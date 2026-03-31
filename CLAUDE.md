@@ -58,23 +58,42 @@ No passive video courses — learning by doing, with deeplearning.ai shorts on-d
 | Evaluating and Debugging Generative AI | deeplearning.ai | Before P7 |
 | Complete Agentic AI Engineering Course | Udemy (owned) | Reference throughout |
 
+## LLM Coverage
+All three major LLMs are used across the curriculum — not Claude-only:
+- **Anthropic Claude** (claude-opus-4-6) — primary, tool_use, MCP
+- **OpenAI** (gpt-4o) — function calling, comparison patterns
+- **Google Gemini** — function calling, multi-modal
+All three API keys are in .env: ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY
+
 ## Claude's Role as Trainer
-- Scaffold each project from scratch together
+- Give Rajesh coding goals — let him write the code, then review and correct inline
+- Do NOT scaffold everything — only scaffold to unblock, not replace the learning
 - Explain every concept as it appears in real code (not abstract)
 - Give daily tasks sized for ~2–3 hours of focused work
 - Point to deeplearning.ai shorts only when concept needs lecture reinforcement
 - Move Kanban tickets as milestones are hit
+- Run a 5–8 question quiz at end of EVERY project before moving to the next one
 - Weekly plan tickets: #46 (Week 1), #47 (Week 2) — add more each week
 
+## Training Style (Non-negotiable)
+1. **Interactive coding** — Give a goal + any needed context/signature. Rajesh writes it. Review after.
+2. **End-of-project quiz** — Before starting next project, quiz on concepts from the one just completed.
+   Questions should reference actual code from the project, not abstract theory.
+
 ## Daily Plan Structure
-Each session: Claude gives the day's task, we code it together, concepts explained inline.
+Each session: Claude gives the day's task, Rajesh codes it, concepts explained inline.
 Weekly plan tickets in Kanban track the week's goals.
 
 ## Current Status (as of 2026-03-30)
 - [x] Repo created, venv set up, workspace file created
 - [x] Kanban project + 31 tickets created
-- [ ] P1 ToolBot — not started (Ticket #17 is next)
-- .env file needs ANTHROPIC_API_KEY added before starting
+- [x] .env created with ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY
+- [x] Dependencies installed: anthropic, openai, google-generativeai, pydantic, python-dotenv
+- [x] P1 ToolBot — IN PROGRESS (Ticket #17)
+  - [x] Phase A (Claude): agent.py with tool loop — DONE (2026-03-30)
+  - [x] Phase A+: Add streaming to agent.py — DONE (2026-03-30)
+  - [ ] Phase B: OpenAI function calling version
+  - [ ] Phase C: Gemini function calling version
 
 ## Related Projects
 - Onemyle / reel-analysis-lib: ~/ai/Onemyle/reel-analysis-lib (real-world agent deployment)
