@@ -92,7 +92,7 @@ Weekly plan tickets in Kanban track the week's goals.
 - [x] P1 ToolBot — IN PROGRESS (Ticket #17)
   - [x] Phase A (Claude): agent.py with tool loop — DONE (2026-03-30)
   - [x] Phase A+: Add streaming to agent.py — DONE (2026-03-30)
-  - [ ] Phase B: OpenAI function calling version
+  - [x] Phase B: OpenAI function calling version — DONE (2026-03-31)
   - [ ] Phase C: Gemini function calling version
 
 ## Related Projects

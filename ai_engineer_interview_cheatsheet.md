@@ -196,4 +196,141 @@ messages.append({"role": "user", "content": tool_results})
 - Never mutate existing messages — always append
 
 ---
-*Last updated: 2026-03-31 — covers P1 ToolBot (Phase A, A+)*
+
+## Anthropic vs OpenAI — Side by Side
+
+### Client setup
+```python
+# Anthropic
+import anthropic
+client = anthropic.Anthropic()
+
+# OpenAI
+from openai import OpenAI
+client = OpenAI()
+```
+
+### Tool schema format
+```python
+# Anthropic
+{
+    "name": "get_weather",
+    "description": "...",
+    "input_schema": {           # ← key is "input_schema"
+        "type": "object",
+        "properties": { ... },
+        "required": ["city"],
+    }
+}
+
+# OpenAI
+{
+    "type": "function",         # ← extra wrapper
+    "function": {
+        "name": "get_weather",
+        "description": "...",
+        "parameters": {         # ← key is "parameters"
+            "type": "object",
+            "properties": { ... },
+            "required": ["city"],
+        }
+    }
+}
+```
+
+### API call
+```python
+# Anthropic
+response = client.messages.create(
+    model="claude-opus-4-6",
+    max_tokens=1024,
+    tools=TOOLS,
+    messages=messages,
+)
+
+# OpenAI
+response = client.chat.completions.create(
+    model="gpt-4o",
+    max_tokens=1024,
+    tools=TOOLS,
+    messages=messages,
+)
+```
+
+### Streaming
+```python
+# Anthropic
+with client.messages.stream(model=..., ...) as stream:
+    for text in stream.text_stream:          # text_stream gives strings directly
+        print(text, end="", flush=True)
+    response = stream.get_final_message()    # ← get_final_message()
+
+# OpenAI
+with client.chat.completions.stream(model=..., ...) as stream:
+    for event in stream:                     # yields typed events, not strings
+        if event.type == "content.delta":
+            print(event.delta, end="", flush=True)
+    response = stream.get_final_completion() # ← get_final_completion()
+```
+
+### Stop/finish reason
+```python
+# Anthropic
+response.stop_reason == "end_turn"    # done
+response.stop_reason == "tool_use"    # wants tools
+
+# OpenAI
+response.choices[0].finish_reason == "stop"        # done
+response.choices[0].finish_reason == "tool_calls"  # wants tools
+```
+
+### Accessing tool calls
+```python
+# Anthropic — iterate response.content blocks
+for block in response.content:
+    if block.type == "tool_use":
+        name = block.name
+        args = block.input          # already a dict
+        id   = block.id
+
+# OpenAI — iterate message.tool_calls
+for tool_call in response.choices[0].message.tool_calls:
+    name = tool_call.function.name
+    args = json.loads(tool_call.function.arguments)  # JSON string → dict
+    id   = tool_call.id
+```
+
+### Feeding tool results back
+```python
+# Anthropic — single "user" message with list of results
+messages.append({
+    "role": "user",
+    "content": [
+        {"type": "tool_result", "tool_use_id": id, "content": result}
+    ]
+})
+
+# OpenAI — one "tool" message per result
+messages.append({"role": "assistant", "content": ..., "tool_calls": [...]})
+messages.append({"role": "tool", "tool_call_id": id, "content": result})
+```
+
+### Accessing final text
+```python
+# Anthropic
+for block in response.content:
+    if hasattr(block, "text"):
+        print(block.text)
+
+# OpenAI
+print(response.choices[0].message.content)
+```
+
+### Key gotcha — OpenAI streaming events
+OpenAI's `stream()` context manager yields typed **event objects**, not raw text.
+- `event.type == "content.delta"` → text chunk, access via `event.delta`
+- `event.type == "chunk"` → raw chunk object, access via `event.chunk`
+- Unlike Anthropic, there is no `text_stream` shortcut
+
+---
+*Last updated: 2026-03-31 — covers P1 ToolBot (Phase A, A+, B)*
