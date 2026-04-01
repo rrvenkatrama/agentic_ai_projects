@@ -93,7 +93,7 @@ Weekly plan tickets in Kanban track the week's goals.
   - [x] Phase A (Claude): agent.py with tool loop — DONE (2026-03-30)
   - [x] Phase A+: Add streaming to agent.py — DONE (2026-03-30)
   - [x] Phase B: OpenAI function calling version — DONE (2026-03-31)
-  - [ ] Phase C: Gemini function calling version
+  - [x] Phase C: Gemini function calling version — DONE (2026-03-31)
 
 ## Related Projects
 - Onemyle / reel-analysis-lib: ~/ai/Onemyle/reel-analysis-lib (real-world agent deployment)

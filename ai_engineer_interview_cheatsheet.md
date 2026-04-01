@@ -333,4 +333,125 @@ OpenAI's `stream()` context manager yields typed **event objects**, not raw text
 - Unlike Anthropic, there is no `text_stream` shortcut
 
 ---
-*Last updated: 2026-03-31 — covers P1 ToolBot (Phase A, A+, B)*
+
+## Gemini (google-genai SDK)
+
+### Setup
+```python
+from google import genai
+from google.genai import types
+
+client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+```
+
+### Tool definition — two approaches
+
+**Option 1: Pass Python functions directly (new SDK feature)**
+```python
+TOOLS = [get_weather, calculator, get_time]
+```
+The SDK uses Python's `inspect` module to read:
+- Function name → tool name
+- Parameter names + type hints → schema
+- Docstring → description (CRITICAL — without it Gemini guesses from name only)
+
+**Option 2: Explicit schema (like Anthropic/OpenAI)**
+```python
+# Not needed with new SDK — use docstrings on functions instead
+```
+
+### Always add docstrings when passing functions as tools
+```python
+def get_time(timezone: str = "UTC") -> str:
+    """Get the current date and time for a given timezone.
+
+    Args:
+        timezone: IANA timezone name e.g. 'America/New_York'. Defaults to UTC.
+    """
+```
+Without a docstring, Gemini only knows the function name and parameter names.
+It will guess — and guess wrong on ambiguous or complex tools.
+
+### API call
+```python
+response = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents=contents,           # list, managed manually (no chat session)
+    config=types.GenerateContentConfig(tools=TOOLS)
+)
+```
+
+### Detect function calls
+```python
+fn_calls = [p for p in response.candidates[0].content.parts
+            if p.function_call and p.function_call.name]
+```
+
+### Function call fields
+```python
+name = part.function_call.name
+args = dict(part.function_call.args)   # already a dict — no json.loads() needed
+```
+
+### Feed results back
+```python
+# append assistant response to history
+contents.append(response.candidates[0].content)
+
+# collect all tool results into one Content block
+tool_results = []
+for part in fn_calls:
+    result = execute_tool(part.function_call.name, dict(part.function_call.args))
+    tool_results.append(types.Part(
+        function_response=types.FunctionResponse(
+            name=part.function_call.name,
+            response={"result": result}
+        )
+    ))
+
+contents.append(types.Content(parts=tool_results, role="user"))
+```
+
+### Final text
+```python
+print(response.text)
+```
+
+### History management
+Gemini new SDK has no chat session — you manage `contents` manually, same pattern as Anthropic/OpenAI `messages`.
+
+### Streaming
+Gemini streaming with tool calls is not straightforward — use non-streaming for tool loops, add streaming only for pure text responses.
+
+### Current models (as of 2026-03-31)
+| Model | Use case |
+|---|---|
+| `gemini-2.5-flash` | Best price/performance, function calling ✓ |
+| `gemini-2.5-pro` | Most capable, complex reasoning |
+| `gemini-2.5-flash-lite` | Fastest, most economical |
+
+### Key gotcha — deprecated package
+`google-generativeai` is fully deprecated. Use `google-genai`:
+```bash
+pip install google-genai
+```
+```python
+from google import genai          # new
+# NOT: import google.generativeai  # old, deprecated
+```
+
+---
+
+## All Three LLMs — Tool Calling Comparison
+
+| | Anthropic | OpenAI | Gemini |
+|---|---|---|---|
+| Tool args format | dict (`block.input`) | JSON string (`json.loads(...)`) | dict (`dict(part.function_call.args)`) |
+| Tool result role | `"user"` | `"tool"` | `"user"` (as Content) |
+| Stop signal | `stop_reason == "end_turn"` | `finish_reason == "stop"` | no fn_calls in parts |
+| History | manual `messages` list | manual `messages` list | manual `contents` list |
+| Streaming helper | `text_stream` (strings) | typed events (`event.type`) | non-trivial with tools |
+| Tool schema | explicit JSON Schema | explicit JSON Schema | Python functions or explicit |
+
+---
+*Last updated: 2026-03-31 — covers P1 ToolBot (Phase A, A+, B, C)*
