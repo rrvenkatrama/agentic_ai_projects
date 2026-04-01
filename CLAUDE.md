@@ -26,18 +26,26 @@ No passive video courses — learning by doing, with deeplearning.ai shorts on-d
 - Activate: source .venv/bin/activate
 - Keys: copy .env.example to .env, add ANTHROPIC_API_KEY etc.
 
-## The 8-Project Curriculum
+## The 11-Project Curriculum (v4 — approved 2026-04-01)
 
 | # | Folder | Project | Key Tech | Kanban Tickets | Month |
 |---|--------|---------|----------|----------------|-------|
-| P1 | p1_toolbot | ToolBot — CLI agent with tools | async Python, Pydantic v2, Claude tool_use, streaming | #17–20 | 1 |
-| P2 | p2_doctalk | DocTalk — PDF Q&A with citations | Embeddings, chunking, Chroma, RAG, LangChain | #21–24 | 1 |
-| P3 | p3_researchbot | ResearchBot — multi-step web research | LangGraph, checkpointing, human-in-loop, Redis | #25–28 | 2 |
-| P4 | p4_stocksage | StockSage — stock analysis agent | Multi-agent, yfinance, Finnhub, RAG, LangGraph | #29–33 | 2–3 |
-| P5 | p5_reviewcrew | ReviewCrew — GitHub PR code reviewer | CrewAI, role-based agents, GitHub API | #34–36 | 3 |
-| P6 | p6_mcp | MCP++ — extend Onemyle MCP server | MCP spec, SSE, resources, prompt templates | #37–39 | 3 |
-| P7 | p7_observable | ObservableAgent — observability + evals | LangSmith, LangFuse, eval harnesses | #40–42 | 3 |
-| P8 | p8_platform | AgentPlatform — production deploy | Docker, k3s, GitHub Actions CI/CD | #43–45 | 4 |
+| P1 | p1_toolbot | ToolBot — CLI agent, 3 LLMs | async, Pydantic v2, tool_use, streaming | #17–20 | 1 |
+| P2 | p2_doctalk | DocTalk — PDF Q&A + citations | Embeddings, Chroma→Qdrant, RAG, LangChain | #21–24 | 1 |
+| P3 | p3_researchbot | ResearchBot — multi-step web research | LangGraph, checkpointing, human-in-loop, A2A intro | #25–28 | 2 |
+| P4 | p4_stocksage | StockSage — stock analysis agent | Multi-agent, Mem0 memory, reasoning model selection | #29–33 | 2 |
+| P5 | p5_reviewcrew | ReviewCrew — GitHub PR reviewer | CrewAI, OpenAI Agents SDK, parallel execution | #34–36 | 3 |
+| P6 | p6_mcp | MCP++ + A2A — Onemyle MCP server | MCP spec, SSE, A2A protocol | #37–39 | 3 |
+| P7 | p7_observable | ObservableAgent — observability + evals | LangSmith, Langfuse, Arize Phoenix, security evals | #40–42 | 3 |
+| P8 | p8_security | SecurityGuard — agent security | OWASP LLM Top 10, prompt injection, NeMo Guardrails | #48 | 3 |
+| P9 | p9_memory | MemoryAgent — long-term memory | Mem0, Zep, episodic/semantic memory, knowledge graphs | #49 | 3–4 |
+| P10 | p10_platform | AgentPlatform — production deploy | Docker, k3s (local), AWS Bedrock, Terraform, GitHub Actions | #43–45 | 4 |
+| P11 | p11_multimodal | MultiModalBot — vision + audio | GPT-4o vision, Gemini Live, multi-modal RAG | #50 | 4 |
+
+## Sprint Tickets
+- Weeks 1–2: #46, #47 (updated)
+- Weeks 3–16: #51–#64
+- Full plan: see claude_agentic_engineer_plan_v4.md
 
 ## Concepts Covered (by project)
 - P1: async/await, Pydantic v2, tool_use loop, streaming, system prompts, context management
