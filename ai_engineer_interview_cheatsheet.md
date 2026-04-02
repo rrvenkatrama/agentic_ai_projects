@@ -182,6 +182,107 @@ greet(**d)   # same as greet(name="Rajesh", greeting="Hi")
 
 ---
 
+## System Prompts
+
+### What it is
+A permanent instruction given to the LLM **before** the conversation starts. The user never sees it.
+Sets persona, constraints, tool guidance, output format, and context for the entire session.
+
+### Mental model
+Like a job briefing you give an employee before their first day.
+User messages are the work requests that come in after.
+
+### Anthropic — separate `system` parameter
+```python
+client.messages.create(
+    model="claude-opus-4-6",
+    system="You are ToolBot, a helpful assistant...",  # ← separate param
+    messages=[{"role": "user", "content": "..."}]
+)
+```
+
+### OpenAI — inside messages list as role "system"
+```python
+client.chat.completions.create(
+    model="gpt-4o",
+    messages=[
+        {"role": "system", "content": "You are ToolBot..."},  # ← first message
+        {"role": "user", "content": "..."}
+    ]
+)
+```
+
+### Gemini — passed in GenerateContentConfig
+```python
+client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents=contents,
+    config=types.GenerateContentConfig(
+        system_instruction="You are ToolBot...",  # ← config param
+        tools=TOOLS
+    )
+)
+```
+
+### What to put in a system prompt
+| Purpose | Example |
+|---|---|
+| Persona | "You are a senior financial analyst" |
+| Constraints | "Never discuss competitor products" |
+| Tool guidance | "Always use the calculator tool for math, never compute yourself" |
+| Output format | "Respond in bullet points, max 3 bullets" |
+| Context | "You are helping Apple employees with internal IT issues" |
+
+### Key gotcha — Anthropic vs OpenAI placement
+- Anthropic: `system=` is a **separate top-level parameter**, not in messages list
+- OpenAI: system prompt is `{"role": "system", ...}` as the **first item in messages**
+- Gemini: `system_instruction=` inside `GenerateContentConfig`
+
+---
+
+## Context Management + Multi-Turn Memory
+
+### The problem
+If `messages = []` is created inside `run_agent()`, history resets on every call.
+The agent has no memory of previous turns.
+
+### The fix — lift messages to main()
+```python
+async def run_agent(user_message: str, messages: list) -> None:
+    messages.append({"role": "user", "content": user_message})
+    # ... rest of loop unchanged
+
+async def main() -> None:
+    messages = []   # lives here — persists across all turns
+    while True:
+        user_input = input("You: ")
+        await run_agent(user_input, messages)
+```
+
+### Context window limits — simple truncation
+```python
+MAX_MESSAGES = 20
+
+# After each run_agent call:
+if len(messages) > MAX_MESSAGES:
+    messages = messages[-MAX_MESSAGES:]  # keep most recent N messages
+```
+
+### Why truncation is tricky with tool loops
+Tool calls add multiple messages per turn (user → assistant → tool_result → assistant).
+Truncating mid-tool-call can corrupt the history.
+Safe approach: truncate only after a full turn completes (after `end_turn`).
+
+### Better strategies (for later projects)
+| Strategy | How |
+|---|---|
+| Simple truncation | Keep last N messages (what we do in P1) |
+| Token-budget trimming | LangGraph `trim_messages()` — respects token limits |
+| Summarization | Use Claude Haiku to summarize old turns into one message |
+| Sliding window | Keep system + first N + last M messages |
+
+---
+
 ## Message History Pattern
 ```python
 messages = [{"role": "user", "content": user_message}]

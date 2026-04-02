@@ -116,7 +116,18 @@ TOOLS = [
         },
     },
 ]
+SYSTEM_PROMPT = """You are ToolBot, a helpful assistant
+with access to three tools:
+- get_weather: get current weather for any city
+- calculator: evaluate math expressions
+- get_time: get current time in any timezone
 
+Always use the appropriate tool when the user asks about
+weather, math, or time.
+Be concise and friendly. If a tool returns an error,
+explain it clearly to the user."""
+
+MAX_MESSAGES = 20     
 
 # ── 4. Tool dispatcher ────────────────────────────────────────────────────────
 # Maps tool name → (function, Pydantic schema class)
@@ -148,11 +159,12 @@ def execute_tool(name: str, raw_input: dict) -> str:
 #   Claude → stop_reason="end_turn" (final answer)
 #   ... repeat if Claude calls multiple tools
 
-async def run_agent(user_message: str) -> None:
+async def run_agent(user_message: str, messages: list) -> None:
     client = anthropic.Anthropic()
 
-    messages = [{"role": "user", "content": user_message}]
+    # messages = [{"role": "user", "content": user_message}]
 
+    messages.append({"role": "user", "content":user_message})
     print(f"\nYou: {user_message}")
     print("─" * 60)
 
@@ -166,7 +178,7 @@ async def run_agent(user_message: str) -> None:
         #)
 
         with client.messages.stream(model="claude-opus-4-6", 
-            max_tokens=1024,tools=TOOLS,
+            max_tokens=1024,tools=TOOLS, system=SYSTEM_PROMPT, 
             messages=messages ) as stream:
             for text in stream.text_stream:                                          
                  print(text, end="", flush=True) 
@@ -206,6 +218,8 @@ async def run_agent(user_message: str) -> None:
 # ── 6. CLI loop ───────────────────────────────────────────────────────────────
 
 async def main() -> None:
+
+    messages = []    # ← lives here now, persists across turns
     print("ToolBot (Claude) — type 'quit' to exit")
     print("Tools available: weather, calculator, time\n")
 
@@ -221,8 +235,11 @@ async def main() -> None:
         if user_input.lower() in ("quit", "exit"):
             print("Goodbye!")
             break
+                                                           
 
-        await run_agent(user_input)
+        await run_agent(user_input, messages)
+        if len(messages) > MAX_MESSAGES:                         
+            messages = messages[-MAX_MESSAGES:]         
 
 
 if __name__ == "__main__":
