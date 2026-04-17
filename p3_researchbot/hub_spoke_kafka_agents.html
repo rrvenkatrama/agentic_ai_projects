@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hub-and-Spoke + Kafka Agent-as-Consumer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.7; }
+    .sidebar { position: fixed; top: 0; left: 0; width: 260px; height: 100vh; background: #1a1d2e; padding: 24px 16px; overflow-y: auto; border-right: 1px solid #2d3148; }
+    .sidebar h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #7c83a8; margin-bottom: 16px; }
+    .sidebar a { display: block; padding: 6px 10px; color: #a0aec0; text-decoration: none; font-size: 13.5px; border-radius: 6px; margin-bottom: 2px; }
+    .sidebar a:hover { background: #2d3148; color: #e2e8f0; }
+    .sidebar .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #4a5080; margin: 16px 0 6px 10px; }
+    main { margin-left: 260px; padding: 48px 56px; max-width: 900px; }
+    h1 { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .subtitle { color: #7c83a8; font-size: 14px; margin-bottom: 48px; }
+    h2 { font-size: 20px; font-weight: 600; color: #fff; margin: 48px 0 16px; padding-top: 48px; border-top: 1px solid #2d3148; }
+    h2:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+    h3 { font-size: 15px; font-weight: 600; color: #a0aec0; margin: 24px 0 10px; }
+    p { color: #cbd5e0; margin-bottom: 14px; font-size: 15px; }
+    ul { color: #cbd5e0; font-size: 15px; margin: 10px 0 14px 20px; }
+    ul li { margin-bottom: 5px; }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; background: #1e2130; color: #7dd3fc; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    pre { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 20px; margin: 16px 0; overflow-x: auto; }
+    pre code { background: none; padding: 0; color: #e2e8f0; font-size: 13.5px; line-height: 1.6; }
+    .keyword { color: #c084fc; }
+    .string { color: #86efac; }
+    .comment { color: #4a5080; font-style: italic; }
+    .fn { color: #60a5fa; }
+    .num { color: #f9a8d4; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+    th { background: #1e2130; color: #a0aec0; text-align: left; padding: 10px 14px; border-bottom: 1px solid #2d3148; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    td { padding: 10px 14px; border-bottom: 1px solid #1e2130; color: #cbd5e0; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #1a1d2e; }
+    .note { background: #1e2130; border-left: 3px solid #7dd3fc; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; color: #a0aec0; }
+    .note strong { color: #7dd3fc; }
+    .warn { background: #1e2130; border-left: 3px solid #f59e0b; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; color: #a0aec0; }
+    .warn strong { color: #f59e0b; }
+    .good { background: #1e2130; border-left: 3px solid #86efac; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; color: #a0aec0; }
+    .good strong { color: #86efac; }
+    .flow { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 24px; margin: 16px 0; font-family: "JetBrains Mono", monospace; font-size: 13px; line-height: 2.2; }
+    .flow .node { color: #86efac; font-weight: 600; }
+    .flow .arrow { color: #4a5080; }
+    .flow .topic { color: #f9a8d4; font-weight: 600; }
+    .flow .label { color: #a0aec0; font-size: 12px; }
+    .tag { display: inline-block; background: #2d3148; color: #7dd3fc; font-size: 11px; padding: 2px 8px; border-radius: 12px; margin-right: 6px; font-family: monospace; }
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h2>Kafka Agent-as-Consumer</h2>
+  <div class="section-label">Overview</div>
+  <a href="#what">What We Built</a>
+  <a href="#vs-langgraph">vs hub_spoke.py</a>
+  <div class="section-label">Architecture</div>
+  <a href="#flow">Full Flow Diagram</a>
+  <a href="#topics">Two Topics</a>
+  <a href="#no-langgraph">No LangGraph</a>
+  <div class="section-label">Kafka Concepts</div>
+  <a href="#topic">Topic</a>
+  <a href="#group-id">Consumer Group ID</a>
+  <a href="#fanout-vs-lb">Fan-out vs Load Balance</a>
+  <a href="#offset">Offset & auto_offset_reset</a>
+  <a href="#serializer">Serializer / Deserializer</a>
+  <div class="section-label">Code Patterns</div>
+  <a href="#producer">Producer</a>
+  <a href="#consumer">Consumer (Agent)</a>
+  <a href="#aggregator">Aggregator</a>
+  <a href="#seen-set">seen set — deduplication</a>
+  <div class="section-label">Setup</div>
+  <a href="#k3s">Kafka on k3s</a>
+  <a href="#running">Running the System</a>
+  <a href="#enterprise">Enterprise Context</a>
+</div>
+
+<main>
+  <h1>Hub-and-Spoke + Kafka</h1>
+  <p class="subtitle">Agent-as-Consumer design pattern — P3 ResearchBot reference &nbsp;·&nbsp; 2026-04-16</p>
+
+  <!-- WHAT WE BUILT -->
+  <h2 id="what">What We Built</h2>
+  <p>The same hub-and-spoke research system as <code>hub_spoke.py</code> — coordinator fans out to 3 specialist agents (news, technical, examples), each searches DuckDuckGo, an aggregator collects results — but implemented using <strong>Kafka as the communication layer</strong> instead of LangGraph.</p>
+  <p>Each agent is an <strong>independent Python script</strong> that reads from a Kafka topic and writes to another. They share nothing except the topics. No shared memory, no shared process, no framework.</p>
+
+  <!-- VS LANGGRAPH -->
+  <h2 id="vs-langgraph">hub_spoke.py vs kafka_agents.py</h2>
+  <table>
+    <tr><th></th><th>hub_spoke.py (LangGraph)</th><th>kafka_agents.py (Kafka)</th></tr>
+    <tr><td>Orchestration</td><td>LangGraph StateGraph</td><td>Plain Python + Kafka</td></tr>
+    <tr><td>Fan-out</td><td>LangGraph edges (function calls)</td><td>Producer publishes 3 messages</td></tr>
+    <tr><td>Coordinator knows agents?</td><td>Yes — edges are hardwired</td><td>No — just publishes to topic</td></tr>
+    <tr><td>Agent coordination</td><td>LangGraph barrier (implicit)</td><td>Aggregator polls with seen set</td></tr>
+    <tr><td>State</td><td>HubState TypedDict (shared memory)</td><td>Kafka messages (JSON bytes)</td></tr>
+    <tr><td>Agent crash</td><td>Whole graph dies</td><td>Only that agent dies; message stays in Kafka</td></tr>
+    <tr><td>Scaling one agent</td><td>Not possible</td><td>Deploy 10 news_agents, Kafka load-balances</td></tr>
+    <tr><td>Adding new agent</td><td>Rewire graph, redeploy</td><td>New consumer subscribes, zero downtime</td></tr>
+    <tr><td>Framework</td><td>Yes — LangGraph</td><td>No framework magic</td></tr>
+  </table>
+
+  <!-- FULL FLOW DIAGRAM -->
+  <h2 id="flow">Full Flow Diagram</h2>
+  <div class="flow">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="topic">TOPIC: research-tasks</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;┌──────────────────────────────┐<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│ {topic:"quantum",agent:"news"}│<br>
+    <span class="node">producer</span> <span class="arrow">──publish──▶</span>│ {topic:"quantum",agent:"tech"}│<span class="arrow">──▶</span> <span class="node">news_agent</span> <span class="label">(group: news-group)</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│ {topic:"quantum",agent:"exmp"}│<span class="arrow">──▶</span> <span class="node">technical_agent</span> <span class="label">(group: technical-group)</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└──────────────────────────────┘<span class="arrow">──▶</span> <span class="node">examples_agent</span> <span class="label">(group: examples-group)</span><br>
+    <br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="topic">TOPIC: research-findings</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;┌──────────────────────────────┐<br>
+    <span class="node">news_agent</span> <span class="arrow">──publish──▶</span>&nbsp;│ Finding(agent="news", ...)&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+    <span class="node">technical_agent</span> <span class="arrow">────────▶</span>&nbsp;│ Finding(agent="technical", ...)│<span class="arrow">──▶</span> <span class="node">aggregator</span><br>
+    <span class="node">examples_agent</span> <span class="arrow">─────────▶</span>&nbsp;│ Finding(agent="examples", ...) │<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└──────────────────────────────┘<br>
+  </div>
+
+  <!-- TWO TOPICS -->
+  <h2 id="topics">Two Topics</h2>
+  <table>
+    <tr><th>Topic</th><th>Producer</th><th>Consumers</th><th>Message format</th></tr>
+    <tr><td><code>research-tasks</code></td><td>producer script</td><td>news_agent, technical_agent, examples_agent</td><td><code>{"topic": "...", "agent": "news|technical|examples"}</code></td></tr>
+    <tr><td><code>research-findings</code></td><td>all 3 agents</td><td>aggregator</td><td><code>{"agent": "...", "title": "...", "body": "..."}</code></td></tr>
+  </table>
+
+  <!-- NO LANGGRAPH -->
+  <h2 id="no-langgraph">No LangGraph</h2>
+  <p>This exercise deliberately does <strong>not</strong> use LangGraph. Kafka replaces what LangGraph was doing:</p>
+  <ul>
+    <li>LangGraph edges → producer publishes messages</li>
+    <li>LangGraph barrier → aggregator's <code>seen</code> set</li>
+    <li>HubState TypedDict → JSON messages on topics</li>
+    <li>StateGraph compile → no framework, plain Python</li>
+  </ul>
+  <p>This is closer to how real enterprise systems are built — agents are services that read from queues and write to queues. No framework magic gluing them together.</p>
+
+  <!-- TOPIC -->
+  <h2 id="topic">Kafka Topic</h2>
+  <p>A named, persistent, ordered channel. Messages written to a topic stay there — they don't disappear after being read (unlike a traditional queue). Multiple consumers can read independently from the same topic.</p>
+  <pre><code><span class="comment"># Topics are created automatically when first written to</span>
+<span class="comment"># Or explicitly with KafkaAdminClient</span>
+producer.<span class="fn">send</span>(<span class="string">'research-tasks'</span>, message)   <span class="comment"># creates topic if not exists</span></code></pre>
+
+  <!-- GROUP ID -->
+  <h2 id="group-id">Consumer Group ID</h2>
+  <p><code>group_id</code> is a string label that serves two jobs:</p>
+  <ul>
+    <li><strong>Resume tracking</strong> — Kafka stores the last read position (offset) per group. On restart, consumer picks up where it left off, not from the beginning</li>
+    <li><strong>Message distribution</strong> — controls whether consumers share messages or each get their own copy</li>
+  </ul>
+  <pre><code>c = <span class="fn">KafkaConsumer</span>(
+    TASKS_TOPIC,
+    bootstrap_servers=BROKER,
+    group_id=<span class="string">f'{agent_type}-group'</span>,   <span class="comment"># "news-group", "technical-group", "examples-group"</span>
+    ...
+)</code></pre>
+  <div class="note"><strong>Changing group_id</strong> is like starting fresh — Kafka has no stored offset for the new name, so <code>auto_offset_reset</code> decides where to start.</div>
+
+  <!-- FAN-OUT VS LOAD BALANCE -->
+  <h2 id="fanout-vs-lb">Fan-out vs Load Balance</h2>
+  <p>The most important Kafka pattern distinction:</p>
+  <table>
+    <tr><th>Pattern</th><th>group_id</th><th>Each consumer gets</th><th>Use case</th></tr>
+    <tr><td><strong>Fan-out</strong> (our case)</td><td>Different per consumer</td><td>ALL messages independently</td><td>Each agent needs every task</td></tr>
+    <tr><td><strong>Load balance</strong></td><td>Same for all consumers</td><td>Subset of messages (split evenly)</td><td>Process each message exactly once, spread across workers</td></tr>
+  </table>
+
+  <h3>Fan-out (different groups)</h3>
+  <div class="flow">
+    <span class="topic">research-tasks</span>: [msg_news, msg_tech, msg_examples]<br>
+    <br>
+    <span class="node">news_agent</span> <span class="label">(news-group)</span>&nbsp;&nbsp;&nbsp;<span class="arrow">→ gets ALL 3 messages, filters for agent="news"</span><br>
+    <span class="node">tech_agent</span> <span class="label">(tech-group)</span>&nbsp;&nbsp;&nbsp;<span class="arrow">→ gets ALL 3 messages, filters for agent="technical"</span><br>
+    <span class="node">examples_agent</span> <span class="label">(examples-group)</span> <span class="arrow">→ gets ALL 3 messages, filters for agent="examples"</span>
+  </div>
+
+  <h3>Load balance (same group)</h3>
+  <div class="flow">
+    <span class="topic">research-tasks</span>: [msg1, msg2, msg3, msg4, msg5, msg6]<br>
+    <br>
+    <span class="node">worker_A</span> <span class="label">(workers-group)</span> <span class="arrow">→ gets msg1, msg2</span><br>
+    <span class="node">worker_B</span> <span class="label">(workers-group)</span> <span class="arrow">→ gets msg3, msg4</span><br>
+    <span class="node">worker_C</span> <span class="label">(workers-group)</span> <span class="arrow">→ gets msg5, msg6</span>
+  </div>
+  <p>Load balance example: resize 1000 images. Spin up 10 workers in same group — Kafka gives each ~100. No duplicates, no coordination code needed.</p>
+
+  <!-- OFFSET -->
+  <h2 id="offset">Offset &amp; auto_offset_reset</h2>
+  <p>Every message in a topic has a position number called an <strong>offset</strong>. Kafka tracks which offset each consumer group has read up to.</p>
+  <pre><code>Topic: [msg0, msg1, msg2, msg3, msg4]
+                              ↑
+                  news-group last read here (offset=3)
+                  → on restart, starts from msg3</code></pre>
+
+  <p><code>auto_offset_reset</code> — what to do when a group has NO stored offset yet (first run, or new group_id):</p>
+  <table>
+    <tr><th>Value</th><th>Behaviour</th><th>Use when</th></tr>
+    <tr><td><code>'earliest'</code></td><td>Start from the beginning of the topic</td><td>Want to process all existing messages on first run</td></tr>
+    <tr><td><code>'latest'</code></td><td>Start from new messages only (ignore existing)</td><td>Only care about messages that arrive after starting</td></tr>
+  </table>
+  <div class="warn"><strong>Gotcha:</strong> Using <code>'earliest'</code> means re-running agents will pick up old messages from previous runs. This is why the aggregator saw duplicate findings from the previous run — they were still in the topic.</div>
+
+  <!-- SERIALIZER -->
+  <h2 id="serializer">Serializer / Deserializer</h2>
+  <p>Kafka only speaks bytes. Serializers convert Python objects → bytes on send. Deserializers convert bytes → Python objects on receive.</p>
+  <pre><code><span class="comment"># Producer — dict → JSON string → bytes</span>
+<span class="fn">KafkaProducer</span>(
+    value_serializer=<span class="keyword">lambda</span> v: json.<span class="fn">dumps</span>(v).<span class="fn">encode</span>()
+)
+
+<span class="comment"># Consumer — bytes → JSON string → dict</span>
+<span class="fn">KafkaConsumer</span>(
+    value_deserializer=<span class="keyword">lambda</span> m: json.<span class="fn">loads</span>(m.<span class="fn">decode</span>())
+)</code></pre>
+  <p>The lambda parameter (<code>v</code>, <code>m</code>) is just the message value. Could be named anything. Equivalent named function:</p>
+  <pre><code><span class="keyword">def</span> <span class="fn">serialize</span>(v):
+    <span class="keyword">return</span> json.<span class="fn">dumps</span>(v).<span class="fn">encode</span>()
+
+<span class="fn">KafkaProducer</span>(value_serializer=serialize)</code></pre>
+
+  <!-- PRODUCER -->
+  <h2 id="producer">Producer Pattern</h2>
+  <pre><code><span class="keyword">def</span> <span class="fn">producer</span>(topic=<span class="string">'quantum computing'</span>):
+    p = <span class="fn">KafkaProducer</span>(
+        bootstrap_servers=BROKER,
+        value_serializer=<span class="keyword">lambda</span> v: json.<span class="fn">dumps</span>(v).<span class="fn">encode</span>()
+    )
+    <span class="keyword">for</span> agent_type <span class="keyword">in</span> [<span class="string">'news'</span>, <span class="string">'technical'</span>, <span class="string">'examples'</span>]:
+        msg = {<span class="string">'topic'</span>: topic, <span class="string">'agent'</span>: agent_type}
+        p.<span class="fn">send</span>(TASKS_TOPIC, msg)
+    p.<span class="fn">flush</span>()   <span class="comment"># wait until all messages delivered — don't exit early</span></code></pre>
+  <ul>
+    <li>Producer publishes 3 messages and exits — doesn't know or care who's listening</li>
+    <li><code>flush()</code> — blocks until Kafka confirms receipt. Without it the script may exit before messages are sent</li>
+  </ul>
+
+  <!-- CONSUMER -->
+  <h2 id="consumer">Consumer (Agent) Pattern</h2>
+  <pre><code><span class="keyword">def</span> <span class="fn">consumer</span>(agent_type):
+    c = <span class="fn">KafkaConsumer</span>(TASKS_TOPIC, group_id=<span class="string">f'{agent_type}-group'</span>,
+                       auto_offset_reset=<span class="string">'earliest'</span>, ...)
+    p = <span class="fn">KafkaProducer</span>(...)   <span class="comment"># also a producer — publishes findings</span>
+
+    <span class="keyword">for</span> msg <span class="keyword">in</span> c:            <span class="comment"># infinite loop — runs until Ctrl+C</span>
+        task = msg.value
+        <span class="keyword">if</span> task[<span class="string">'agent'</span>] != agent_type:
+            <span class="keyword">continue</span>        <span class="comment"># content-based filtering — ignore other agents' tasks</span>
+        <span class="comment"># search DuckDuckGo...</span>
+        <span class="keyword">for</span> f <span class="keyword">in</span> findings:
+            p.<span class="fn">send</span>(FINDINGS_TOPIC, f.<span class="fn">model_dump</span>())
+        p.<span class="fn">flush</span>()</code></pre>
+  <ul>
+    <li>Each agent is both a consumer (reads tasks) and a producer (writes findings)</li>
+    <li>Content-based filtering — sees all messages, acts only on its own type</li>
+    <li><code>model_dump()</code> — Pydantic v2 method, converts Finding object to plain dict for JSON serialization</li>
+    <li>Runs forever — in production this would be a long-running service</li>
+  </ul>
+
+  <!-- AGGREGATOR -->
+  <h2 id="aggregator">Aggregator Pattern</h2>
+  <pre><code><span class="keyword">def</span> <span class="fn">aggregator</span>(expected=<span class="num">3</span>):
+    c = <span class="fn">KafkaConsumer</span>(FINDINGS_TOPIC, group_id=<span class="string">'aggregator-group'</span>, ...)
+    findings = []
+    seen = <span class="fn">set</span>()
+    <span class="keyword">for</span> msg <span class="keyword">in</span> c:
+        f = <span class="fn">Finding</span>(**msg.value)     <span class="comment"># ** unpacks dict as keyword args</span>
+        <span class="keyword">if</span> f.agent <span class="keyword">not in</span> seen:
+            seen.<span class="fn">add</span>(f.agent)
+            findings.<span class="fn">append</span>(f)
+        <span class="keyword">if</span> <span class="fn">len</span>(seen) >= expected:
+            <span class="keyword">break</span>                    <span class="comment"># got one per agent type — done</span></code></pre>
+  <ul>
+    <li><code>Finding(**msg.value)</code> — <code>msg.value</code> is a dict after deserialization. <code>**</code> unpacks it as keyword arguments into the Pydantic constructor</li>
+    <li><code>break</code> — exits the infinite consumer loop once all agent types are represented</li>
+  </ul>
+
+  <!-- SEEN SET -->
+  <h2 id="seen-set">seen Set — Deduplication</h2>
+  <p>A simple <code>expected=3</code> counter is not enough — you might get 2 news findings before any technical or examples arrive, hit the count of 3, and miss the other types entirely.</p>
+  <pre><code><span class="comment"># Wrong — counts total, not per type</span>
+<span class="keyword">if</span> <span class="fn">len</span>(findings) >= <span class="num">3</span>:
+    <span class="keyword">break</span>    <span class="comment"># might have 3 news findings and 0 others</span>
+
+<span class="comment"># Right — guarantees one per agent type</span>
+seen = <span class="fn">set</span>()
+<span class="keyword">if</span> f.agent <span class="keyword">not in</span> seen:
+    seen.<span class="fn">add</span>(f.agent)
+    findings.<span class="fn">append</span>(f)
+<span class="keyword">if</span> <span class="fn">len</span>(seen) >= <span class="num">3</span>:
+    <span class="keyword">break</span>    <span class="comment"># guaranteed: one news, one technical, one examples</span></code></pre>
+  <p>The <code>seen</code> set also handles duplicate messages from previous runs still in the topic (because <code>auto_offset_reset='earliest'</code> replays old messages for new group IDs).</p>
+
+  <!-- K3S SETUP -->
+  <h2 id="k3s">Kafka on k3s</h2>
+  <p>Single manifest file <code>kafka/kafka.yaml</code> — namespace + deployment + service.</p>
+  <ul>
+    <li>Image: <code>apache/kafka:3.7.0</code> — KRaft mode (no Zookeeper needed)</li>
+    <li>NodePort: <code>30092</code> — accessible from Mac at <code>192.168.1.156:30092</code></li>
+    <li>Kafka broker port: <code>9092</code> internal to the pod</li>
+    <li><code>KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://192.168.1.156:30092</code> — tells Kafka to advertise the external address to clients</li>
+  </ul>
+  <pre><code><span class="comment"># Deploy</span>
+scp p3_researchbot/kafka/kafka.yaml rajramani@192.168.1.156:~/
+ssh rajramani@192.168.1.156 <span class="string">"echo yanni123 | sudo -S kubectl apply -f ~/kafka.yaml"</span>
+
+<span class="comment"># Verify</span>
+ssh rajramani@192.168.1.156 <span class="string">"echo yanni123 | sudo -S kubectl get pods -n kafka"</span>
+
+<span class="comment"># Test connectivity from Mac</span>
+python3 -c <span class="string">"from kafka import KafkaAdminClient; a = KafkaAdminClient(bootstrap_servers='192.168.1.156:30092'); print('Connected:', a.list_topics())"</span></code></pre>
+
+  <!-- RUNNING -->
+  <h2 id="running">Running the System</h2>
+  <p>Open 5 terminal tabs. Start consumers + aggregator first (they block waiting), then fire the producer.</p>
+  <pre><code><span class="comment"># Tab 1 — news agent</span>
+python p3_researchbot/kafka_agents.py consumer news
+
+<span class="comment"># Tab 2 — technical agent</span>
+python p3_researchbot/kafka_agents.py consumer technical
+
+<span class="comment"># Tab 3 — examples agent</span>
+python p3_researchbot/kafka_agents.py consumer examples
+
+<span class="comment"># Tab 4 — aggregator (start before producer)</span>
+python p3_researchbot/kafka_agents.py aggregator
+
+<span class="comment"># Tab 5 — producer (fire last)</span>
+python p3_researchbot/kafka_agents.py producer</code></pre>
+
+  <div class="note"><strong>Order matters:</strong> Start the aggregator before the producer. If the aggregator starts after findings are already in the topic, it will still read them (Kafka persists messages) — but starting it first is cleaner and avoids race conditions.</div>
+
+  <!-- ENTERPRISE -->
+  <h2 id="enterprise">Enterprise Context</h2>
+  <p>In a production enterprise system, each mode would be a separate deployed container:</p>
+  <table>
+    <tr><th>Script mode</th><th>Production equivalent</th></tr>
+    <tr><td><code>producer</code></td><td>API endpoint or scheduled job that triggers research</td></tr>
+    <tr><td><code>consumer news</code></td><td>news-agent-service deployment on k3s, 1-N replicas</td></tr>
+    <tr><td><code>consumer technical</code></td><td>technical-agent-service deployment on k3s</td></tr>
+    <tr><td><code>consumer examples</code></td><td>examples-agent-service deployment on k3s</td></tr>
+    <tr><td><code>aggregator</code></td><td>aggregator-service — writes summary to DB or publishes to results topic</td></tr>
+  </table>
+
+  <div class="good"><strong>Interview answer:</strong> "In a production enterprise setup I'd decouple these agents via Kafka or SQS rather than in-process LangGraph — for fault isolation, independent scaling, and message durability. LangGraph is right for prototyping and moderate-scale deployments where operational simplicity matters more than resilience."</div>
+
+  <br><br>
+  <p style="color: #4a5080; font-size: 13px;">Created: 2026-04-16 — P3 ResearchBot (Ticket #66 — kafka_agents.py)</p>
+</main>
+
+</body>
+</html>

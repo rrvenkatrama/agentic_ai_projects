@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LangChain 101 — Use Cases & Tools</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.7; }
+    .sidebar { position: fixed; top: 0; left: 0; width: 260px; height: 100vh; background: #1a1d2e; padding: 24px 16px; overflow-y: auto; border-right: 1px solid #2d3148; }
+    .sidebar h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #7c83a8; margin-bottom: 16px; }
+    .sidebar a { display: block; padding: 6px 10px; color: #a0aec0; text-decoration: none; font-size: 13.5px; border-radius: 6px; margin-bottom: 2px; }
+    .sidebar a:hover { background: #2d3148; color: #e2e8f0; }
+    .sidebar .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #4a5080; margin: 16px 0 6px 10px; }
+    main { margin-left: 260px; padding: 48px 56px; max-width: 900px; }
+    h1 { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .subtitle { color: #7c83a8; font-size: 14px; margin-bottom: 48px; }
+    h2 { font-size: 20px; font-weight: 600; color: #fff; margin: 48px 0 16px; padding-top: 48px; border-top: 1px solid #2d3148; }
+    h2:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+    h3 { font-size: 15px; font-weight: 600; color: #a0aec0; margin: 24px 0 10px; }
+    p { color: #cbd5e0; margin-bottom: 14px; font-size: 15px; }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; background: #1e2130; color: #7dd3fc; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    pre { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 20px; margin: 16px 0; overflow-x: auto; }
+    pre code { background: none; padding: 0; color: #e2e8f0; font-size: 13.5px; line-height: 1.6; }
+    .keyword { color: #c084fc; }
+    .string { color: #86efac; }
+    .comment { color: #4a5080; font-style: italic; }
+    .fn { color: #60a5fa; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+    th { background: #1e2130; color: #a0aec0; text-align: left; padding: 10px 14px; border-bottom: 1px solid #2d3148; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    td { padding: 10px 14px; border-bottom: 1px solid #1e2130; color: #cbd5e0; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #1a1d2e; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-left: 8px; vertical-align: middle; }
+    .badge-used { background: #14532d; color: #86efac; }
+    .badge-p3 { background: #1e3a5f; color: #7dd3fc; }
+    .badge-p4 { background: #3b1f5e; color: #c084fc; }
+    .note { background: #1e2130; border-left: 3px solid #7dd3fc; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; color: #a0aec0; }
+    .note strong { color: #7dd3fc; }
+    .warn { background: #1e2130; border-left: 3px solid #f59e0b; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; color: #a0aec0; }
+    .warn strong { color: #f59e0b; }
+    .pipeline { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 20px 24px; margin: 16px 0; font-family: "JetBrains Mono", monospace; font-size: 13px; color: #a0aec0; line-height: 2; }
+    .pipeline .arrow { color: #4a5080; }
+    .pipeline .highlight { color: #86efac; font-weight: 600; }
+    .curriculum-table td:first-child { color: #7dd3fc; font-family: monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h2>LangChain 101</h2>
+  <a href="#what-is">What is LangChain?</a>
+  <a href="#packages">Package Structure</a>
+  <div class="section-label">Components</div>
+  <a href="#loaders">1. Document Loaders</a>
+  <a href="#splitters">2. Text Splitters</a>
+  <a href="#embeddings">3. Embeddings</a>
+  <a href="#vectorstores">4. Vector Stores</a>
+  <a href="#llms">5. LLM Wrappers</a>
+  <a href="#chains">6. Chains</a>
+  <a href="#agents">7. Agents & Tools</a>
+  <a href="#memory">8. Memory</a>
+  <div class="section-label">Reference</div>
+  <a href="#lcel">LCEL — Pipe Syntax</a>
+  <a href="#curriculum">Used in Curriculum</a>
+  <a href="#vs-langgraph">LangChain vs LangGraph</a>
+</div>
+
+<main>
+  <h1>LangChain 101</h1>
+  <p class="subtitle">Use cases, components, and tools — P2 DocTalk reference &nbsp;·&nbsp; 2026-04-09</p>
+
+  <!-- WHAT IS -->
+  <h2 id="what-is">What is LangChain?</h2>
+  <p>LangChain is a framework for building LLM-powered applications. Its core value is a <strong>unified API</strong> across providers — swap OpenAI for Claude, or Qdrant for Pinecone, by changing one line. The rest of your pipeline stays identical.</p>
+
+  <div class="pipeline">
+    <span class="highlight">Document</span> <span class="arrow">→</span>
+    <span class="highlight">Loader</span> <span class="arrow">→</span>
+    <span class="highlight">Splitter</span> <span class="arrow">→</span>
+    <span class="highlight">Embeddings</span> <span class="arrow">→</span>
+    <span class="highlight">Vector Store</span> <span class="arrow">→</span>
+    <span class="highlight">Retriever</span> <span class="arrow">→</span>
+    <span class="highlight">LLM</span> <span class="arrow">→</span>
+    <span class="highlight">Answer</span>
+  </div>
+
+  <p>Each box in that pipeline is a swappable LangChain component. This is what we built in P2 DocTalk.</p>
+
+  <!-- PACKAGES -->
+  <h2 id="packages">Package Structure</h2>
+  <p>LangChain split its original monolithic package into sub-packages so you only install what you need. Each provider team (OpenAI, Qdrant, Google) maintains their own package.</p>
+
+  <table>
+    <tr><th>Package</th><th>Contents</th><th>Maintained by</th></tr>
+    <tr><td><code>langchain</code></td><td>Core abstractions, chains, agents</td><td>LangChain team</td></tr>
+    <tr><td><code>langchain-core</code></td><td>Base types and interfaces (lowest level)</td><td>LangChain team</td></tr>
+    <tr><td><code>langchain-community</code></td><td>Community integrations — PyPDFLoader, etc.</td><td>Community (variable quality)</td></tr>
+    <tr><td><code>langchain-text-splitters</code></td><td>Text splitting utilities</td><td>LangChain team</td></tr>
+    <tr><td><code>langchain-openai</code></td><td>OpenAI wrappers</td><td>Co-maintained with OpenAI</td></tr>
+    <tr><td><code>langchain-qdrant</code></td><td>Qdrant integration</td><td>Qdrant team</td></tr>
+    <tr><td><code>langchain-anthropic</code></td><td>Claude integration</td><td>Anthropic</td></tr>
+    <tr><td><code>langchain-google-genai</code></td><td>Gemini integration</td><td>Google</td></tr>
+    <tr><td><code>langgraph</code></td><td>Graph-based agent orchestration (P3)</td><td>LangChain team</td></tr>
+  </table>
+
+  <div class="note"><strong>Rule:</strong> The <code>langchain-&lt;provider&gt;</code> naming is used by both LangChain and external providers — you can't tell from the name alone who maintains it. Check PyPI for the author.</div>
+
+  <!-- LOADERS -->
+  <h2 id="loaders">1. Document Loaders <span class="badge badge-used">Used in P2</span></h2>
+  <p>Load data from any source into LangChain <code>Document</code> objects. Each Document has two parts: <code>page_content</code> (the text) and <code>metadata</code> (source, page number, etc.).</p>
+
+  <table>
+    <tr><th>Loader</th><th>Source</th><th>Package</th></tr>
+    <tr><td><code>PyPDFLoader</code></td><td>PDF files (one Document per page)</td><td>langchain-community</td></tr>
+    <tr><td><code>WebBaseLoader</code></td><td>Web pages via URL</td><td>langchain-community</td></tr>
+    <tr><td><code>CSVLoader</code></td><td>CSV files (one Document per row)</td><td>langchain-community</td></tr>
+    <tr><td><code>NotionLoader</code></td><td>Notion pages via API</td><td>langchain-community</td></tr>
+    <tr><td><code>GitLoader</code></td><td>Git repos (file contents)</td><td>langchain-community</td></tr>
+    <tr><td><code>JSONLoader</code></td><td>JSON files with jq path selector</td><td>langchain-community</td></tr>
+    <tr><td><code>UnstructuredLoader</code></td><td>Word, PowerPoint, HTML, email</td><td>langchain-community</td></tr>
+    <tr><td><code>DirectoryLoader</code></td><td>All files in a folder (with a sub-loader)</td><td>langchain-community</td></tr>
+  </table>
+
+  <pre><code><span class="comment"># What we used in P2</span>
+<span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> PyPDFLoader
+
+loader = <span class="fn">PyPDFLoader</span>(<span class="string">"Mavic Drone Manual.pdf"</span>)
+documents = loader.<span class="fn">load</span>()
+<span class="comment"># documents[0].page_content → text of page 1</span>
+<span class="comment"># documents[0].metadata    → {'source': 'Mavic...pdf', 'page': 0}</span></code></pre>
+
+  <!-- SPLITTERS -->
+  <h2 id="splitters">2. Text Splitters <span class="badge badge-used">Used in P2</span></h2>
+  <p>Break documents into chunks before embedding. Smaller chunks = more precise retrieval. Overlap ensures answers that straddle a boundary aren't lost.</p>
+
+  <table>
+    <tr><th>Splitter</th><th>When to use</th></tr>
+    <tr><td><code>RecursiveCharacterTextSplitter</code></td><td>General purpose — tries paragraph → line → sentence → word in order</td></tr>
+    <tr><td><code>TokenTextSplitter</code></td><td>Split by exact token count (more precise for LLM context limits)</td></tr>
+    <tr><td><code>MarkdownHeaderTextSplitter</code></td><td>Split at <code>##</code> headings — ideal for docs and wikis</td></tr>
+    <tr><td><code>HTMLHeaderTextSplitter</code></td><td>Split at <code>&lt;h1&gt;</code>, <code>&lt;h2&gt;</code> tags</td></tr>
+    <tr><td><code>CodeTextSplitter</code></td><td>Split at function/class boundaries — preserves code structure</td></tr>
+  </table>
+
+  <pre><code><span class="keyword">from</span> langchain_text_splitters <span class="keyword">import</span> RecursiveCharacterTextSplitter
+
+splitter = <span class="fn">RecursiveCharacterTextSplitter</span>(
+    chunk_size=<span class="string">500</span>,    <span class="comment"># target characters per chunk</span>
+    chunk_overlap=<span class="string">50</span>   <span class="comment"># consecutive chunks share 50 chars — boundary context preserved</span>
+)
+chunks = splitter.<span class="fn">split_documents</span>(documents)
+<span class="comment"># chunks[0].page_content → first 500 chars</span>
+<span class="comment"># chunks[1].page_content → starts 50 chars before chunk[0] ended</span></code></pre>
+
+  <!-- EMBEDDINGS -->
+  <h2 id="embeddings">3. Embeddings <span class="badge badge-used">Used in P2</span></h2>
+  <p>Convert text → vectors (lists of floats) for similarity search. Must use the <strong>same model</strong> for indexing and querying — mixing models produces meaningless scores.</p>
+
+  <table>
+    <tr><th>Class</th><th>Provider</th><th>Dimensions</th><th>Notes</th></tr>
+    <tr><td><code>OpenAIEmbeddings</code></td><td>OpenAI</td><td>1536</td><td><code>text-embedding-3-small</code> — preferred (better + cheaper than ada-002)</td></tr>
+    <tr><td><code>OpenAIEmbeddings</code></td><td>OpenAI</td><td>3072</td><td><code>text-embedding-3-large</code> — highest quality</td></tr>
+    <tr><td><code>BedrockEmbeddings</code></td><td>AWS Bedrock</td><td>1536</td><td>Good for AWS-native stacks</td></tr>
+    <tr><td><code>GoogleGenerativeAIEmbeddings</code></td><td>Google</td><td>768</td><td><code>text-embedding-004</code></td></tr>
+    <tr><td><code>HuggingFaceEmbeddings</code></td><td>Local</td><td>384</td><td><code>all-MiniLM-L6-v2</code> — free, no API key, runs on CPU</td></tr>
+    <tr><td><code>OllamaEmbeddings</code></td><td>Local</td><td>768</td><td><code>nomic-embed-text</code> via Ollama — privacy-safe</td></tr>
+  </table>
+
+  <pre><code><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> OpenAIEmbeddings
+
+embedding = <span class="fn">OpenAIEmbeddings</span>(model=<span class="string">"text-embedding-3-small"</span>)
+<span class="comment"># API key read automatically from OPENAI_API_KEY env var</span>
+<span class="comment"># Outputs 1536-float vector per text input</span></code></pre>
+
+  <!-- VECTOR STORES -->
+  <h2 id="vectorstores">4. Vector Stores <span class="badge badge-used">Used in P2</span></h2>
+  <p>Store embeddings and run similarity search. LangChain wraps each one with the same interface — <code>.add_documents()</code> and <code>.similarity_search()</code> work identically across all.</p>
+
+  <table>
+    <tr><th>Class</th><th>Type</th><th>Notes</th></tr>
+    <tr><td><code>QdrantVectorStore</code></td><td>In-memory or Qdrant Cloud</td><td>Used in P2. <code>":memory:"</code> = no server needed</td></tr>
+    <tr><td><code>Chroma</code></td><td>Local, embedded in Python</td><td>Simplest setup — zero config, persists to disk</td></tr>
+    <tr><td><code>FAISS</code></td><td>Local, in-memory</td><td>Meta's library — extremely fast for large corpora</td></tr>
+    <tr><td><code>Pinecone</code></td><td>Managed cloud</td><td>Production-grade, serverless, requires API key</td></tr>
+    <tr><td><code>PGVector</code></td><td>PostgreSQL extension</td><td>Good if you already have Postgres — no new infra</td></tr>
+    <tr><td><code>Weaviate</code></td><td>Open-source cloud/local</td><td>Built-in hybrid search (vector + keyword)</td></tr>
+  </table>
+
+  <pre><code><span class="keyword">from</span> langchain_qdrant <span class="keyword">import</span> QdrantVectorStore
+<span class="keyword">from</span> qdrant_client <span class="keyword">import</span> QdrantClient
+<span class="keyword">from</span> qdrant_client.models <span class="keyword">import</span> Distance, VectorParams
+
+client = <span class="fn">QdrantClient</span>(<span class="string">":memory:"</span>)   <span class="comment"># no API key, no server</span>
+client.<span class="fn">create_collection</span>(
+    collection_name=<span class="string">"docs"</span>,
+    vectors_config=<span class="fn">VectorParams</span>(size=<span class="string">1536</span>, distance=Distance.COSINE)
+)
+vector_store = <span class="fn">QdrantVectorStore</span>(client=client, collection_name=<span class="string">"docs"</span>, embedding=embedding)
+vector_store.<span class="fn">add_documents</span>(chunks)
+
+results = vector_store.<span class="fn">similarity_search_with_score</span>(question, k=<span class="string">3</span>)
+<span class="comment"># returns list of (Document, float) tuples — doc + cosine score</span></code></pre>
+
+  <!-- LLM WRAPPERS -->
+  <h2 id="llms">5. LLM Wrappers</h2>
+  <p>Call any LLM with a unified chat interface. <code>ChatModel.invoke(messages)</code> works the same regardless of provider — the abstraction is the point.</p>
+
+  <table>
+    <tr><th>Class</th><th>Provider</th><th>Package</th></tr>
+    <tr><td><code>ChatOpenAI</code></td><td>OpenAI GPT-4o, GPT-4 mini etc.</td><td>langchain-openai</td></tr>
+    <tr><td><code>ChatAnthropic</code></td><td>Claude (all models)</td><td>langchain-anthropic</td></tr>
+    <tr><td><code>ChatGoogleGenerativeAI</code></td><td>Gemini</td><td>langchain-google-genai</td></tr>
+    <tr><td><code>ChatBedrock</code></td><td>AWS Bedrock (Claude, Titan, etc.)</td><td>langchain-aws</td></tr>
+    <tr><td><code>ChatOllama</code></td><td>Any local model via Ollama</td><td>langchain-ollama</td></tr>
+  </table>
+
+  <div class="note"><strong>Note:</strong> In P2 we called the Anthropic SDK directly rather than using <code>ChatAnthropic</code>. Both work — direct SDK gives you more control; LangChain wrapper integrates cleanly into chains and agents.</div>
+
+  <!-- CHAINS -->
+  <h2 id="chains">6. Chains <span class="badge badge-p4">P4</span></h2>
+  <p>Pre-built pipelines that string together components. A chain takes an input, passes it through multiple steps, and returns a final output.</p>
+
+  <table>
+    <tr><th>Chain</th><th>What it does</th></tr>
+    <tr><td><code>RetrievalQA</code></td><td>RAG in one call — retrieves + sends to LLM + returns answer</td></tr>
+    <tr><td><code>ConversationalRetrievalChain</code></td><td>RAG with chat history — remembers previous turns</td></tr>
+    <tr><td><code>LLMChain</code></td><td>Simple prompt template → LLM → output</td></tr>
+    <tr><td><code>SequentialChain</code></td><td>Output of step N feeds into step N+1</td></tr>
+    <tr><td><code>MapReduceChain</code></td><td>Summarise long docs — process chunks in parallel, combine results</td></tr>
+  </table>
+
+  <div class="warn"><strong>Important:</strong> Chains are the "old" LangChain API (LCEL / legacy). <strong>LangGraph</strong> (P3) is the modern replacement — more flexible, supports branching, cycles, and human-in-the-loop. Use LangGraph for new projects.</div>
+
+  <!-- AGENTS & TOOLS -->
+  <h2 id="agents">7. Agents &amp; Tools <span class="badge badge-p3">P3</span> <span class="badge badge-p4">P4</span></h2>
+  <p>Let an LLM decide which tools to call, in what order, based on the user's goal. The LLM reasons about the task and picks tools — your code doesn't hardcode the sequence.</p>
+
+  <table>
+    <tr><th>Tool / Class</th><th>What it does</th></tr>
+    <tr><td><code>Tool</code></td><td>Wrap any Python function as an LLM-callable tool</td></tr>
+    <tr><td><code>DuckDuckGoSearchRun</code></td><td>Web search without an API key</td></tr>
+    <tr><td><code>WikipediaQueryRun</code></td><td>Wikipedia lookups</td></tr>
+    <tr><td><code>PythonREPLTool</code></td><td>Execute Python code dynamically</td></tr>
+    <tr><td><code>SQLDatabaseTool</code></td><td>Query SQL databases in natural language</td></tr>
+    <tr><td><code>ArxivQueryRun</code></td><td>Search research papers</td></tr>
+    <tr><td><code>initialize_agent</code></td><td>Old-style agent loop — replaced by LangGraph in modern code</td></tr>
+  </table>
+
+  <div class="note"><strong>P1 connection:</strong> The tool loop you built manually in <code>agent.py</code> (Claude tool_use) is exactly what <code>initialize_agent</code> does under the hood — but LangChain abstracts the loop. LangGraph (P3) makes it a proper stateful graph.</div>
+
+  <!-- MEMORY -->
+  <h2 id="memory">8. Memory <span class="badge badge-p4">P4</span></h2>
+  <p>Give chains and agents conversation history across turns. Without memory, every call is stateless — the LLM has no context from previous messages.</p>
+
+  <table>
+    <tr><th>Class</th><th>What it does</th><th>Tradeoff</th></tr>
+    <tr><td><code>ConversationBufferMemory</code></td><td>Keeps full history in RAM</td><td>Simple but grows without bound</td></tr>
+    <tr><td><code>ConversationSummaryMemory</code></td><td>Summarises old turns using an LLM</td><td>Saves tokens, loses some detail</td></tr>
+    <tr><td><code>ConversationBufferWindowMemory</code></td><td>Keeps last N turns only</td><td>Fixed token cost, forgets old context</td></tr>
+    <tr><td><code>VectorStoreRetrieverMemory</code></td><td>Stores memories as embeddings, retrieves relevant ones</td><td>Scales well — only recalls what's relevant</td></tr>
+  </table>
+
+  <!-- CURRICULUM -->
+  <!-- LCEL -->
+  <h2 id="lcel">LCEL — LangChain Expression Language</h2>
+  <p>LCEL is LangChain's pipe-based syntax for wiring components together. The <code>|</code> operator passes the output of each step as the input to the next — same as Unix pipes, but in Python.</p>
+
+  <p><code>|</code> is standard Python bitwise OR, but LangChain's <code>Runnable</code> base class redefines it via <code>__or__</code> to mean "chain these steps". Every LangChain component (retriever, prompt, llm, parser) inherits from <code>Runnable</code>.</p>
+
+  <h3>How invoke flows through the chain</h3>
+  <p>When you call <code>chain.invoke(question)</code>, LangChain calls <code>.invoke()</code> on each step automatically — you only call it once. Plain Python functions (like <code>format_docs</code>) are called directly without <code>.invoke()</code>.</p>
+
+  <h3>The fan-out dict pattern</h3>
+  <p>The prompt needs <strong>two</strong> inputs (<code>context</code> and <code>question</code>) but the chain only receives <strong>one</strong> (the question string). The dict fan-out splits one input into two named values:</p>
+
+  <pre><code>chain.invoke(<span class="string">"How do I return the drone to home automatically?"</span>)
+                    │
+          ┌─────────┴──────────┐
+          │                    │
+          ▼                    ▼
+   retriever(<span class="string">"How do I...?"</span>)   RunnablePassthrough()
+          │                    │
+          ▼                    │
+   [doc1, doc2, doc3]          │
+          │                    │
+          ▼                    │
+   format_docs([doc1,doc2,doc3])│
+          │                    │
+          ▼                    ▼
+   <span class="string">"context string"</span>     <span class="string">"How do I return...?"</span>
+          │                    │
+          └─────────┬──────────┘
+                    ▼
+       {<span class="string">"context"</span>: <span class="string">"context string"</span>,
+        <span class="string">"question"</span>: <span class="string">"How do I return...?"</span>}
+                    │
+                    ▼
+                 prompt  ← fills {context} and {question} placeholders
+                    │
+                    ▼
+                  llm   ← Claude API call
+                    │
+                    ▼
+           StrOutputParser()  ← extracts plain string from AIMessage
+                    │
+                    ▼
+              answer (string)</code></pre>
+
+  <p><code>RunnablePassthrough()</code> means: take the original input to <code>chain.invoke()</code> and pass it through unchanged into the <code>"question"</code> key. Without it the original question string would be lost after the retriever step.</p>
+
+  <h3>LCEL vs plain Python — same thing, different style</h3>
+  <table>
+    <tr><th>LCEL</th><th>Plain Python equivalent</th></tr>
+    <tr><td><code>retriever | format_docs</code></td><td><code>docs = retriever.invoke(q)</code> then <code>format_docs(docs)</code></td></tr>
+    <tr><td><code>RunnablePassthrough()</code></td><td>The <code>question</code> variable used as-is</td></tr>
+    <tr><td><code>| prompt</code></td><td>Building the <code>messages</code> list manually</td></tr>
+    <tr><td><code>| llm</code></td><td><code>llm.invoke(messages)</code></td></tr>
+    <tr><td><code>| StrOutputParser()</code></td><td><code>response.content</code></td></tr>
+    <tr><td><code>chain.invoke(question)</code></td><td>4 sequential function calls</td></tr>
+  </table>
+
+  <div class="note"><strong>When to use LCEL:</strong> once you understand the manual version (doctalk.py), LCEL makes multi-step chains more readable and composable. LangGraph (P3) builds on this same pipe pattern for stateful agent graphs.</div>
+
+  <h2 id="curriculum">Used in Curriculum</h2>
+
+  <table class="curriculum-table">
+    <tr><th>Project</th><th>LangChain components</th></tr>
+    <tr>
+      <td>P2 DocTalk</td>
+      <td>PyPDFLoader, RecursiveCharacterTextSplitter, OpenAIEmbeddings, QdrantVectorStore</td>
+    </tr>
+    <tr>
+      <td>P3 ResearchBot</td>
+      <td>LangGraph — StateGraph, nodes, edges, checkpointing, human-in-the-loop</td>
+    </tr>
+    <tr>
+      <td>P4 StockSage</td>
+      <td>Chains, retrievers, tools, LangChain memory, Mem0</td>
+    </tr>
+  </table>
+
+  <!-- VS LANGGRAPH -->
+  <h2 id="vs-langgraph">LangChain vs LangGraph</h2>
+
+  <table>
+    <tr><th></th><th>LangChain (Chains)</th><th>LangGraph</th></tr>
+    <tr><td>Structure</td><td>Linear pipeline (A → B → C)</td><td>Directed graph (nodes + edges, can loop)</td></tr>
+    <tr><td>State</td><td>Passed implicitly</td><td>Explicit typed state object</td></tr>
+    <tr><td>Branching</td><td>Limited</td><td>Full conditional routing</td></tr>
+    <tr><td>Loops / retries</td><td>Not supported</td><td>Native — graph can cycle</td></tr>
+    <tr><td>Human-in-the-loop</td><td>Awkward</td><td>Built-in interrupt/resume</td></tr>
+    <tr><td>Checkpointing</td><td>No</td><td>Yes — resume from any node</td></tr>
+    <tr><td>When to use</td><td>Simple RAG, quick prototypes</td><td>Any multi-step agent workflow</td></tr>
+  </table>
+
+  <div class="note"><strong>Bottom line:</strong> LangGraph is built on top of LangChain core — it's not a replacement for loaders, splitters, embeddings, or vector stores. It replaces the <em>orchestration</em> layer (Chains + <code>initialize_agent</code>). You'll use both together in P3 and beyond.</div>
+
+  <br><br>
+  <p style="color: #4a5080; font-size: 13px;">Created: 2026-04-09 — P2 DocTalk session 2</p>
+</main>
+
+</body>
+</html>

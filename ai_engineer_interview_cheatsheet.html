@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Engineer Interview Cheatsheet</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.7; }
+    .sidebar { position: fixed; top: 0; left: 0; width: 270px; height: 100vh; background: #1a1d2e; padding: 24px 16px; overflow-y: auto; border-right: 1px solid #2d3148; }
+    .sidebar h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #7c83a8; margin-bottom: 16px; }
+    .sidebar a { display: block; padding: 5px 10px; color: #a0aec0; text-decoration: none; font-size: 13px; border-radius: 6px; margin-bottom: 1px; }
+    .sidebar a:hover { background: #2d3148; color: #e2e8f0; }
+    .sidebar .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #4a5080; margin: 14px 0 5px 10px; }
+    main { margin-left: 270px; padding: 48px 56px; max-width: 900px; }
+    h1 { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .subtitle { color: #7c83a8; font-size: 14px; margin-bottom: 48px; }
+    h2 { font-size: 20px; font-weight: 600; color: #fff; margin: 48px 0 16px; padding-top: 48px; border-top: 1px solid #2d3148; }
+    h2:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+    h3 { font-size: 15px; font-weight: 600; color: #a0aec0; margin: 24px 0 10px; }
+    p { color: #cbd5e0; margin-bottom: 14px; font-size: 15px; }
+    ul { color: #cbd5e0; font-size: 15px; margin: 10px 0 14px 20px; }
+    ul li { margin-bottom: 5px; }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; background: #1e2130; color: #7dd3fc; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    pre { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 20px; margin: 16px 0; overflow-x: auto; }
+    pre code { background: none; padding: 0; color: #e2e8f0; font-size: 13.5px; line-height: 1.6; }
+    .kw { color: #c084fc; }
+    .st { color: #86efac; }
+    .cm { color: #4a5080; font-style: italic; }
+    .fn { color: #60a5fa; }
+    .num { color: #f9a8d4; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+    th { background: #1e2130; color: #a0aec0; text-align: left; padding: 10px 14px; border-bottom: 1px solid #2d3148; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    td { padding: 10px 14px; border-bottom: 1px solid #1e2130; color: #cbd5e0; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #1a1d2e; }
+    .note { background: #1e2130; border-left: 3px solid #7dd3fc; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; color: #a0aec0; }
+    .note strong { color: #7dd3fc; }
+    .warn { background: #1e2130; border-left: 3px solid #f59e0b; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; color: #a0aec0; }
+    .warn strong { color: #f59e0b; }
+    .good { background: #1e2130; border-left: 3px solid #86efac; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; color: #a0aec0; }
+    .good strong { color: #86efac; }
+    .flow { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 24px; margin: 16px 0; font-family: "JetBrains Mono", monospace; font-size: 13px; line-height: 2.2; }
+    .flow .node { color: #86efac; font-weight: 600; }
+    .flow .arrow { color: #4a5080; }
+    .flow .label { color: #a0aec0; font-size: 12px; }
+    .tag { display: inline-block; background: #2d3148; color: #7dd3fc; font-size: 11px; padding: 2px 8px; border-radius: 12px; margin-right: 6px; font-family: monospace; }
+    hr { border: none; border-top: 1px solid #2d3148; margin: 32px 0; }
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h2>AI Engineer Cheatsheet</h2>
+  <div class="section-label">P1 — ToolBot</div>
+  <a href="#pydantic">Pydantic v2</a>
+  <a href="#tool-use">Claude API — tool_use</a>
+  <a href="#streaming">Streaming</a>
+  <a href="#python">Python Concepts</a>
+  <a href="#system-prompts">System Prompts</a>
+  <a href="#context">Context + Multi-Turn Memory</a>
+  <a href="#message-history">Message History Pattern</a>
+  <div class="section-label">Comparison</div>
+  <a href="#anthropic-vs-openai">Anthropic vs OpenAI</a>
+  <a href="#gemini">Gemini (google-genai)</a>
+  <a href="#three-llms">All Three LLMs</a>
+  <div class="section-label">P2 — DocTalk</div>
+  <a href="#embeddings">Embeddings</a>
+  <a href="#rag">RAG</a>
+  <div class="section-label">P3 — ResearchBot</div>
+  <a href="#langgraph">LangGraph — Core</a>
+  <a href="#annotated">Annotated State</a>
+  <a href="#immutability">State Immutability</a>
+  <a href="#conditional">Conditional Edges</a>
+  <a href="#mermaid">Mermaid Diagrams</a>
+  <a href="#hub-spoke">Hub-and-Spoke</a>
+  <a href="#invoke-vs-stream">invoke() vs stream()</a>
+  <a href="#kafka-agents">Agent-as-Consumer (Kafka)</a>
+  <a href="#checkpointing">Checkpointing</a>
+  <a href="#hitl">Human-in-the-Loop</a>
+</div>
+
+<main>
+  <h1>AI Engineer Interview Cheatsheet</h1>
+  <p class="subtitle">Updated as projects progress — concepts, patterns, gotchas &nbsp;·&nbsp; Last updated: 2026-04-12</p>
+
+  <!-- PYDANTIC -->
+  <h2 id="pydantic"><span class="tag">P1</span> Pydantic v2</h2>
+
+  <h3>What it is</h3>
+  <p>Runtime data validation library. Define a typed schema — Pydantic validates incoming data against it and raises a clear error if it doesn't match.</p>
+
+  <h3>BaseModel</h3>
+  <pre><code><span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel
+
+<span class="kw">class</span> <span class="fn">WeatherInput</span>(BaseModel):
+    city: str               <span class="cm"># required</span>
+    units: str = <span class="st">"celsius"</span>  <span class="cm"># optional, has default</span></code></pre>
+  <ul>
+    <li>Annotations (<code>city: str</code>) stored in <code>__annotations__</code> at class definition time</li>
+    <li>Pydantic reads those and auto-generates <code>__init__</code>, type checking, and validation</li>
+    <li>Fields end up as <strong>instance variables</strong>, not class variables</li>
+  </ul>
+
+  <h3>field_validator</h3>
+  <pre><code><span class="kw">from</span> pydantic <span class="kw">import</span> field_validator
+
+<span class="kw">@</span><span class="fn">field_validator</span>(<span class="st">"units"</span>)
+<span class="kw">@classmethod</span>
+<span class="kw">def</span> <span class="fn">check_units</span>(cls, v: str) -> str:
+    <span class="kw">if</span> v <span class="kw">not in</span> (<span class="st">"celsius"</span>, <span class="st">"fahrenheit"</span>):
+        <span class="kw">raise</span> <span class="fn">ValueError</span>(<span class="st">"must be celsius or fahrenheit"</span>)
+    <span class="kw">return</span> v  <span class="cm"># return value is used as the final field value</span></code></pre>
+  <ul>
+    <li>Runs before the object is created — no instance exists yet, so <code>@classmethod</code> is required</li>
+    <li><code>v</code> = the value being validated</li>
+    <li>Return the value (can transform it, e.g. <code>return v.lower()</code>)</li>
+  </ul>
+
+  <h3>ValidationError</h3>
+  <pre><code><span class="kw">from</span> pydantic <span class="kw">import</span> ValidationError
+
+<span class="kw">try</span>:
+    validated = <span class="fn">WeatherInput</span>(**raw_input)
+<span class="kw">except</span> ValidationError <span class="kw">as</span> e:
+    <span class="kw">return</span> <span class="st">f"Invalid arguments: {e}"</span></code></pre>
+  <ul>
+    <li>Raised when type check or field_validator fails</li>
+    <li>Always catch at system boundaries (external data, LLM output)</li>
+  </ul>
+
+  <h3>model_dump()</h3>
+  <pre><code>validated = <span class="fn">WeatherInput</span>(city=<span class="st">"London"</span>, units=<span class="st">"celsius"</span>)
+validated.<span class="fn">model_dump</span>()
+<span class="cm"># → {"city": "London", "units": "celsius"}</span></code></pre>
+  <ul>
+    <li>Converts Pydantic object → plain dict</li>
+    <li>Use <code>**validated.model_dump()</code> to unpack as function kwargs</li>
+  </ul>
+
+  <!-- TOOL USE -->
+  <h2 id="tool-use"><span class="tag">P1</span> Claude API — tool_use</h2>
+
+  <h3>How tool_use works (the loop)</h3>
+  <div class="flow">
+You → Claude (messages + tools list)<br>
+Claude → <span class="node">stop_reason="tool_use"</span>   <span class="label">wants to call a tool</span><br>
+You → execute tool, collect result<br>
+You → Claude (messages + tool result)<br>
+Claude → <span class="node">stop_reason="end_turn"</span>   <span class="label">gives final answer</span>
+  </div>
+  <p>Repeat if Claude calls multiple tools in sequence.</p>
+
+  <h3>stop_reason values</h3>
+  <table>
+    <tr><th>Value</th><th>Meaning</th></tr>
+    <tr><td><code>"end_turn"</code></td><td>Claude is done, final answer ready</td></tr>
+    <tr><td><code>"tool_use"</code></td><td>Claude wants to call one or more tools</td></tr>
+    <tr><td><code>"max_tokens"</code></td><td>Hit token limit before finishing</td></tr>
+  </table>
+
+  <h3>Tool schema (JSON Schema)</h3>
+  <pre><code>{
+    <span class="st">"name"</span>: <span class="st">"get_weather"</span>,
+    <span class="st">"description"</span>: <span class="st">"Get current weather for a city."</span>,
+    <span class="st">"input_schema"</span>: {
+        <span class="st">"type"</span>: <span class="st">"object"</span>,
+        <span class="st">"properties"</span>: {
+            <span class="st">"city"</span>: {<span class="st">"type"</span>: <span class="st">"string"</span>, <span class="st">"description"</span>: <span class="st">"City name"</span>},
+            <span class="st">"units"</span>: {<span class="st">"type"</span>: <span class="st">"string"</span>, <span class="st">"enum"</span>: [<span class="st">"celsius"</span>, <span class="st">"fahrenheit"</span>]},
+        },
+        <span class="st">"required"</span>: [<span class="st">"city"</span>],
+    },
+}</code></pre>
+  <div class="note"><strong>description is critical</strong> — Claude uses it to decide when to call the tool. <code>required</code> lists mandatory fields; omitted fields use defaults.</div>
+
+  <h3>Tool result message format</h3>
+  <pre><code>{<span class="st">"role"</span>: <span class="st">"user"</span>, <span class="st">"content"</span>: [
+    {
+        <span class="st">"type"</span>: <span class="st">"tool_result"</span>,
+        <span class="st">"tool_use_id"</span>: block.id,   <span class="cm"># must match the tool_use block id</span>
+        <span class="st">"content"</span>: <span class="st">"result string"</span>,
+    }
+]}</code></pre>
+  <ul>
+    <li>Tool results go back as role <code>"user"</code> — not <code>"assistant"</code></li>
+    <li><code>tool_use_id</code> links result to the specific tool call Claude made</li>
+  </ul>
+
+  <h3>TOOL_MAP pattern</h3>
+  <pre><code>TOOL_MAP = {
+    <span class="st">"get_weather"</span>: (get_weather_fn, WeatherInput),
+    <span class="st">"calculator"</span>:  (calculator_fn,  CalculatorInput),
+}
+
+<span class="kw">def</span> <span class="fn">execute_tool</span>(name, raw_input):
+    fn, schema_cls = TOOL_MAP[name]
+    validated = <span class="fn">schema_cls</span>(**raw_input)         <span class="cm"># Pydantic validates</span>
+    <span class="kw">return</span> <span class="fn">fn</span>(**validated.<span class="fn">model_dump</span>())          <span class="cm"># call with clean args</span></code></pre>
+  <p>Single dispatch point for all tools. Keeps validation and dispatch logic in one place.</p>
+
+  <!-- STREAMING -->
+  <h2 id="streaming"><span class="tag">P1</span> Streaming (Anthropic SDK)</h2>
+
+  <h3>Non-streaming vs streaming</h3>
+  <pre><code><span class="cm"># Non-streaming — waits for full response</span>
+response = client.messages.<span class="fn">create</span>(model=..., ...)
+
+<span class="cm"># Streaming — prints word by word</span>
+<span class="kw">with</span> client.messages.<span class="fn">stream</span>(model=..., ...) <span class="kw">as</span> stream:
+    <span class="kw">for</span> text <span class="kw">in</span> stream.text_stream:
+        <span class="fn">print</span>(text, end=<span class="st">""</span>, flush=<span class="kw">True</span>)
+    response = stream.<span class="fn">get_final_message</span>()  <span class="cm"># must be inside the with block</span></code></pre>
+  <ul>
+    <li><code>get_final_message()</code> must be called <strong>inside</strong> the <code>with</code> block</li>
+    <li>Returns same object as <code>messages.create()</code> — <code>.stop_reason</code>, <code>.content</code> all available</li>
+    <li><code>end=""</code> prevents newline per token; <code>flush=True</code> forces immediate output</li>
+  </ul>
+
+  <div class="note"><strong>When to stream:</strong> Stream the final text response to the user (better UX). The tool loop itself works the same — <code>stop_reason</code> and <code>content</code> come from <code>get_final_message()</code>.</div>
+
+  <!-- PYTHON CONCEPTS -->
+  <h2 id="python"><span class="tag">P1</span> Python Concepts</h2>
+
+  <h3>async/await</h3>
+  <pre><code><span class="kw">async def</span> <span class="fn">run_agent</span>(message: str) -> <span class="kw">None</span>:
+    response = <span class="kw">await</span> <span class="fn">some_async_call</span>()
+
+asyncio.<span class="fn">run</span>(<span class="fn">main</span>())   <span class="cm"># entry point for async programs</span></code></pre>
+  <ul>
+    <li><code>async def</code> marks a coroutine — must be awaited or run via <code>asyncio.run()</code></li>
+    <li>Lets I/O-bound work (API calls) run without blocking</li>
+  </ul>
+
+  <h3>@classmethod vs instance method</h3>
+  <pre><code><span class="kw">class</span> <span class="fn">Foo</span>:
+    <span class="kw">def</span> <span class="fn">instance_method</span>(self):    <span class="cm"># receives object instance</span>
+        ...
+    <span class="kw">@classmethod</span>
+    <span class="kw">def</span> <span class="fn">class_method</span>(cls):        <span class="cm"># receives the class itself</span>
+        ...</code></pre>
+  <p>Used in Pydantic validators because no instance exists yet at validation time.</p>
+
+  <h3>**kwargs unpacking</h3>
+  <pre><code><span class="kw">def</span> <span class="fn">greet</span>(name, greeting=<span class="st">"Hello"</span>):
+    <span class="fn">print</span>(<span class="st">f"{greeting}, {name}"</span>)
+
+d = {<span class="st">"name"</span>: <span class="st">"Rajesh"</span>, <span class="st">"greeting"</span>: <span class="st">"Hi"</span>}
+<span class="fn">greet</span>(**d)   <span class="cm"># same as greet(name="Rajesh", greeting="Hi")</span></code></pre>
+
+  <h3>Silent function overwrite</h3>
+  <pre><code><span class="kw">def</span> <span class="fn">foo</span>(): <span class="kw">return</span> <span class="st">"first"</span>
+<span class="kw">def</span> <span class="fn">foo</span>(): <span class="kw">return</span> <span class="st">"second"</span>  <span class="cm"># silently replaces the first — no error</span>
+
+<span class="fn">foo</span>()  <span class="cm"># → "second"</span></code></pre>
+  <div class="warn"><strong>Gotcha:</strong> Python silently overwrites functions defined with the same name. No error, no warning. The first definition is gone.</div>
+
+  <!-- SYSTEM PROMPTS -->
+  <h2 id="system-prompts"><span class="tag">P1</span> System Prompts</h2>
+
+  <h3>What it is</h3>
+  <p>A permanent instruction given to the LLM <strong>before</strong> the conversation starts. The user never sees it. Sets persona, constraints, tool guidance, output format, and context for the entire session.</p>
+  <div class="note"><strong>Mental model:</strong> Like a job briefing you give an employee before their first day. User messages are the work requests that come in after.</div>
+
+  <h3>Anthropic — separate system parameter</h3>
+  <pre><code>client.messages.<span class="fn">create</span>(
+    model=<span class="st">"claude-opus-4-6"</span>,
+    system=<span class="st">"You are ToolBot, a helpful assistant..."</span>,  <span class="cm"># ← separate param</span>
+    messages=[{<span class="st">"role"</span>: <span class="st">"user"</span>, <span class="st">"content"</span>: <span class="st">"..."</span>}]
+)</code></pre>
+
+  <h3>OpenAI — inside messages list as role "system"</h3>
+  <pre><code>client.chat.completions.<span class="fn">create</span>(
+    model=<span class="st">"gpt-4o"</span>,
+    messages=[
+        {<span class="st">"role"</span>: <span class="st">"system"</span>, <span class="st">"content"</span>: <span class="st">"You are ToolBot..."</span>},  <span class="cm"># ← first message</span>
+        {<span class="st">"role"</span>: <span class="st">"user"</span>, <span class="st">"content"</span>: <span class="st">"..."</span>}
+    ]
+)</code></pre>
+
+  <h3>Gemini — passed in GenerateContentConfig</h3>
+  <pre><code>client.models.<span class="fn">generate_content</span>(
+    model=<span class="st">"gemini-2.5-flash"</span>,
+    contents=contents,
+    config=types.<span class="fn">GenerateContentConfig</span>(
+        system_instruction=<span class="st">"You are ToolBot..."</span>,  <span class="cm"># ← config param</span>
+        tools=TOOLS
+    )
+)</code></pre>
+
+  <h3>What to put in a system prompt</h3>
+  <table>
+    <tr><th>Purpose</th><th>Example</th></tr>
+    <tr><td>Persona</td><td>"You are a senior financial analyst"</td></tr>
+    <tr><td>Constraints</td><td>"Never discuss competitor products"</td></tr>
+    <tr><td>Tool guidance</td><td>"Always use the calculator tool for math, never compute yourself"</td></tr>
+    <tr><td>Output format</td><td>"Respond in bullet points, max 3 bullets"</td></tr>
+    <tr><td>Context</td><td>"You are helping Apple employees with internal IT issues"</td></tr>
+  </table>
+
+  <div class="warn"><strong>Placement gotcha:</strong> Anthropic uses a top-level <code>system=</code> parameter. OpenAI uses <code>{"role": "system"}</code> as the first message. Gemini uses <code>system_instruction=</code> inside <code>GenerateContentConfig</code>.</div>
+
+  <!-- CONTEXT MANAGEMENT -->
+  <h2 id="context"><span class="tag">P1</span> Context Management + Multi-Turn Memory</h2>
+
+  <h3>The problem</h3>
+  <p>If <code>messages = []</code> is created inside <code>run_agent()</code>, history resets on every call. The agent has no memory of previous turns.</p>
+
+  <h3>The fix — lift messages to main()</h3>
+  <pre><code><span class="kw">async def</span> <span class="fn">run_agent</span>(user_message: str, messages: list) -> <span class="kw">None</span>:
+    messages.<span class="fn">append</span>({<span class="st">"role"</span>: <span class="st">"user"</span>, <span class="st">"content"</span>: user_message})
+    <span class="cm"># ... rest of loop unchanged</span>
+
+<span class="kw">async def</span> <span class="fn">main</span>() -> <span class="kw">None</span>:
+    messages = []   <span class="cm"># lives here — persists across all turns</span>
+    <span class="kw">while True</span>:
+        user_input = <span class="fn">input</span>(<span class="st">"You: "</span>)
+        <span class="kw">await</span> <span class="fn">run_agent</span>(user_input, messages)</code></pre>
+
+  <h3>Context window limits — simple truncation</h3>
+  <pre><code>MAX_MESSAGES = <span class="num">20</span>
+
+<span class="kw">if</span> <span class="fn">len</span>(messages) > MAX_MESSAGES:
+    messages = messages[-MAX_MESSAGES:]  <span class="cm"># keep most recent N messages</span></code></pre>
+  <div class="warn"><strong>Tool loop gotcha:</strong> Tool calls add multiple messages per turn. Truncating mid-tool-call corrupts the history. Safe approach: truncate only after a full turn completes (after <code>end_turn</code>).</div>
+
+  <h3>Better strategies (for later projects)</h3>
+  <table>
+    <tr><th>Strategy</th><th>How</th></tr>
+    <tr><td>Simple truncation</td><td>Keep last N messages (P1 approach)</td></tr>
+    <tr><td>Token-budget trimming</td><td>LangGraph <code>trim_messages()</code> — respects token limits</td></tr>
+    <tr><td>Summarisation</td><td>Use Claude Haiku to summarise old turns into one message</td></tr>
+    <tr><td>Sliding window</td><td>Keep system + first N + last M messages</td></tr>
+  </table>
+
+  <!-- MESSAGE HISTORY -->
+  <h2 id="message-history"><span class="tag">P1</span> Message History Pattern</h2>
+  <pre><code>messages = [{<span class="st">"role"</span>: <span class="st">"user"</span>, <span class="st">"content"</span>: user_message}]
+
+<span class="cm"># After Claude responds:</span>
+messages.<span class="fn">append</span>({<span class="st">"role"</span>: <span class="st">"assistant"</span>, <span class="st">"content"</span>: response.content})
+
+<span class="cm"># After tool execution:</span>
+messages.<span class="fn">append</span>({<span class="st">"role"</span>: <span class="st">"user"</span>, <span class="st">"content"</span>: tool_results})</code></pre>
+  <ul>
+    <li>Claude sees the full history on every API call — stateless API, stateful client</li>
+    <li>Never mutate existing messages — always append</li>
+  </ul>
+
+  <!-- ANTHROPIC VS OPENAI -->
+  <h2 id="anthropic-vs-openai">Anthropic vs OpenAI — Side by Side</h2>
+
+  <h3>Client setup</h3>
+  <pre><code><span class="cm"># Anthropic</span>
+<span class="kw">import</span> anthropic
+client = anthropic.<span class="fn">Anthropic</span>()
+
+<span class="cm"># OpenAI</span>
+<span class="kw">from</span> openai <span class="kw">import</span> OpenAI
+client = <span class="fn">OpenAI</span>()</code></pre>
+
+  <h3>Tool schema format</h3>
+  <pre><code><span class="cm"># Anthropic</span>
+{
+    <span class="st">"name"</span>: <span class="st">"get_weather"</span>,
+    <span class="st">"description"</span>: <span class="st">"..."</span>,
+    <span class="st">"input_schema"</span>: {           <span class="cm"># ← key is "input_schema"</span>
+        <span class="st">"type"</span>: <span class="st">"object"</span>,
+        <span class="st">"properties"</span>: { ... },
+        <span class="st">"required"</span>: [<span class="st">"city"</span>],
+    }
+}
+
+<span class="cm"># OpenAI</span>
+{
+    <span class="st">"type"</span>: <span class="st">"function"</span>,         <span class="cm"># ← extra wrapper</span>
+    <span class="st">"function"</span>: {
+        <span class="st">"name"</span>: <span class="st">"get_weather"</span>,
+        <span class="st">"description"</span>: <span class="st">"..."</span>,
+        <span class="st">"parameters"</span>: {         <span class="cm"># ← key is "parameters"</span>
+            <span class="st">"type"</span>: <span class="st">"object"</span>,
+            <span class="st">"properties"</span>: { ... },
+            <span class="st">"required"</span>: [<span class="st">"city"</span>],
+        }
+    }
+}</code></pre>
+
+  <h3>Stop / finish reason</h3>
+  <pre><code><span class="cm"># Anthropic</span>
+response.stop_reason == <span class="st">"end_turn"</span>    <span class="cm"># done</span>
+response.stop_reason == <span class="st">"tool_use"</span>    <span class="cm"># wants tools</span>
+
+<span class="cm"># OpenAI</span>
+response.choices[<span class="num">0</span>].finish_reason == <span class="st">"stop"</span>        <span class="cm"># done</span>
+response.choices[<span class="num">0</span>].finish_reason == <span class="st">"tool_calls"</span>  <span class="cm"># wants tools</span></code></pre>
+
+  <h3>Accessing tool calls</h3>
+  <pre><code><span class="cm"># Anthropic — iterate response.content blocks</span>
+<span class="kw">for</span> block <span class="kw">in</span> response.content:
+    <span class="kw">if</span> block.type == <span class="st">"tool_use"</span>:
+        name = block.name
+        args = block.input          <span class="cm"># already a dict</span>
+        id   = block.id
+
+<span class="cm"># OpenAI — iterate message.tool_calls</span>
+<span class="kw">for</span> tool_call <span class="kw">in</span> response.choices[<span class="num">0</span>].message.tool_calls:
+    name = tool_call.function.name
+    args = json.<span class="fn">loads</span>(tool_call.function.arguments)  <span class="cm"># JSON string → dict</span>
+    id   = tool_call.id</code></pre>
+
+  <h3>Feeding tool results back</h3>
+  <pre><code><span class="cm"># Anthropic — single "user" message with list of results</span>
+messages.<span class="fn">append</span>({
+    <span class="st">"role"</span>: <span class="st">"user"</span>,
+    <span class="st">"content"</span>: [
+        {<span class="st">"type"</span>: <span class="st">"tool_result"</span>, <span class="st">"tool_use_id"</span>: id, <span class="st">"content"</span>: result}
+    ]
+})
+
+<span class="cm"># OpenAI — one "tool" message per result</span>
+messages.<span class="fn">append</span>({<span class="st">"role"</span>: <span class="st">"assistant"</span>, <span class="st">"content"</span>: ..., <span class="st">"tool_calls"</span>: [...]})
+messages.<span class="fn">append</span>({<span class="st">"role"</span>: <span class="st">"tool"</span>, <span class="st">"tool_call_id"</span>: id, <span class="st">"content"</span>: result})</code></pre>
+
+  <h3>Streaming</h3>
+  <pre><code><span class="cm"># Anthropic</span>
+<span class="kw">with</span> client.messages.<span class="fn">stream</span>(model=..., ...) <span class="kw">as</span> stream:
+    <span class="kw">for</span> text <span class="kw">in</span> stream.text_stream:          <span class="cm"># text_stream gives strings directly</span>
+        <span class="fn">print</span>(text, end=<span class="st">""</span>, flush=<span class="kw">True</span>)
+    response = stream.<span class="fn">get_final_message</span>()    <span class="cm"># ← get_final_message()</span>
+
+<span class="cm"># OpenAI</span>
+<span class="kw">with</span> client.chat.completions.<span class="fn">stream</span>(model=..., ...) <span class="kw">as</span> stream:
+    <span class="kw">for</span> event <span class="kw">in</span> stream:                     <span class="cm"># yields typed events, not strings</span>
+        <span class="kw">if</span> event.type == <span class="st">"content.delta"</span>:
+            <span class="fn">print</span>(event.delta, end=<span class="st">""</span>, flush=<span class="kw">True</span>)
+    response = stream.<span class="fn">get_final_completion</span>() <span class="cm"># ← get_final_completion()</span></code></pre>
+  <div class="warn"><strong>OpenAI streaming events:</strong> yields typed event objects, not raw text. <code>event.type == "content.delta"</code> → text chunk via <code>event.delta</code>. Unlike Anthropic, there is no <code>text_stream</code> shortcut.</div>
+
+  <!-- GEMINI -->
+  <h2 id="gemini"><span class="tag">P1</span> Gemini (google-genai SDK)</h2>
+
+  <h3>Setup</h3>
+  <pre><code><span class="kw">from</span> google <span class="kw">import</span> genai
+<span class="kw">from</span> google.genai <span class="kw">import</span> types
+
+client = genai.<span class="fn">Client</span>(api_key=os.environ[<span class="st">"GEMINI_API_KEY"</span>])</code></pre>
+
+  <h3>Tool definition — pass Python functions directly</h3>
+  <pre><code>TOOLS = [get_weather, calculator, get_time]
+<span class="cm"># SDK uses inspect to read: function name, type hints (schema), docstring (description)</span></code></pre>
+  <div class="warn"><strong>Always add docstrings:</strong> Without a docstring Gemini only knows the function name. It will guess — and guess wrong on complex tools.</div>
+  <pre><code><span class="kw">def</span> <span class="fn">get_time</span>(timezone: str = <span class="st">"UTC"</span>) -> str:
+    <span class="st">"""Get the current date and time for a given timezone.
+
+    Args:
+        timezone: IANA timezone name e.g. 'America/New_York'. Defaults to UTC.
+    """</span></code></pre>
+
+  <h3>Detect function calls</h3>
+  <pre><code>fn_calls = [p <span class="kw">for</span> p <span class="kw">in</span> response.candidates[<span class="num">0</span>].content.parts
+            <span class="kw">if</span> p.function_call <span class="kw">and</span> p.function_call.name]</code></pre>
+
+  <h3>Feed results back</h3>
+  <pre><code><span class="cm"># Append assistant response to history</span>
+contents.<span class="fn">append</span>(response.candidates[<span class="num">0</span>].content)
+
+<span class="cm"># Collect all tool results into one Content block</span>
+tool_results = []
+<span class="kw">for</span> part <span class="kw">in</span> fn_calls:
+    result = <span class="fn">execute_tool</span>(part.function_call.name, <span class="fn">dict</span>(part.function_call.args))
+    tool_results.<span class="fn">append</span>(types.<span class="fn">Part</span>(
+        function_response=types.<span class="fn">FunctionResponse</span>(
+            name=part.function_call.name,
+            response={<span class="st">"result"</span>: result}
+        )
+    ))
+contents.<span class="fn">append</span>(types.<span class="fn">Content</span>(parts=tool_results, role=<span class="st">"user"</span>))</code></pre>
+
+  <h3>Current models</h3>
+  <table>
+    <tr><th>Model</th><th>Use case</th></tr>
+    <tr><td><code>gemini-2.5-flash</code></td><td>Best price/performance, function calling ✓</td></tr>
+    <tr><td><code>gemini-2.5-pro</code></td><td>Most capable, complex reasoning</td></tr>
+    <tr><td><code>gemini-2.5-flash-lite</code></td><td>Fastest, most economical</td></tr>
+  </table>
+
+  <div class="warn"><strong>Deprecated package:</strong> <code>google-generativeai</code> is fully deprecated. Use <code>pip install google-genai</code> and <code>from google import genai</code>.</div>
+
+  <!-- THREE LLMS -->
+  <h2 id="three-llms">All Three LLMs — Tool Calling Comparison</h2>
+  <table>
+    <tr><th></th><th>Anthropic</th><th>OpenAI</th><th>Gemini</th></tr>
+    <tr><td>Tool args format</td><td><code>dict (block.input)</code></td><td>JSON string (<code>json.loads(...)</code>)</td><td><code>dict(part.function_call.args)</code></td></tr>
+    <tr><td>Tool result role</td><td><code>"user"</code></td><td><code>"tool"</code></td><td><code>"user"</code> (as Content)</td></tr>
+    <tr><td>Stop signal</td><td><code>stop_reason == "end_turn"</code></td><td><code>finish_reason == "stop"</code></td><td>no fn_calls in parts</td></tr>
+    <tr><td>History</td><td>manual <code>messages</code> list</td><td>manual <code>messages</code> list</td><td>manual <code>contents</code> list</td></tr>
+    <tr><td>Streaming helper</td><td><code>text_stream</code> (strings)</td><td>typed events (<code>event.type</code>)</td><td>non-trivial with tools</td></tr>
+    <tr><td>Tool schema</td><td>explicit JSON Schema</td><td>explicit JSON Schema</td><td>Python functions or explicit</td></tr>
+  </table>
+
+  <!-- EMBEDDINGS -->
+  <h2 id="embeddings"><span class="tag">P2</span> Embeddings</h2>
+
+  <h3>What an embedding is</h3>
+  <p>A list of floats that represents a string's position in semantic space. Vectors with similar meaning point in nearly the same direction.</p>
+  <ul>
+    <li>Input: string</li>
+    <li>Output: <code>list[float]</code> — 1536 numbers for <code>text-embedding-3-small</code></li>
+  </ul>
+
+  <h3>OpenAI embedding API</h3>
+  <pre><code>response = client.embeddings.<span class="fn">create</span>(input=text, model=<span class="st">"text-embedding-3-small"</span>)
+vector = response.data[<span class="num">0</span>].embedding   <span class="cm"># list[float], length 1536</span></code></pre>
+
+  <h3>Local embeddings (no API, no cost)</h3>
+  <pre><code><span class="kw">from</span> sentence_transformers <span class="kw">import</span> SentenceTransformer
+model = <span class="fn">SentenceTransformer</span>(<span class="st">"all-MiniLM-L6-v2"</span>)  <span class="cm"># 384 dimensions</span>
+vector = model.<span class="fn">encode</span>(<span class="st">"some text"</span>)   <span class="cm"># runs on your machine</span></code></pre>
+
+  <h3>Embedding model comparison</h3>
+  <table>
+    <tr><th>Model</th><th>Dims</th><th>Type</th><th>Cost</th></tr>
+    <tr><td><code>text-embedding-3-small</code></td><td>1536</td><td>API</td><td>Per token</td></tr>
+    <tr><td><code>text-embedding-3-large</code></td><td>3072</td><td>API</td><td>Per token</td></tr>
+    <tr><td><code>text-embedding-004</code> (Google)</td><td>768</td><td>API</td><td>Per token</td></tr>
+    <tr><td><code>all-MiniLM-L6-v2</code></td><td>384</td><td>Local</td><td>Free</td></tr>
+    <tr><td>Anthropic Claude</td><td>—</td><td>N/A</td><td><strong>No embedding API</strong></td></tr>
+  </table>
+
+  <div class="warn"><strong>Hard rule — never mix embedding models.</strong> You must use the same model for indexing AND querying. Different models produce vectors in incompatible spaces — mixing makes cosine similarity scores meaningless.</div>
+
+  <h3>Cosine similarity</h3>
+  <pre><code><span class="kw">def</span> <span class="fn">cosine_similarity</span>(a: list[float], b: list[float]) -> float:
+    dot = <span class="fn">sum</span>(a[i] * b[i] <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="fn">len</span>(a)))
+    mag_a = math.<span class="fn">sqrt</span>(<span class="fn">sum</span>(x**<span class="num">2</span> <span class="kw">for</span> x <span class="kw">in</span> a))
+    mag_b = math.<span class="fn">sqrt</span>(<span class="fn">sum</span>(x**<span class="num">2</span> <span class="kw">for</span> x <span class="kw">in</span> b))
+    <span class="kw">return</span> dot / (mag_a * mag_b)</code></pre>
+  <ul>
+    <li>Measures the <strong>angle</strong> between two vectors, not distance</li>
+    <li>Dividing by magnitude normalises for document length — measure <em>meaning</em>, not <em>size</em></li>
+    <li>Score guide: <code>1.0</code> identical, <code>0.8+</code> very similar, <code>0.5–0.7</code> related, <code>&lt;0.3</code> unrelated</li>
+  </ul>
+
+  <!-- RAG -->
+  <h2 id="rag"><span class="tag">P2</span> RAG (Retrieval Augmented Generation)</h2>
+
+  <h3>What it solves</h3>
+  <p>LLMs don't know your private documents and can't fit a 100-page PDF in a prompt. RAG retrieves the relevant parts first, then sends only those to the LLM.</p>
+
+  <div class="flow">
+<span class="label">INDEXING (once):</span>   document → chunk → embed each chunk → store in vector DB<br>
+<span class="label">QUERYING (per Q):</span>  question → embed → find top-K similar chunks → LLM → answer
+  </div>
+
+  <h3>Why chunks, not full documents</h3>
+  <ul>
+    <li>Token limits on embedding APIs</li>
+    <li>A small focused chunk scores higher similarity than a large unfocused one</li>
+    <li>Precision: find 2–3 sentences that answer the question, not the whole document</li>
+  </ul>
+
+  <h3>Chunk size tradeoff</h3>
+  <table>
+    <tr><th>Smaller chunks</th><th>Larger chunks</th></tr>
+    <tr><td>More precise retrieval</td><td>More context per chunk</td></tr>
+    <tr><td>May lose surrounding context</td><td>May dilute similarity score</td></tr>
+    <tr><td>More API calls to embed</td><td>Fewer chunks to manage</td></tr>
+  </table>
+  <div class="note"><strong>Default starting point:</strong> 256–512 tokens, 50-token overlap between chunks. Overlap ensures answers that straddle a boundary aren't lost.</div>
+
+  <h3>LangChain + Qdrant RAG stack (DocTalk)</h3>
+  <table>
+    <tr><th>Component</th><th>Package</th><th>Role</th></tr>
+    <tr><td><code>PyPDFLoader</code></td><td>langchain-community</td><td>Loads PDF → list of Document objects (one per page)</td></tr>
+    <tr><td><code>RecursiveCharacterTextSplitter</code></td><td>langchain-text-splitters</td><td>Splits pages into chunks</td></tr>
+    <tr><td><code>OpenAIEmbeddings</code></td><td>langchain-openai</td><td>Calls OpenAI API → 1536-float vector</td></tr>
+    <tr><td><code>QdrantClient</code></td><td>qdrant-client</td><td>Creates/manages in-memory vector store</td></tr>
+    <tr><td><code>QdrantVectorStore</code></td><td>langchain-qdrant</td><td>LangChain wrapper — add/search documents</td></tr>
+  </table>
+
+  <h3>Full RAG pipeline (doctalk.py pattern)</h3>
+  <pre><code><span class="cm"># 1. Index</span>
+loader = <span class="fn">PyPDFLoader</span>(<span class="st">"doc.pdf"</span>)
+documents = loader.<span class="fn">load</span>()
+chunks = <span class="fn">RecursiveCharacterTextSplitter</span>(chunk_size=<span class="num">500</span>, chunk_overlap=<span class="num">50</span>).<span class="fn">split_documents</span>(documents)
+client = <span class="fn">QdrantClient</span>(<span class="st">":memory:"</span>)
+client.<span class="fn">create_collection</span>(<span class="st">"docs"</span>, vectors_config=<span class="fn">VectorParams</span>(size=<span class="num">1536</span>, distance=Distance.COSINE))
+embedding = <span class="fn">OpenAIEmbeddings</span>(model=<span class="st">"text-embedding-3-small"</span>)
+vector_store = <span class="fn">QdrantVectorStore</span>(client=client, collection_name=<span class="st">"docs"</span>, embedding=embedding)
+vector_store.<span class="fn">add_documents</span>(chunks)
+
+<span class="cm"># 2. Retrieve</span>
+results = vector_store.<span class="fn">similarity_search_with_score</span>(question, k=<span class="num">3</span>)
+
+<span class="cm"># 3. Format context with citations</span>
+context = <span class="st">""</span>
+<span class="kw">for</span> doc, score <span class="kw">in</span> results:
+    context += <span class="st">f"[Page {doc.metadata.get('page','?')}, score: {score:.4f}]\n{doc.page_content}\n\n---\n\n"</span>
+
+<span class="cm"># 4. Generate with Claude</span>
+response = anthropic.<span class="fn">Anthropic</span>().messages.<span class="fn">create</span>(
+    model=<span class="st">"claude-sonnet-4-6"</span>,
+    system=<span class="st">"Answer using only the context provided. Cite page numbers."</span>,
+    messages=[{<span class="st">"role"</span>: <span class="st">"user"</span>, <span class="st">"content"</span>: <span class="st">f"Context:\n{context}\n\nQuestion: {question}"</span>}]
+)</code></pre>
+
+  <!-- LANGGRAPH CORE -->
+  <h2 id="langgraph"><span class="tag">P3</span> LangGraph — Core</h2>
+
+  <h3>What it is</h3>
+  <p>A framework for building stateful multi-step agent workflows as directed graphs. Replaces LangChain's old Chains/agents API. Nodes are functions, edges define flow, state is shared across all nodes.</p>
+
+  <div class="flow">
+State (TypedDict) → flows through → <span class="node">Nodes (functions)</span> → connected by → Edges
+  </div>
+
+  <h3>Key concepts</h3>
+  <table>
+    <tr><th>Concept</th><th>What it is</th></tr>
+    <tr><td><code>StateGraph(Schema)</code></td><td>Creates the graph. Argument is the state schema — NOT inheritance</td></tr>
+    <tr><td><code>TypedDict</code></td><td>Defines the shape of the shared state dict</td></tr>
+    <tr><td>Node</td><td>Plain Python function: takes full state, returns dict of changed fields only</td></tr>
+    <tr><td>Fixed edge</td><td><code>add_edge("a", "b")</code> — always go from a to b</td></tr>
+    <tr><td>Conditional edge</td><td><code>add_conditional_edges("a", router_fn)</code> — branch based on state</td></tr>
+    <tr><td><code>set_entry_point()</code></td><td>Which node runs first</td></tr>
+    <tr><td><code>END</code></td><td>Terminal constant — graph stops when an edge points here</td></tr>
+    <tr><td><code>compile()</code></td><td>Validates graph, returns a Runnable with <code>.invoke()</code></td></tr>
+  </table>
+
+  <h3>LangGraph vs LangChain Chains</h3>
+  <table>
+    <tr><th></th><th>Chains</th><th>LangGraph</th></tr>
+    <tr><td>Structure</td><td>Linear only</td><td>Graph — branch + loop</td></tr>
+    <tr><td>State</td><td>Implicit</td><td>Explicit TypedDict</td></tr>
+    <tr><td>Human-in-the-loop</td><td>Awkward</td><td>Built-in</td></tr>
+    <tr><td>Checkpointing</td><td>No</td><td>Yes</td></tr>
+  </table>
+
+  <div class="note"><strong>"Runnable" is not a Python built-in.</strong> It's a LangChain/LangGraph concept — any object with <code>.invoke()</code>. <code>graph.compile()</code> returns a Runnable. In plain Python the equivalent is any callable with <code>__call__</code>.</div>
+
+  <!-- ANNOTATED STATE -->
+  <h2 id="annotated"><span class="tag">P3</span> Annotated State — Reducers</h2>
+
+  <p>By default, when a node returns a field it <strong>overwrites</strong> the existing value. <code>Annotated</code> lets you specify a merge strategy instead.</p>
+
+  <pre><code><span class="kw">from</span> typing <span class="kw">import</span> TypedDict, Annotated
+<span class="kw">import</span> operator
+
+<span class="kw">class</span> <span class="fn">ResearchState</span>(TypedDict):
+    topic: str                                         <span class="cm"># overwrite</span>
+    search_queries: Annotated[list[str], operator.add] <span class="cm"># append (concatenate)</span>
+    findings: Annotated[list[str], operator.add]       <span class="cm"># append (concatenate)</span>
+    summary: str                                       <span class="cm"># overwrite</span></code></pre>
+
+  <h3>What Annotated actually is</h3>
+  <ul>
+    <li><code>Annotated[list[str], operator.add]</code> is a <strong>type descriptor object</strong> — not a list, not data</li>
+    <li>It only exists at class definition time. At runtime <code>state['search_queries']</code> is a plain <code>list</code></li>
+    <li>Python does nothing with the metadata — LangGraph reads it via <code>get_type_hints()</code> at <code>StateGraph()</code> time</li>
+    <li>Uses <code>[]</code> not <code>()</code> — it's a generic type (type parameterisation), not a function call</li>
+  </ul>
+
+  <h3>How LangGraph uses it — reducer map</h3>
+  <pre><code><span class="cm"># Pseudocode — what StateGraph() does internally</span>
+<span class="kw">for</span> field, type_hint <span class="kw">in</span> <span class="fn">get_type_hints</span>(ResearchState, include_extras=<span class="kw">True</span>).items():
+    <span class="kw">if</span> <span class="fn">is_annotated</span>(type_hint):
+        _, reducer = <span class="fn">get_args</span>(type_hint)        <span class="cm"># extracts operator.add</span>
+        reducers[field] = reducer
+    <span class="kw">else</span>:
+        reducers[field] = <span class="kw">lambda</span> old, new: new   <span class="cm"># default: replace
+
+# After each node returns a delta:
+</span><span class="kw">for</span> key, new_value <span class="kw">in</span> node_output.items():
+    state[key] = reducers[key](state[key], new_value)</code></pre>
+
+  <h3>operator.add — why it says &lt;built-in function add&gt;</h3>
+  <p><code>operator.add</code> is implemented in C — Python labels it a "built-in function". It's the <code>+</code> operator as a callable object (you can't pass syntax as an argument).</p>
+  <pre><code>operator.<span class="fn">add</span>([<span class="st">"a"</span>], [<span class="st">"b"</span>])  <span class="cm"># same as ["a"] + ["b"]  → ["a", "b"]</span></code></pre>
+
+  <h3>Custom reducers</h3>
+  <pre><code><span class="cm"># Merge and deduplicate</span>
+seen_urls: Annotated[list[str], <span class="kw">lambda</span> a, b: <span class="fn">list</span>(<span class="fn">dict</span>.<span class="fn">fromkeys</span>(a + b))]
+
+<span class="cm"># Set union (auto-dedup)</span>
+tags: Annotated[set, operator.or_]
+
+<span class="cm"># Dict merge (later values win)</span>
+metadata: Annotated[dict, operator.or_]</code></pre>
+
+  <!-- STATE IMMUTABILITY -->
+  <h2 id="immutability"><span class="tag">P3</span> State Immutability Rule</h2>
+
+  <p>Python passes dicts by object reference, so <code>state</code> inside a node <em>is</em> the live dict. But <strong>never mutate it in place</strong> — always return a delta.</p>
+
+  <pre><code><span class="cm"># CORRECT — return a delta dict</span>
+<span class="kw">def</span> <span class="fn">generate_queries</span>(state: ResearchState) -> dict:
+    <span class="kw">return</span> {<span class="st">"search_queries"</span>: [<span class="st">"q1"</span>, <span class="st">"q2"</span>]}
+
+<span class="cm"># WRONG — mutating in place</span>
+<span class="kw">def</span> <span class="fn">generate_queries</span>(state: ResearchState) -> dict:
+    state[<span class="st">"search_queries"</span>] = [<span class="st">"q1"</span>, <span class="st">"q2"</span>]  <span class="cm"># breaks reducers, checkpointing, parallel nodes</span>
+    <span class="kw">return</span> {}</code></pre>
+
+  <p>Why mutation breaks things:</p>
+  <ul>
+    <li><strong>Reducers</strong> — <code>operator.add</code> never runs; merge step is bypassed</li>
+    <li><strong>Checkpointing</strong> — LangGraph saves state snapshots between nodes; mutation corrupts them</li>
+    <li><strong>Parallel branches</strong> — two nodes running concurrently race on the same dict</li>
+  </ul>
+  <div class="note"><strong>Mental model:</strong> treat state as read-only inside a node. Same pattern as React's <code>setState</code> — never mutate, return what changed.</div>
+
+  <!-- CONDITIONAL EDGES -->
+  <h2 id="conditional"><span class="tag">P3</span> Conditional Edges — Routing</h2>
+
+  <h3>Router function</h3>
+  <pre><code><span class="kw">def</span> <span class="fn">route_summary</span>(state: ResearchState) -> str:
+    <span class="kw">if</span> <span class="fn">len</span>(state[<span class="st">'findings'</span>]) >= <span class="num">11</span>:
+        <span class="kw">return</span> <span class="st">"detailed_summary"</span>
+    <span class="kw">else</span>:
+        <span class="kw">return</span> <span class="st">"brief_summary"</span></code></pre>
+
+  <h3>Without dict — router return must match node name exactly</h3>
+  <pre><code>graph.<span class="fn">add_conditional_edges</span>(<span class="st">"research"</span>, route_summary)</code></pre>
+
+  <h3>With dict — translation layer</h3>
+  <pre><code>graph.<span class="fn">add_conditional_edges</span>(<span class="st">"research"</span>, route_summary, {
+    <span class="st">"enough"</span>: <span class="st">"detailed_summary"</span>,    <span class="cm"># router returns "enough" → go to "detailed_summary"</span>
+    <span class="st">"not_enough"</span>: <span class="st">"brief_summary"</span>    <span class="cm"># dict is a lookup table — LangGraph reads it</span>
+})</code></pre>
+
+  <h3>Full wiring — two terminal nodes</h3>
+  <pre><code>graph.<span class="fn">add_node</span>(<span class="st">"detailed_summary"</span>, detailed_summary)
+graph.<span class="fn">add_node</span>(<span class="st">"brief_summary"</span>, brief_summary)
+graph.<span class="fn">add_conditional_edges</span>(<span class="st">"research"</span>, route_summary)
+graph.<span class="fn">add_edge</span>(<span class="st">"detailed_summary"</span>, END)
+graph.<span class="fn">add_edge</span>(<span class="st">"brief_summary"</span>, END)  <span class="cm"># both terminal nodes need their own edge to END</span></code></pre>
+
+  <div class="note"><strong>Router is pure logic.</strong> It only reads state and returns a string — no API calls, no side effects, no mutations.</div>
+
+  <!-- MERMAID -->
+  <h2 id="mermaid"><span class="tag">P3</span> Mermaid Diagrams</h2>
+
+  <h3>Generate from compiled graph</h3>
+  <pre><code>app = <span class="fn">build_graph</span>()
+<span class="fn">print</span>(app.<span class="fn">get_graph</span>().<span class="fn">draw_mermaid</span>())  <span class="cm"># paste output into mermaid.live</span></code></pre>
+
+  <h3>Reading the output</h3>
+  <pre><code>graph TD;
+    __start__ --> generate_queries;
+    generate_queries --> generate_followup_queries;
+    generate_followup_queries --> research;
+    research -.-> brief_summary;       <span class="cm">&lt;-- dashed = conditional edge</span>
+    research -.-> detailed_summary;    <span class="cm">&lt;-- dashed = conditional edge</span>
+    brief_summary --> __end__;
+    detailed_summary --> __end__;</code></pre>
+
+  <table>
+    <tr><th>Mermaid syntax</th><th>Meaning</th></tr>
+    <tr><td><code>--&gt;</code></td><td>Solid arrow — fixed edge, always goes this way</td></tr>
+    <tr><td><code>-.-&gt;</code></td><td>Dashed arrow — conditional edge, decided at runtime by router</td></tr>
+    <tr><td><code>([...])</code></td><td>Rounded pill — start/end nodes</td></tr>
+    <tr><td><code>(...)</code></td><td>Rectangle — regular nodes</td></tr>
+    <tr><td><code>:::first</code> / <code>:::last</code></td><td>CSS class — start is transparent, end is purple</td></tr>
+  </table>
+
+  <div class="warn"><strong>Mermaid shows shape, not logic.</strong> Condition labels are NOT auto-generated — edit the raw output by hand to add them: <code>research -.-&gt;|"≥ 11 findings"| detailed_summary</code>. Use mermaid.live to preview.</div>
+
+  <!-- HUB AND SPOKE -->
+  <h2 id="hub-spoke"><span class="tag">P3</span> Hub-and-Spoke Multi-Agent Architecture</h2>
+  <p>Coordinator fans out to N specialist agents (parallel), aggregator fans in (barrier). Most common enterprise multi-agent pattern.</p>
+
+  <div class="flow">
+    <span class="node">coordinator</span> <span class="arrow">──▶</span> <span class="node">news_agent</span> <span class="arrow">──┐</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">──▶</span> <span class="node">technical_agent</span> <span class="arrow">──┤──▶</span> <span class="node">aggregator</span> <span class="arrow">──▶</span> END<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">──▶</span> <span class="node">examples_agent</span> <span class="arrow">──┘</span>
+  </div>
+
+  <ul>
+    <li>Fan-out: multiple <code>add_edge()</code> calls from coordinator — LangGraph fires all in parallel</li>
+    <li>Fan-in: multiple edges into aggregator — LangGraph buffers, fires only when ALL branches return</li>
+    <li>Use <code>Annotated[list[Finding], operator.add]</code> — all branches' findings merged automatically</li>
+    <li>Use Pydantic <code>Finding(BaseModel)</code> not <code>list[str]</code> — preserves which agent produced what</li>
+    <li>Coordinator is a pass-through — architecture lives in edges, not coordinator logic</li>
+  </ul>
+
+  <!-- INVOKE VS STREAM -->
+  <h2 id="invoke-vs-stream"><span class="tag">P3</span> invoke() vs stream()</h2>
+
+  <table>
+    <tr><th>Mode</th><th>When you see results</th><th>Use case</th></tr>
+    <tr><td><code>app.invoke(state)</code></td><td>Only after ALL nodes finish</td><td>Scripts, batch jobs</td></tr>
+    <tr><td><code>app.stream(state)</code></td><td>After EACH node finishes</td><td>UI progress, monitoring, debug</td></tr>
+    <tr><td><code>app.stream(state, mode="events")</code></td><td>Node start/end + LLM tokens</td><td>Real-time UIs</td></tr>
+  </table>
+
+  <pre><code><span class="cm"># stream() — yields {node_name: state_delta} after each node</span>
+<span class="kw">for</span> chunk <span class="kw">in</span> app.<span class="fn">stream</span>({<span class="st">"topic"</span>: <span class="st">"quantum computing"</span>, <span class="st">"findings"</span>: [], <span class="st">"summary"</span>: <span class="st">""</span>}):
+    node_name = list(chunk.keys())[<span class="num">0</span>]
+    print(f<span class="st">"[{node_name} done]"</span>, chunk)</code></pre>
+
+  <div class="note"><strong>invoke() vs stream() do NOT change execution.</strong> Same graph, same parallelism. Only difference is when results surface to calling code.</div>
+
+  <div class="warn"><strong>stream() gotcha:</strong> nodes that return <code>{}</code> (no state update) yield <code>None</code> as the chunk value — not an empty dict. Always guard: <code>if node_data is None: continue</code></div>
+
+  <div class="warn"><strong>Parallel DuckDuckGo searches:</strong> 3 simultaneous requests can trigger rate limiting — one hangs indefinitely. Fix: <code>DDGS(timeout=10)</code></div>
+
+  <!-- KAFKA AGENT AS CONSUMER -->
+  <h2 id="kafka-agents"><span class="tag">P3</span> Agent-as-Consumer (Kafka) — Enterprise Pattern</h2>
+  <p>In-process LangGraph = all agents in one process. Enterprise = agents as <strong>independent services on a message bus</strong>.</p>
+
+  <table>
+    <tr><th>In-process (LangGraph)</th><th>Event-driven (Kafka/SQS)</th></tr>
+    <tr><td>All agents die if process crashes</td><td>Independent services — fault isolated</td></tr>
+    <tr><td>Can't scale one agent independently</td><td>Scale news_agent × 10, others × 1</td></tr>
+    <tr><td>Work lost on crash</td><td>Kafka persists messages — replay on restart</td></tr>
+    <tr><td>New agent = redeployment</td><td>New consumer subscribes to topic, zero downtime</td></tr>
+  </table>
+
+  <ul>
+    <li><strong>Kafka</strong> — high throughput, durable (Apple/Netflix/Uber scale)</li>
+    <li><strong>AWS SQS/SNS</strong> — AWS-native, easier to operate</li>
+    <li><strong>Redis Streams</strong> — lower volume, lower ops overhead</li>
+  </ul>
+
+  <div class="good"><strong>Interview line:</strong> "In production I'd decouple these agents via SQS or Kafka for fault isolation, independent scaling, and durability. LangGraph is right for prototyping and moderate-scale deployments."</div>
+
+  <br><br>
+  <!-- CHECKPOINTING -->
+  <h2 id="checkpointing"><span class="tag">P3</span> Checkpointing</h2>
+  <p>LangGraph saves full state after every node. Enables crash recovery, replay, and is required for HITL.</p>
+
+  <table>
+    <tr><th>Checkpointer</th><th>Storage</th><th>Use case</th></tr>
+    <tr><td><code>MemorySaver</code></td><td>RAM</td><td>Dev/testing — lost on restart</td></tr>
+    <tr><td><code>SqliteSaver</code></td><td>SQLite file</td><td>PoC — persists across restarts</td></tr>
+    <tr><td><code>PostgresSaver</code></td><td>Postgres</td><td>Production — concurrent access</td></tr>
+  </table>
+
+  <pre><code><span class="kw">from</span> langgraph.checkpoint.memory <span class="kw">import</span> MemorySaver
+memory = <span class="fn">MemorySaver</span>()
+app = graph.<span class="fn">compile</span>(checkpointer=memory)</code></pre>
+
+  <ul>
+    <li>Checkpointing ≠ HITL — use alone for crash recovery on long-running graphs</li>
+    <li>HITL always needs a checkpointer — but checkpointing doesn't need HITL</li>
+    <li><code>SqliteSaver.from_conn_string()</code> returns context manager in newer LangGraph — use <code>MemorySaver</code> for dev</li>
+  </ul>
+
+  <!-- HITL -->
+  <h2 id="hitl"><span class="tag">P3</span> Human-in-the-Loop (HITL)</h2>
+
+  <pre><code><span class="cm"># 1. Compile with interrupt</span>
+app = graph.<span class="fn">compile</span>(checkpointer=memory, interrupt_before=[<span class="st">"summarise"</span>])
+config = {<span class="st">"configurable"</span>: {<span class="st">"thread_id"</span>: <span class="st">"1"</span>}}
+
+<span class="cm"># 2. Phase 1 — run until interrupt point</span>
+app.<span class="fn">invoke</span>(initial_state, config)
+
+<span class="cm"># 3. Inspect paused state</span>
+state = app.<span class="fn">get_state</span>(config)
+findings = state.values[<span class="st">"findings"</span>]
+
+<span class="cm"># 4. Inject human edits (operator.add merges — list not replace)</span>
+app.<span class="fn">update_state</span>(config, {<span class="st">"findings"</span>: [<span class="st">"my own finding"</span>]})
+
+<span class="cm"># 5. Resume — None = load from checkpoint, don't restart</span>
+result = app.<span class="fn">invoke</span>(<span class="kw">None</span>, config)</code></pre>
+
+  <ul>
+    <li><code>invoke(state, config)</code> — start fresh with this state</li>
+    <li><code>invoke(None, config)</code> — load latest snapshot for thread_id and resume. Never re-pass state on resume</li>
+    <li><code>thread_id</code> — identifies checkpoint row. Think: session ID / user ID</li>
+    <li><code>"configurable"</code> — LangGraph's namespace for user runtime settings inside config dict</li>
+    <li>Reusing same thread_id on re-run may skip Phase 1 — change thread_id or delete DB between tests</li>
+  </ul>
+
+  <div class="good"><strong>Interview line:</strong> "I'd use LangGraph's interrupt_before with a MemorySaver checkpointer for dev HITL workflows — pause before a summarise or decision node, let a human review findings, inject edits via update_state, then resume with invoke(None, config)."</div>
+
+  <br><br>
+  <p style="color: #4a5080; font-size: 13px;">Last updated: 2026-04-17 — P3 ResearchBot complete (checkpointing, HITL, P3 quiz 6.5/7)</p>
+</main>
+
+</body>
+</html>

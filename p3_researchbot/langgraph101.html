@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LangGraph 101 — State Machines & Agents</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.7; }
+    .sidebar { position: fixed; top: 0; left: 0; width: 260px; height: 100vh; background: #1a1d2e; padding: 24px 16px; overflow-y: auto; border-right: 1px solid #2d3148; }
+    .sidebar h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #7c83a8; margin-bottom: 16px; }
+    .sidebar a { display: block; padding: 6px 10px; color: #a0aec0; text-decoration: none; font-size: 13.5px; border-radius: 6px; margin-bottom: 2px; }
+    .sidebar a:hover { background: #2d3148; color: #e2e8f0; }
+    .sidebar .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #4a5080; margin: 16px 0 6px 10px; }
+    main { margin-left: 260px; padding: 48px 56px; max-width: 900px; }
+    h1 { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .subtitle { color: #7c83a8; font-size: 14px; margin-bottom: 48px; }
+    h2 { font-size: 20px; font-weight: 600; color: #fff; margin: 48px 0 16px; padding-top: 48px; border-top: 1px solid #2d3148; }
+    h2:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+    h3 { font-size: 15px; font-weight: 600; color: #a0aec0; margin: 24px 0 10px; }
+    p { color: #cbd5e0; margin-bottom: 14px; font-size: 15px; }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; background: #1e2130; color: #7dd3fc; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    pre { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 20px; margin: 16px 0; overflow-x: auto; }
+    pre code { background: none; padding: 0; color: #e2e8f0; font-size: 13.5px; line-height: 1.6; }
+    .keyword { color: #c084fc; }
+    .string { color: #86efac; }
+    .comment { color: #4a5080; font-style: italic; }
+    .fn { color: #60a5fa; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+    th { background: #1e2130; color: #a0aec0; text-align: left; padding: 10px 14px; border-bottom: 1px solid #2d3148; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    td { padding: 10px 14px; border-bottom: 1px solid #1e2130; color: #cbd5e0; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #1a1d2e; }
+    .note { background: #1e2130; border-left: 3px solid #7dd3fc; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; color: #a0aec0; }
+    .note strong { color: #7dd3fc; }
+    .warn { background: #1e2130; border-left: 3px solid #f59e0b; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; color: #a0aec0; }
+    .warn strong { color: #f59e0b; }
+    .flow { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 24px; margin: 16px 0; font-family: "JetBrains Mono", monospace; font-size: 13px; line-height: 2.2; }
+    .flow .node { color: #86efac; font-weight: 600; }
+    .flow .arrow { color: #4a5080; }
+    .flow .state { color: #7dd3fc; }
+    .flow .label { color: #a0aec0; font-size: 12px; }
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h2>LangGraph 101</h2>
+  <a href="#what-is">What is LangGraph?</a>
+  <a href="#vs-langchain">vs LangChain Chains</a>
+  <a href="#core-concepts">Core Concepts</a>
+  <div class="section-label">Building Blocks</div>
+  <a href="#state">State (TypedDict)</a>
+  <a href="#nodes">Nodes</a>
+  <a href="#edges">Edges</a>
+  <a href="#compile">Compile & Invoke</a>
+  <div class="section-label">Patterns</div>
+  <a href="#annotated">Annotated State</a>
+  <a href="#annotated-internals">Annotated — Internals</a>
+  <a href="#fanout">Fan-out / Fan-in</a>
+  <a href="#conditional">Conditional Edges & Routing</a>
+  <a href="#mermaid">Mermaid Diagrams</a>
+  <div class="section-label">Multi-Agent Patterns</div>
+  <a href="#hub-spoke">Hub-and-Spoke Architecture</a>
+  <a href="#invoke-vs-stream">invoke() vs stream()</a>
+  <a href="#kafka-agents">Agent-as-Consumer (Kafka)</a>
+  <div class="section-label">Checkpointing & HITL</div>
+  <a href="#checkpointing">Checkpointing</a>
+  <a href="#hitl">Human-in-the-Loop</a>
+  <a href="#config">thread_id & config</a>
+  <a href="#flow">Execution Flow</a>
+  <a href="#graph-intro">graph_intro.py walkthrough</a>
+</div>
+
+<main>
+  <h1>LangGraph 101</h1>
+  <p class="subtitle">State machines, nodes, edges — P3 ResearchBot reference &nbsp;·&nbsp; 2026-04-11</p>
+
+  <!-- WHAT IS -->
+  <h2 id="what-is">What is LangGraph?</h2>
+  <p>LangGraph is a framework for building <strong>stateful, multi-step agent workflows</strong> as directed graphs. Each step is a node. Data flows between nodes via a shared state object. You define which node runs after which using edges.</p>
+
+  <p>It sits on top of LangChain core but replaces the old Chains/agents API with a proper graph-based state machine — supporting branching, loops, checkpointing, and human-in-the-loop.</p>
+
+  <div class="note"><strong>Install:</strong> <code>pip install langgraph</code> — separate from LangChain, maintained by the LangChain team.</div>
+
+  <!-- VS LANGCHAIN -->
+  <h2 id="vs-langchain">LangGraph vs LangChain Chains</h2>
+  <table>
+    <tr><th></th><th>LangChain Chains (old)</th><th>LangGraph (new)</th></tr>
+    <tr><td>Structure</td><td>Linear A → B → C</td><td>Directed graph — can branch and loop</td></tr>
+    <tr><td>State</td><td>Passed implicitly</td><td>Explicit typed state object shared by all nodes</td></tr>
+    <tr><td>Branching</td><td>Limited</td><td>Full conditional routing via edges</td></tr>
+    <tr><td>Loops / retries</td><td>Not supported</td><td>Native — graph can cycle back</td></tr>
+    <tr><td>Human-in-the-loop</td><td>Awkward</td><td>Built-in interrupt/resume</td></tr>
+    <tr><td>Checkpointing</td><td>No</td><td>Yes — pause and resume at any node</td></tr>
+    <tr><td>Use when</td><td>Simple RAG pipelines</td><td>Any multi-step agent workflow</td></tr>
+  </table>
+
+  <!-- CORE CONCEPTS -->
+  <h2 id="core-concepts">Core Concepts</h2>
+  <table>
+    <tr><th>Concept</th><th>What it is</th><th>Analogy</th></tr>
+    <tr><td><strong>State</strong></td><td>A TypedDict passed to every node. Nodes read from it and return updates to it.</td><td>A struct/record passed along the pipeline</td></tr>
+    <tr><td><strong>Node</strong></td><td>A plain Python function. Takes state, returns dict of changes.</td><td>A worker that does one job</td></tr>
+    <tr><td><strong>Edge</strong></td><td>Defines which node runs after which. Can be fixed or conditional.</td><td>A wire connecting workers</td></tr>
+    <tr><td><strong>Graph</strong></td><td>The <code>StateGraph</code> object that holds all nodes and edges.</td><td>A flowchart / circuit board</td></tr>
+    <tr><td><strong>Compiled graph</strong></td><td>Result of <code>graph.compile()</code> — a Runnable with <code>.invoke()</code></td><td>A built executable</td></tr>
+    <tr><td><strong>END</strong></td><td>Special constant — edge to END means the graph stops after that node</td><td>The exit point</td></tr>
+  </table>
+
+  <!-- STATE -->
+  <h2 id="state">State — TypedDict</h2>
+  <p>The state is a plain Python dict with declared types. It is the <strong>single source of truth</strong> shared across all nodes. Every node reads from it and returns a partial update — only the fields it changed.</p>
+
+  <pre><code><span class="keyword">from</span> typing <span class="keyword">import</span> TypedDict
+
+<span class="keyword">class</span> <span class="fn">ResearchState</span>(TypedDict):
+    topic: str               <span class="comment"># input — the research topic</span>
+    search_queries: list[str] <span class="comment"># populated by Node 1</span>
+    findings: list[str]       <span class="comment"># populated by Node 2</span>
+    summary: str              <span class="comment"># populated by Node 3</span></code></pre>
+
+  <p><code>TypedDict</code> is just a dict with declared keys and types. It's still a plain dict at runtime — the type hints are for IDE help and LangGraph's schema validation.</p>
+
+  <div class="note"><strong>Key rule:</strong> <code>StateGraph(ResearchState)</code> is NOT inheritance. It passes <code>ResearchState</code> as a configuration argument — LangGraph stores it as a schema to understand the shape of data flowing through the graph.</div>
+
+  <!-- NODES -->
+  <h2 id="nodes">Nodes</h2>
+  <p>A node is a plain Python function. Signature: takes the full state, returns a dict of only the fields it changed. LangGraph merges the returned dict into the current state automatically.</p>
+
+  <pre><code><span class="keyword">def</span> <span class="fn">generate_queries</span>(state: ResearchState) -> dict:
+    queries = [
+        f<span class="string">"What is {state['topic']}?"</span>,
+        f<span class="string">"{state['topic']} latest developments"</span>,
+        f<span class="string">"{state['topic']} key concepts"</span>
+    ]
+    <span class="keyword">return</span> {<span class="string">"search_queries"</span>: queries}
+    <span class="comment"># Only returns what changed — LangGraph merges it into full state</span>
+    <span class="comment"># topic, findings, summary are unchanged and don't need to be returned</span></code></pre>
+
+  <div class="note"><strong>Why return only changed fields?</strong> Nodes are single-responsibility. Node 1 only knows about queries — it shouldn't touch findings or summary. LangGraph merges partial updates, so you only return what you changed.</div>
+
+  <h3>State passing — immutability rule</h3>
+  <p>Python passes dicts by object reference, so <code>state</code> inside a node <em>is</em> the live dict in memory. But <strong>never mutate it in place</strong> — always return a delta dict.</p>
+
+  <pre><code><span class="comment"># CORRECT — return a delta dict</span>
+<span class="keyword">def</span> <span class="fn">generate_queries</span>(state: ResearchState) -> dict:
+    <span class="keyword">return</span> {<span class="string">"search_queries"</span>: [<span class="string">"q1"</span>, <span class="string">"q2"</span>]}
+
+<span class="comment"># WRONG — mutating in place</span>
+<span class="keyword">def</span> <span class="fn">generate_queries</span>(state: ResearchState) -> dict:
+    state[<span class="string">"search_queries"</span>] = [<span class="string">"q1"</span>, <span class="string">"q2"</span>]  <span class="comment"># breaks reducers, checkpointing, parallel nodes</span>
+    <span class="keyword">return</span> {}</code></pre>
+
+  <div class="warn"><strong>Why in-place mutation breaks things:</strong><br>
+  1. <strong>Reducers</strong> — <code>operator.add</code> never runs; the merge step is bypassed entirely<br>
+  2. <strong>Checkpointing</strong> — LangGraph saves state snapshots between nodes; mutation corrupts them<br>
+  3. <strong>Parallel branches</strong> — two nodes running concurrently would race on the same dict<br><br>
+  Mental model: treat <code>state</code> as <strong>read-only inside a node</strong>. Same pattern as React's <code>setState</code> — you never mutate, you return what changed.</div>
+
+  <!-- EDGES -->
+  <h2 id="edges">Edges</h2>
+  <p>Edges define execution order. Two types:</p>
+
+  <table>
+    <tr><th>Type</th><th>How to define</th><th>When to use</th></tr>
+    <tr><td><strong>Fixed edge</strong></td><td><code>graph.add_edge("a", "b")</code></td><td>Always go from a to b</td></tr>
+    <tr><td><strong>Conditional edge</strong></td><td><code>graph.add_conditional_edges("a", router_fn)</code></td><td>Go to different nodes based on state</td></tr>
+    <tr><td><strong>Entry point</strong></td><td><code>graph.set_entry_point("node_name")</code></td><td>Which node runs first</td></tr>
+    <tr><td><strong>Terminal edge</strong></td><td><code>graph.add_edge("last_node", END)</code></td><td>Graph stops after this node</td></tr>
+  </table>
+
+  <pre><code>graph.<span class="fn">set_entry_point</span>(<span class="string">"generate_queries"</span>)     <span class="comment"># first node</span>
+graph.<span class="fn">add_edge</span>(<span class="string">"generate_queries"</span>, <span class="string">"research"</span>)  <span class="comment"># fixed: always go to research next</span>
+graph.<span class="fn">add_edge</span>(<span class="string">"research"</span>, <span class="string">"summarise"</span>)         <span class="comment"># fixed: always go to summarise next</span>
+graph.<span class="fn">add_edge</span>(<span class="string">"summarise"</span>, END)               <span class="comment"># terminal: stop after summarise</span></code></pre>
+
+  <!-- COMPILE -->
+  <h2 id="compile">Compile & Invoke</h2>
+
+  <pre><code><span class="comment"># Build the graph</span>
+graph = <span class="fn">StateGraph</span>(ResearchState)
+graph.<span class="fn">add_node</span>(<span class="string">"generate_queries"</span>, generate_queries)
+graph.<span class="fn">add_node</span>(<span class="string">"research"</span>, research)
+graph.<span class="fn">add_node</span>(<span class="string">"summarise"</span>, summarise)
+graph.<span class="fn">set_entry_point</span>(<span class="string">"generate_queries"</span>)
+graph.<span class="fn">add_edge</span>(<span class="string">"generate_queries"</span>, <span class="string">"research"</span>)
+graph.<span class="fn">add_edge</span>(<span class="string">"research"</span>, <span class="string">"summarise"</span>)
+graph.<span class="fn">add_edge</span>(<span class="string">"summarise"</span>, END)
+
+<span class="comment"># Compile → returns a Runnable object</span>
+app = graph.<span class="fn">compile</span>()
+
+<span class="comment"># Invoke with initial state — all fields must be present</span>
+result = app.<span class="fn">invoke</span>({
+    <span class="string">"topic"</span>: <span class="string">"LangGraph state machines"</span>,
+    <span class="string">"search_queries"</span>: [],
+    <span class="string">"findings"</span>: [],
+    <span class="string">"summary"</span>: <span class="string">""</span>
+})
+<span class="comment"># result is the final state dict after all nodes ran</span></code></pre>
+
+  <p><code>graph.compile()</code> validates the graph (checks all edges point to real nodes, entry point exists, etc.) and returns a <strong>Runnable</strong> — an object with <code>.invoke()</code>. LangGraph's Runnable is the same base class used by LangChain LCEL components.</p>
+
+  <div class="note"><strong>"Runnable" is not a Python built-in.</strong> It's a LangChain/LangGraph concept — an object that has <code>.invoke()</code>. In plain Python the equivalent is any callable object (one with <code>__call__</code>). LangGraph just standardises on <code>.invoke()</code> as the interface.</div>
+
+  <!-- ANNOTATED STATE -->
+  <h2 id="annotated">Annotated State — Merge Strategy</h2>
+  <p>By default, when a node returns a field, it <strong>overwrites</strong> the existing value. But for lists you often want to <strong>append</strong> instead. <code>Annotated</code> lets you specify the merge strategy.</p>
+
+  <pre><code><span class="keyword">from</span> typing <span class="keyword">import</span> TypedDict, Annotated
+<span class="keyword">import</span> operator
+
+<span class="keyword">class</span> <span class="fn">ResearchState</span>(TypedDict):
+    topic: str                                      <span class="comment"># overwrite on update</span>
+    search_queries: Annotated[list[str], operator.add]  <span class="comment"># append on update</span>
+    findings: Annotated[list[str], operator.add]        <span class="comment"># append on update</span>
+    summary: str                                    <span class="comment"># overwrite on update</span></code></pre>
+
+  <p><code>Annotated[list[str], operator.add]</code> means: "this field is a list of strings, and when a node returns an update, use <code>operator.add</code> (list concatenation) to merge it instead of overwriting."</p>
+
+  <table>
+    <tr><th>Without Annotated</th><th>With Annotated[list, operator.add]</th></tr>
+    <tr><td>Node returns <code>["query1"]</code> → replaces existing list</td><td>Node returns <code>["query1"]</code> → appended to existing list</td></tr>
+    <tr><td>Only last node's output survives</td><td>Multiple nodes can add to the same list</td></tr>
+    <tr><td>Fine for scalar fields (topic, summary)</td><td>Needed when multiple nodes contribute to a list</td></tr>
+  </table>
+
+  <!-- ANNOTATED INTERNALS -->
+  <h2 id="annotated-internals">Annotated — What It Actually Is</h2>
+
+  <h3>Is Annotated[list[str], operator.add] a list?</h3>
+  <p>No. It's a <strong>type descriptor object</strong> — not a list, not a container of data. It only exists at the class definition level as metadata. The actual values flowing through the graph at runtime are plain Python lists.</p>
+
+  <pre><code><span class="keyword">import</span> typing, operator
+t = typing.<span class="fn">Annotated</span>[list[str], operator.add]
+<span class="fn">print</span>(type(t))            <span class="comment"># typing.Annotated[list[str], &lt;built-in function add&gt;]</span>
+<span class="fn">print</span>(isinstance(t, list)) <span class="comment"># False</span>
+
+<span class="comment"># What actually lives in the state dict at runtime — plain types:</span>
+state = {
+    <span class="string">"topic"</span>: <span class="string">"LangGraph state machines"</span>,  <span class="comment"># str</span>
+    <span class="string">"search_queries"</span>: [<span class="string">"q1"</span>, <span class="string">"q2"</span>],         <span class="comment"># plain list[str]</span>
+    <span class="string">"findings"</span>: [],                          <span class="comment"># plain list[str]</span>
+    <span class="string">"summary"</span>: <span class="string">""</span>                            <span class="comment"># str</span>
+}</code></pre>
+
+  <div class="note"><strong>Blueprint analogy:</strong> <code>Annotated[list[str], operator.add]</code> is like an annotation on an architectural drawing that says "this pipe uses compression fittings." The annotation is on the drawing — the actual pipe in the building is just a pipe.</div>
+
+  <h3>Python's part — Annotated</h3>
+  <p><code>Annotated</code> does <strong>nothing at runtime</strong>. It's purely a typing construct that stores two things: the real type and the metadata. Python itself doesn't know what <code>operator.add</code> means here — it's just a passenger.</p>
+
+  <pre><code><span class="keyword">import</span> typing, operator
+t = typing.<span class="fn">Annotated</span>[list[str], operator.add]
+<span class="fn">print</span>(typing.<span class="fn">get_args</span>(t))
+<span class="comment"># (list[str], &lt;built-in function add&gt;)</span>
+<span class="comment">#              ↑ operator.add stored as metadata — Python does nothing with it</span></code></pre>
+
+  <h3>LangGraph's part — building the reducer map</h3>
+  <p>When you call <code>StateGraph(ResearchState)</code>, LangGraph inspects every field using <code>typing.get_type_hints()</code> and builds a <strong>reducer map</strong> — one merge function per field:</p>
+
+  <pre><code><span class="comment"># Pseudocode of what LangGraph does internally</span>
+<span class="keyword">for</span> field, type_hint <span class="keyword">in</span> <span class="fn">get_type_hints</span>(ResearchState, include_extras=<span class="keyword">True</span>).items():
+    <span class="keyword">if</span> <span class="fn">is_annotated</span>(type_hint):
+        _, reducer = <span class="fn">get_args</span>(type_hint)    <span class="comment"># extracts operator.add</span>
+        reducers[field] = reducer             <span class="comment"># stores it</span>
+    <span class="keyword">else</span>:
+        reducers[field] = <span class="keyword">lambda</span> old, new: new  <span class="comment"># default: replace</span></code></pre>
+
+  <table>
+    <tr><th>Field</th><th>Reducer stored</th></tr>
+    <tr><td><code>topic</code></td><td><code>lambda old, new: new</code> — replace</td></tr>
+    <tr><td><code>search_queries</code></td><td><code>operator.add</code> — concatenate</td></tr>
+    <tr><td><code>findings</code></td><td><code>operator.add</code> — concatenate</td></tr>
+    <tr><td><code>summary</code></td><td><code>lambda old, new: new</code> — replace</td></tr>
+  </table>
+
+  <p>Then after every node returns a delta dict, LangGraph applies the reducer for each field:</p>
+
+  <pre><code><span class="comment"># Pseudocode of state merge after each node</span>
+<span class="keyword">for</span> key, new_value <span class="keyword">in</span> node_output.items():
+    state[key] = reducers[key](state[key], new_value)
+
+<span class="comment"># For search_queries:</span>
+state[<span class="string">"search_queries"</span>] = operator.<span class="fn">add</span>([<span class="string">"q1"</span>,<span class="string">"q2"</span>,<span class="string">"q3"</span>], [<span class="string">"q4"</span>,<span class="string">"q5"</span>])
+<span class="comment"># → ["q1","q2","q3","q4","q5"]</span>
+
+<span class="comment"># For summary (plain str — replace reducer):</span>
+state[<span class="string">"summary"</span>] = new_value  <span class="comment"># just overwrites</span></code></pre>
+
+  <h3>Why &lt;built-in function add&gt;?</h3>
+  <p><code>operator.add</code> is implemented in C as part of Python's standard library, so Python labels it a "built-in function" rather than a user-defined function. It's just the <code>+</code> operator as a callable object — it exists so you can pass <code>+</code> as an argument (you can't pass syntax directly).</p>
+
+  <pre><code><span class="keyword">import</span> operator
+
+<span class="fn">print</span>(operator.add)   <span class="comment"># &lt;built-in function add&gt;  — implemented in C</span>
+
+<span class="keyword">def</span> <span class="fn">my_add</span>(a, b): <span class="keyword">return</span> a + b
+<span class="fn">print</span>(my_add)         <span class="comment"># &lt;function my_add at 0x...&gt;  — user-defined Python</span>
+
+operator.<span class="fn">add</span>([<span class="string">"a"</span>], [<span class="string">"b"</span>])  <span class="comment"># same as ["a"] + ["b"]  → ["a", "b"]</span></code></pre>
+
+  <div class="note"><strong>Custom reducers:</strong> The second argument to <code>Annotated</code> can be any callable. LangGraph just calls it at merge time. You could write your own:<br><br>
+  <code>Annotated[list[str], lambda a, b: list(set(a + b))]</code> — merge and deduplicate<br>
+  <code>Annotated[list[str], lambda a, b: sorted(set(a + b))]</code> — merge, deduplicate, sort</div>
+
+  <!-- FAN-OUT / FAN-IN -->
+  <h2 id="fanout">Fan-out / Fan-in — Parallel with a Gate</h2>
+  <p>You can't run two nodes in parallel <em>and</em> force one to wait for the other — that's sequential by definition. But you can <strong>fan-out</strong> (run two nodes in parallel) and then <strong>fan-in</strong> (gate the next node until both finish).</p>
+
+  <div class="flow">
+<span class="label">start</span>
+    │
+    ├──────────────────┐
+    ▼                  ▼
+<span class="node">generate_queries</span>   <span class="node">generate_followup</span>
+<span class="label">(3 queries)</span>        <span class="label">(2 queries)</span>
+    │                  │
+    └────────┬─────────┘
+             ▼
+        <span class="node">merge_node</span>  <span class="label">← LangGraph holds here until BOTH complete</span>
+             │
+             ▼
+         <span class="node">research</span>
+  </div>
+
+  <pre><code>graph.<span class="fn">set_entry_point</span>(<span class="string">"start"</span>)
+graph.<span class="fn">add_edge</span>(<span class="string">"start"</span>, <span class="string">"generate_queries"</span>)
+graph.<span class="fn">add_edge</span>(<span class="string">"start"</span>, <span class="string">"generate_followup_queries"</span>)
+graph.<span class="fn">add_edge</span>(<span class="string">"generate_queries"</span>, <span class="string">"merge"</span>)
+graph.<span class="fn">add_edge</span>(<span class="string">"generate_followup_queries"</span>, <span class="string">"merge"</span>)
+graph.<span class="fn">add_edge</span>(<span class="string">"merge"</span>, <span class="string">"research"</span>)
+<span class="comment"># LangGraph sees two edges pointing to "merge" — automatically waits for both</span></code></pre>
+
+  <div class="warn"><strong>Ordering with operator.add in parallel branches:</strong> When two nodes run in parallel and both write to an <code>Annotated</code> list field, the final order depends on which result LangGraph processes first. If order matters, run sequentially. If order doesn't matter (e.g. a bag of search queries), parallel + <code>operator.add</code> is fine.</div>
+
+  <div class="note"><strong>This is the hub-and-spoke pattern</strong> used in P3 Ticket #65 — a coordinator fans out to 3 specialist sub-agents, then an aggregator node waits for all 3 before synthesising results.</div>
+
+  <!-- CONDITIONAL EDGES -->
+  <h2 id="conditional">Conditional Edges &amp; Routing</h2>
+  <p>Fixed edges always go to the same node. <strong>Conditional edges</strong> let the graph branch — a router function inspects the state and returns which node to go to next.</p>
+
+  <h3>Router function</h3>
+  <pre><code><span class="keyword">def</span> <span class="fn">route_summary</span>(state: ResearchState) -> str:
+    <span class="keyword">if</span> len(state[<span class="string">'findings'</span>]) >= 11:
+        <span class="keyword">return</span> <span class="string">"detailed_summary"</span>
+    <span class="keyword">else</span>:
+        <span class="keyword">return</span> <span class="string">"brief_summary"</span></code></pre>
+
+  <p>The router takes the full state and returns a string — the name of the next node to route to. LangGraph calls it after the source node completes.</p>
+
+  <h3>Wiring — without dict (simple)</h3>
+  <p>When the router return values exactly match node names, no dict is needed:</p>
+  <pre><code>graph.<span class="fn">add_conditional_edges</span>(<span class="string">"research"</span>, route_summary)
+<span class="comment"># router returns "detailed_summary" or "brief_summary" — must match node names exactly</span></code></pre>
+
+  <h3>Wiring — with dict (translation layer)</h3>
+  <p>When you want the router to return readable strings that don't match node names:</p>
+  <pre><code>graph.<span class="fn">add_conditional_edges</span>(<span class="string">"research"</span>, route_summary, {
+    <span class="string">"enough"</span>: <span class="string">"detailed_summary"</span>,   <span class="comment"># router returns "enough" → go to "detailed_summary" node</span>
+    <span class="string">"not_enough"</span>: <span class="string">"brief_summary"</span>    <span class="comment"># router returns "not_enough" → go to "brief_summary" node</span>
+})
+<span class="comment"># The dict is a lookup table. LangGraph reads it — not Python, not the dict itself.</span></code></pre>
+
+  <h3>Full routing pattern — two terminal nodes</h3>
+  <div class="flow">
+<span class="label">research completes</span>
+        │
+        ▼
+<span class="node">route_summary(state)</span>  <span class="label">← router inspects len(findings)</span>
+        │
+        ├ - - <span class="label">≥ 11</span> - - → <span class="node">detailed_summary</span> → END
+        │
+        └ - - <span class="label">&lt; 11</span>  - - → <span class="node">brief_summary</span>    → END
+  </div>
+
+  <pre><code>graph.<span class="fn">add_node</span>(<span class="string">"detailed_summary"</span>, detailed_summary)
+graph.<span class="fn">add_node</span>(<span class="string">"brief_summary"</span>, brief_summary)
+graph.<span class="fn">add_conditional_edges</span>(<span class="string">"research"</span>, route_summary)
+graph.<span class="fn">add_edge</span>(<span class="string">"detailed_summary"</span>, END)
+graph.<span class="fn">add_edge</span>(<span class="string">"brief_summary"</span>, END)</code></pre>
+
+  <div class="note"><strong>Router is pure logic — no side effects.</strong> It only reads state and returns a string. It should never call APIs, mutate state, or do real work. Keep routers as simple conditionals.</div>
+
+  <!-- MERMAID -->
+  <h2 id="mermaid">Mermaid Diagrams — Visualising Your Graph</h2>
+  <p>LangGraph can generate a <strong>Mermaid diagram</strong> of your compiled graph — showing all nodes, edges, and branch points. Add this to <code>main()</code>:</p>
+
+  <pre><code>app = <span class="fn">build_graph</span>()
+<span class="fn">print</span>(app.<span class="fn">get_graph</span>().<span class="fn">draw_mermaid</span>())
+<span class="comment"># Paste the output into mermaid.live to see the visual diagram</span></code></pre>
+
+  <h3>Reading the output</h3>
+  <pre><code>graph TD;
+    __start__([&lt;p&gt;__start__&lt;/p&gt;]):::first
+    generate_queries(generate_queries)
+    generate_followup_queries(generate_followup_queries)
+    research(research)
+    detailed_summary(detailed_summary)
+    brief_summary(brief_summary)
+    __end__([&lt;p&gt;__end__&lt;/p&gt;]):::last
+    __start__ --&gt; generate_queries;
+    generate_queries --&gt; generate_followup_queries;
+    generate_followup_queries --&gt; research;
+    research -.-&gt; brief_summary;       &lt;!-- dashed = conditional edge --&gt;
+    research -.-&gt; detailed_summary;    &lt;!-- dashed = conditional edge --&gt;
+    brief_summary --&gt; __end__;
+    detailed_summary --&gt; __end__;</code></pre>
+
+  <table>
+    <tr><th>Mermaid syntax</th><th>Meaning</th></tr>
+    <tr><td><code>--&gt;</code></td><td>Fixed edge — always goes this way</td></tr>
+    <tr><td><code>-.-&gt;</code></td><td>Conditional edge — dashed, decided at runtime by router</td></tr>
+    <tr><td><code>([...])</code></td><td>Rounded pill shape — start/end nodes</td></tr>
+    <tr><td><code>(...)</code></td><td>Rectangle — regular nodes</td></tr>
+    <tr><td><code>:::first</code> / <code>:::last</code></td><td>CSS class — start is transparent, end is purple</td></tr>
+  </table>
+
+  <div class="note"><strong>Edge labels:</strong> <code>draw_mermaid()</code> does not add condition labels to dashed edges — it only knows the graph structure, not what your router logic means. To add labels, edit the raw Mermaid output by hand before pasting into mermaid.live: <code>research -.-&gt;|"≥ 11 findings"| detailed_summary</code></div>
+
+  <div class="warn"><strong>Mermaid shows shape, not logic.</strong> Use it to verify the graph is wired correctly — all nodes present, all edges pointing the right way. The condition inside the router lives in code, not in the diagram.</div>
+
+  <!-- FLOW -->
+  <h2 id="flow">Execution Flow — What Happens Inside invoke()</h2>
+
+  <div class="flow">
+<span class="label">app.invoke(initial_state) called</span>
+        │
+        ▼
+<span class="node">generate_queries</span>
+  reads:   <span class="state">state['topic']</span> = "LangGraph state machines"
+  returns: <span class="state">{"search_queries": ["What is...?", "...latest", "...concepts"]}</span>
+  LangGraph merges → state now has 3 queries
+        │
+        ▼  <span class="label">add_edge("generate_queries", "research")</span>
+        │
+        ▼
+<span class="node">research</span>
+  reads:   <span class="state">state['search_queries']</span> = [3 items]
+  returns: <span class="state">{"findings": ["Finding for: ...", ...]}</span>
+  LangGraph merges → state now has 3 findings
+        │
+        ▼  <span class="label">add_edge("research", "summarise")</span>
+        │
+        ▼
+<span class="node">summarise</span>
+  reads:   <span class="state">state['findings']</span> = [3 items]
+  returns: <span class="state">{"summary": "Summary of LangGraph state machines: ..."}</span>
+  LangGraph merges → state now has summary
+        │
+        ▼  <span class="label">add_edge("summarise", END)</span>
+        │
+        ▼
+<span class="label">invoke() returns final state dict</span>
+  </div>
+
+  <p>The state dict is the baton in a relay race. Each node picks it up, reads what it needs, adds its contribution, and passes it on. No node knows about the others — they just read and write the shared state.</p>
+
+  <!-- GRAPH_INTRO WALKTHROUGH -->
+  <h2 id="graph-intro">graph_intro.py — Full Code</h2>
+  <p>The complete first LangGraph file from P3 ResearchBot. A 3-node linear graph with simulated (fake) node work — no external API calls. Purpose: understand the graph mechanics before adding real web search.</p>
+
+  <pre><code><span class="keyword">from</span> typing <span class="keyword">import</span> TypedDict
+<span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, END
+
+<span class="comment"># 1. State schema — shared dict flowing through all nodes</span>
+<span class="keyword">class</span> <span class="fn">ResearchState</span>(TypedDict):
+    topic: str
+    search_queries: list[str]
+    findings: list[str]
+    summary: str
+
+<span class="comment"># 2. Node functions — take full state, return only changed fields</span>
+<span class="keyword">def</span> <span class="fn">generate_queries</span>(state: ResearchState) -> dict:
+    queries = [
+        f<span class="string">"What is {state['topic']}?"</span>,
+        f<span class="string">"{state['topic']} latest developments"</span>,
+        f<span class="string">"{state['topic']} key concepts"</span>
+    ]
+    <span class="keyword">return</span> {<span class="string">"search_queries"</span>: queries}
+
+<span class="keyword">def</span> <span class="fn">research</span>(state: ResearchState) -> dict:
+    findings = [f<span class="string">"Finding for: {q}"</span> <span class="keyword">for</span> q <span class="keyword">in</span> state[<span class="string">'search_queries'</span>]]
+    <span class="keyword">return</span> {<span class="string">"findings"</span>: findings}
+
+<span class="keyword">def</span> <span class="fn">summarise</span>(state: ResearchState) -> dict:
+    summary = f<span class="string">"Summary of {state['topic']}: "</span> + <span class="string">" | "</span>.<span class="fn">join</span>(state[<span class="string">'findings'</span>][:2])
+    <span class="keyword">return</span> {<span class="string">"summary"</span>: summary}
+
+<span class="comment"># 3. Build and compile the graph</span>
+<span class="keyword">def</span> <span class="fn">build_graph</span>():
+    graph = <span class="fn">StateGraph</span>(ResearchState)
+
+    graph.<span class="fn">add_node</span>(<span class="string">"generate_queries"</span>, generate_queries)
+    graph.<span class="fn">add_node</span>(<span class="string">"research"</span>, research)
+    graph.<span class="fn">add_node</span>(<span class="string">"summarise"</span>, summarise)
+
+    graph.<span class="fn">set_entry_point</span>(<span class="string">"generate_queries"</span>)
+    graph.<span class="fn">add_edge</span>(<span class="string">"generate_queries"</span>, <span class="string">"research"</span>)
+    graph.<span class="fn">add_edge</span>(<span class="string">"research"</span>, <span class="string">"summarise"</span>)
+    graph.<span class="fn">add_edge</span>(<span class="string">"summarise"</span>, END)
+
+    <span class="keyword">return</span> graph.<span class="fn">compile</span>()
+
+<span class="comment"># 4. Run it</span>
+<span class="keyword">def</span> <span class="fn">main</span>():
+    app = <span class="fn">build_graph</span>()
+    result = app.<span class="fn">invoke</span>({
+        <span class="string">"topic"</span>: <span class="string">"LangGraph state machines"</span>,
+        <span class="string">"search_queries"</span>: [],
+        <span class="string">"findings"</span>: [],
+        <span class="string">"summary"</span>: <span class="string">""</span>
+    })
+    print(result[<span class="string">'summary'</span>])
+
+<span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:
+    <span class="fn">main</span>()</code></pre>
+
+  <br><br>
+  <p style="color: #4a5080; font-size: 13px;">Created: 2026-04-11 — P3 ResearchBot session 1 (graph_intro.py)</p>
+
+  <!-- HUB AND SPOKE -->
+  <h2 id="hub-spoke">Hub-and-Spoke Multi-Agent Architecture</h2>
+  <p>A <strong>coordinator node fans out</strong> to N specialist sub-agents, each runs independently in parallel, then an <strong>aggregator fans in</strong> and merges results. One of the most common enterprise multi-agent patterns.</p>
+
+  <div class="flow">
+    <span class="node">coordinator</span> <span class="arrow">──fan-out──▶</span> <span class="node">news_agent</span> <span class="arrow">──┐</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">──────────▶</span> <span class="node">technical_agent</span> <span class="arrow">──┤──▶</span> <span class="node">aggregator</span> <span class="arrow">──▶</span> END<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">──────────▶</span> <span class="node">examples_agent</span> <span class="arrow">──┘</span>
+  </div>
+
+  <h3>Typed inter-node data with Pydantic</h3>
+  <p>Rather than passing raw strings, sub-agents return <strong>structured Pydantic objects</strong>. This preserves attribution (which agent produced what) and makes downstream aggregation deterministic.</p>
+  <pre><code><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel
+
+<span class="keyword">class</span> <span class="fn">Finding</span>(BaseModel):
+    agent: str      <span class="comment"># "news" | "technical" | "examples"</span>
+    title: str
+    body: str
+
+<span class="keyword">class</span> <span class="fn">HubState</span>(TypedDict):
+    topic: str
+    findings: Annotated[list[Finding], operator.add]  <span class="comment"># merged across all agents</span>
+    summary: str</code></pre>
+
+  <h3>Fan-out — multiple edges from one node</h3>
+  <pre><code>graph.<span class="fn">add_edge</span>(<span class="string">"coordinator"</span>, <span class="string">"news_agent"</span>)
+graph.<span class="fn">add_edge</span>(<span class="string">"coordinator"</span>, <span class="string">"technical_agent"</span>)
+graph.<span class="fn">add_edge</span>(<span class="string">"coordinator"</span>, <span class="string">"examples_agent"</span>)</code></pre>
+  <p>LangGraph fires all 3 in parallel. Each returns <code>{"findings": [Finding(...), ...]}</code>. The <code>operator.add</code> reducer merges all three lists automatically.</p>
+
+  <h3>Fan-in — implicit barrier synchronization</h3>
+  <pre><code>graph.<span class="fn">add_edge</span>(<span class="string">"news_agent"</span>, <span class="string">"aggregator"</span>)
+graph.<span class="fn">add_edge</span>(<span class="string">"technical_agent"</span>, <span class="string">"aggregator"</span>)
+graph.<span class="fn">add_edge</span>(<span class="string">"examples_agent"</span>, <span class="string">"aggregator"</span>)</code></pre>
+  <p>LangGraph sees <code>aggregator</code> has 3 incoming branches. It buffers results and fires <code>aggregator</code> only when <strong>all 3 have returned</strong>. This is a barrier / <code>Promise.all()</code> equivalent — no explicit wait needed.</p>
+
+  <div class="note"><strong>Coordinator is a pass-through.</strong> Its real role is to be the fan-out point in the graph topology. The architecture lives in the edges, not the coordinator logic.</div>
+
+  <h3>DuckDuckGo parallel search — rate limiting gotcha</h3>
+  <p>When 3 agents fire simultaneous DuckDuckGo searches, one may hang indefinitely waiting for a response. Always set a timeout:</p>
+  <pre><code><span class="keyword">with</span> <span class="fn">DDGS</span>(timeout=<span class="comment">10</span>) <span class="keyword">as</span> ddgs:   <span class="comment"># timeout in seconds — prevents indefinite hang</span>
+    results = ddgs.<span class="fn">text</span>(query, max_results=<span class="comment">2</span>)</code></pre>
+
+  <h3>stream() — None chunk for pass-through nodes</h3>
+  <p>When a node returns <code>{}</code> (empty dict — no state update), LangGraph streams its chunk value as <code>None</code>. Guard against it:</p>
+  <pre><code><span class="keyword">for</span> chunk <span class="keyword">in</span> app.<span class="fn">stream</span>(initial_state):
+    node_name = list(chunk.keys())[<span class="comment">0</span>]
+    node_data = chunk[node_name]
+    <span class="keyword">if</span> node_data <span class="keyword">is</span> <span class="keyword">None</span>:   <span class="comment"># coordinator returns {} → None in stream</span>
+        <span class="keyword">continue</span>
+    <span class="comment"># process node_data safely</span></code></pre>
+
+  <!-- INVOKE VS STREAM -->
+  <h2 id="invoke-vs-stream">invoke() vs stream()</h2>
+  <p>Two ways to run a compiled LangGraph app — they differ in <strong>when results become visible</strong> to your code.</p>
+
+  <table>
+    <tr><th>Mode</th><th>Returns</th><th>When you see results</th><th>Use case</th></tr>
+    <tr><td><code>invoke()</code></td><td>Final state dict</td><td>Only after ALL nodes complete</td><td>Simple scripts, batch jobs</td></tr>
+    <tr><td><code>stream()</code></td><td>Generator of state chunks</td><td>After EACH node completes</td><td>UI progress, monitoring, debugging</td></tr>
+    <tr><td><code>stream(mode="events")</code></td><td>Generator of fine events</td><td>Node start/end + LLM token stream</td><td>Real-time UIs, token-level streaming</td></tr>
+  </table>
+
+  <h3>invoke() — blocking, get everything at end</h3>
+  <pre><code>result = app.<span class="fn">invoke</span>({<span class="string">"topic"</span>: <span class="string">"quantum computing"</span>, <span class="string">"findings"</span>: [], <span class="string">"summary"</span>: <span class="string">""</span>})
+print(result[<span class="string">'summary'</span>])  <span class="comment"># printed only after all nodes finish</span></code></pre>
+
+  <h3>stream() — yields after each node</h3>
+  <pre><code><span class="keyword">for</span> chunk <span class="keyword">in</span> app.<span class="fn">stream</span>({<span class="string">"topic"</span>: <span class="string">"quantum computing"</span>, <span class="string">"findings"</span>: [], <span class="string">"summary"</span>: <span class="string">""</span>}):
+    <span class="comment"># chunk = {node_name: {state_delta}}</span>
+    node_name = list(chunk.keys())[0]
+    print(f<span class="string">"[{node_name} completed]"</span>)
+    print(chunk)</code></pre>
+
+  <p>With hub-and-spoke, <code>stream()</code> output looks like:</p>
+  <pre><code>{'news_agent':       {'findings': [Finding(agent='news', ...)]}}
+{'technical_agent':  {'findings': [Finding(agent='technical', ...)]}}
+{'examples_agent':   {'findings': [Finding(agent='examples', ...)]}}
+{'aggregator':       {'summary': 'Final merged summary...'}}</code></pre>
+
+  <p>Each agent's results appear as soon as <em>that agent</em> finishes. The aggregator still waits for all 3 (barrier), but your app code sees partial results stream in.</p>
+
+  <div class="note"><strong>invoke() vs stream() do NOT change execution.</strong> Both run the same graph with the same parallelism. The only difference is when results surface to your calling code.</div>
+
+  <!-- KAFKA AGENTS -->
+  <h2 id="kafka-agents">Agent-as-Consumer (Kafka) — Enterprise Pattern</h2>
+  <p>In-process LangGraph runs all agents in one Python process. For enterprise-scale systems, agents become <strong>independent services communicating via a message bus</strong> (Kafka, SQS, RabbitMQ).</p>
+
+  <div class="flow">
+    <span class="node">producer_agent</span> <span class="arrow">──publishes──▶</span> [<span class="state">tasks topic</span>] <span class="arrow">──subscribes──▶</span> <span class="node">news_agent</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">──subscribes──▶</span> <span class="node">technical_agent</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">──subscribes──▶</span> <span class="node">examples_agent</span><br>
+    <br>
+    <span class="node">consumer agents</span> <span class="arrow">──publish──▶</span> [<span class="state">findings topic</span>] <span class="arrow">──▶</span> <span class="node">aggregator_agent</span>
+  </div>
+
+  <h3>Why enterprises use this vs in-process</h3>
+  <table>
+    <tr><th>In-process (LangGraph)</th><th>Event-driven (Kafka/SQS)</th></tr>
+    <tr><td>All agents die if process crashes</td><td>Agents are independent services</td></tr>
+    <tr><td>Can't scale one agent independently</td><td>Scale news_agent × 10, others × 1</td></tr>
+    <tr><td>Work lost on crash</td><td>Kafka persists messages — agent replays on restart</td></tr>
+    <tr><td>Adding new agent requires redeployment</td><td>New consumer subscribes to topic, zero downtime</td></tr>
+  </table>
+
+  <h3>Common enterprise stacks</h3>
+  <table>
+    <tr><th>Bus</th><th>When</th></tr>
+    <tr><td>Apache Kafka</td><td>High-throughput, durable — Apple, Netflix, Uber scale</td></tr>
+    <tr><td>AWS SQS/SNS</td><td>AWS-native shops — easier to operate</td></tr>
+    <tr><td>Redis Streams</td><td>Lower volume, lower ops overhead</td></tr>
+    <tr><td>Azure Service Bus</td><td>Azure-native shops</td></tr>
+  </table>
+
+  <h3>PoC setup (Ticket #66)</h3>
+  <p>Kafka deployed as a pod on k3s at <code>192.168.1.156</code> (KRaft mode — no Zookeeper). Python agents on Mac connect to <code>192.168.1.156:9092</code> via NodePort.</p>
+  <pre><code><span class="comment"># Producer — publish research task</span>
+<span class="keyword">from</span> kafka <span class="keyword">import</span> KafkaProducer
+producer = <span class="fn">KafkaProducer</span>(bootstrap_servers=<span class="string">'192.168.1.156:9092'</span>, ...)
+producer.<span class="fn">send</span>(<span class="string">'research-tasks'</span>, {<span class="string">'topic'</span>: <span class="string">'quantum computing'</span>, <span class="string">'agent'</span>: <span class="string">'news'</span>})
+
+<span class="comment"># Consumer (news_agent) — subscribe and process</span>
+<span class="keyword">from</span> kafka <span class="keyword">import</span> KafkaConsumer
+consumer = <span class="fn">KafkaConsumer</span>(<span class="string">'research-tasks'</span>, group_id=<span class="string">'news-agent-group'</span>, ...)
+<span class="keyword">for</span> msg <span class="keyword">in</span> consumer:
+    <span class="comment"># search DuckDuckGo, publish Finding to 'research-findings' topic</span></code></pre>
+
+  <div class="note"><strong>Interview answer:</strong> "In a production enterprise setup I'd decouple these agents via SQS or Kafka rather than in-process LangGraph — for fault isolation, independent scaling, and durability. LangGraph is right for prototyping and lower-scale deployments."</div>
+
+  <!-- CHECKPOINTING -->
+  <h2 id="checkpointing">Checkpointing</h2>
+  <p>LangGraph can <strong>save the full graph state after every node</strong>. These snapshots allow crash recovery, replay from any point, and are required for HITL.</p>
+
+  <div class="flow">
+    <span class="node">generate_queries</span> <span class="arrow">→ [snapshot]→</span> <span class="node">research</span> <span class="arrow">→ [snapshot]→</span> <span class="node">summarise</span> <span class="arrow">→ [snapshot]</span>
+  </div>
+
+  <h3>Checkpointer options</h3>
+  <table>
+    <tr><th>Checkpointer</th><th>Storage</th><th>Use case</th></tr>
+    <tr><td><code>MemorySaver</code></td><td>Python dict (RAM)</td><td>Dev/testing — lost on restart</td></tr>
+    <tr><td><code>SqliteSaver</code></td><td>SQLite file</td><td>PoC — persists across restarts</td></tr>
+    <tr><td><code>PostgresSaver</code></td><td>Postgres DB</td><td>Production — concurrent access</td></tr>
+  </table>
+
+  <pre><code><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> MemorySaver
+
+memory = <span class="fn">MemorySaver</span>()
+app = graph.<span class="fn">compile</span>(checkpointer=memory)   <span class="comment"># snapshots after every node</span></code></pre>
+
+  <div class="warn"><strong>SqliteSaver API changed</strong> in newer LangGraph — <code>from_conn_string()</code> now returns a context manager, not a direct saver. Use <code>MemorySaver</code> for dev. For SQLite persistence use <code>sqlite3.connect()</code> directly and pass to <code>SqliteSaver(conn)</code>.</div>
+
+  <h3>Checkpointing without HITL</h3>
+  <p>Checkpointing is independent of HITL. Use it alone for crash recovery on long-running graphs — research jobs, multi-step pipelines with expensive API calls. HITL always requires a checkpointer, but checkpointing does not require HITL.</p>
+
+  <!-- HITL -->
+  <h2 id="hitl">Human-in-the-Loop (HITL)</h2>
+  <p>Pauses the graph at a specific node and waits for human input before continuing. Built on top of checkpointing — the paused state is saved to the checkpointer so it can be resumed.</p>
+
+  <div class="flow">
+    <span class="node">generate_queries</span> <span class="arrow">→</span> <span class="node">research</span> <span class="arrow">→ [PAUSE]</span> <span class="arrow">→</span> <span class="node">summarise</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↑<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;human reviews findings, optionally edits
+  </div>
+
+  <pre><code><span class="comment"># 1. Compile with interrupt point</span>
+app = graph.<span class="fn">compile</span>(checkpointer=memory, interrupt_before=[<span class="string">"summarise"</span>])
+
+<span class="comment"># 2. Phase 1 — run until interrupt</span>
+config = {<span class="string">"configurable"</span>: {<span class="string">"thread_id"</span>: <span class="string">"1"</span>}}
+app.<span class="fn">invoke</span>(initial_state, config)   <span class="comment"># stops before summarise</span>
+
+<span class="comment"># 3. Inspect state at pause point</span>
+state = app.<span class="fn">get_state</span>(config)
+findings = state.values[<span class="string">"findings"</span>]
+
+<span class="comment"># 4. Optionally inject human edits into checkpoint</span>
+app.<span class="fn">update_state</span>(config, {<span class="string">"findings"</span>: [<span class="string">"my own finding"</span>]})
+
+<span class="comment"># 5. Phase 2 — resume (None = load from checkpoint, don't restart)</span>
+result = app.<span class="fn">invoke</span>(<span class="keyword">None</span>, config)</code></pre>
+
+  <div class="note"><strong>invoke(state, config) vs invoke(None, config):</strong> Passing a state dict starts fresh. Passing <code>None</code> tells LangGraph to load the latest snapshot for this thread_id from the checkpointer and resume from there. Never pass the state dict again on resume — it would restart from the beginning.</div>
+
+  <!-- THREAD ID -->
+  <h2 id="config">thread_id &amp; config</h2>
+  <p>The config dict is passed to every <code>invoke()</code> call when a checkpointer is attached. It identifies which checkpoint row to read/write.</p>
+
+  <pre><code>config = {<span class="string">"configurable"</span>: {<span class="string">"thread_id"</span>: <span class="string">"1"</span>}}</code></pre>
+
+  <table>
+    <tr><th>Key</th><th>Meaning</th></tr>
+    <tr><td><code>"configurable"</code></td><td>LangGraph's namespace for user-defined runtime settings. Other top-level keys: <code>"callbacks"</code>, <code>"recursion_limit"</code>, <code>"tags"</code></td></tr>
+    <tr><td><code>"thread_id"</code></td><td>Identifies this run's checkpoint row. Think: session ID, conversation ID, user ID</td></tr>
+  </table>
+
+  <p>The checkpointer SQLite/Postgres table is a <strong>shared lookup table</strong>. Multiple program instances write to it, each identified by thread_id. In a web app, each user gets their own thread_id — their state is isolated even though they share the same DB.</p>
+
+  <div class="warn"><strong>Reusing thread_id</strong> on a second run means LangGraph finds a completed checkpoint and may skip Phase 1. Delete the DB or change thread_id between test runs.</div>
+
+  <h3>Time travel — replay from any snapshot</h3>
+  <pre><code>history = list(app.<span class="fn">get_state_history</span>(config))
+<span class="keyword">for</span> snapshot <span class="keyword">in</span> history:
+    print(snapshot.next)           <span class="comment"># which node runs next</span>
+    print(snapshot.values)         <span class="comment"># full state at this point</span>
+
+<span class="comment"># Resume from an earlier snapshot</span>
+earlier = history[-2]
+app.<span class="fn">invoke</span>(<span class="keyword">None</span>, earlier.config)   <span class="comment"># re-runs from that point</span></code></pre>
+
+  <br><br>
+  <p style="color: #4a5080; font-size: 13px;">Last updated: 2026-04-17 — P3 ResearchBot complete (checkpointing, HITL, thread_id, P3 quiz 6.5/7)</p>
+</main>
+
+</body>
+</html>

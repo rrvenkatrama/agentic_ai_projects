@@ -14,7 +14,7 @@ No passive video courses — learning by doing, with deeplearning.ai shorts on-d
 - Goal: Agentic AI Engineer positions within 4 months (by ~July 2026)
 
 ## Kanban Tracking
-- Tool: MyKanban at http://192.168.1.150:3002
+- Tool: MyKanban at http://192.168.1.156:3002
 - Project: "AI Engineering Readiness" (Project ID: 3)
 - Login: rajramani@msn.com / yanni123
 - All 31 tickets created (IDs #17–#47)
@@ -87,21 +87,40 @@ All three API keys are in .env: ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KE
 1. **Interactive coding** — Give a goal + any needed context/signature. Rajesh writes it. Review after.
 2. **End-of-project quiz** — Before starting next project, quiz on concepts from the one just completed.
    Questions should reference actual code from the project, not abstract theory.
+3. **Detailed step-by-step instructions** — For every coding task, give numbered steps with: what to write, what it does, why it's needed. Include code snippets per step. Not high-level bullets.
 
 ## Daily Plan Structure
 Each session: Claude gives the day's task, Rajesh codes it, concepts explained inline.
 Weekly plan tickets in Kanban track the week's goals.
 
-## Current Status (as of 2026-04-01)
+## Current Status (as of 2026-04-17)
 - [x] Repo created, venv set up, workspace file created
-- [x] Kanban project + 31 tickets created
+- [x] Kanban project + 33 tickets created (IDs #17–#50, #65, #66)
 - [x] .env created with ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY
-- [x] Dependencies installed: anthropic, openai, google-generativeai, pydantic, python-dotenv
-- [x] P1 ToolBot — IN PROGRESS (Ticket #17)
+- [x] Dependencies installed: anthropic, openai, google-generativeai, pydantic, python-dotenv, fastapi, uvicorn, langchain*, kafka-python
+- [x] P1 ToolBot — COMPLETE (Tickets #17-20, quiz 7/7)
   - [x] Phase A (Claude): agent.py with tool loop — DONE (2026-03-30)
   - [x] Phase A+: Add streaming to agent.py — DONE (2026-03-30)
   - [x] Phase B: OpenAI function calling version — DONE (2026-03-31)
   - [x] Phase C: Gemini function calling version — DONE (2026-03-31)
+- [x] P2 DocTalk — COMPLETE (Tickets #21-24, quiz 6.5/8)
+  - [x] embed_intro.py — embeddings + cosine similarity from scratch
+  - [x] rag_simple.py — chunking + retrieval, no LangChain
+  - [x] rag_langchain.py — LangChain + Qdrant retrieval pipeline
+  - [x] doctalk.py — full RAG with Claude + citations
+  - [x] doctalk_langchain.py — LCEL chain version
+  - [x] app.py — FastAPI web app with upload + chat UI
+  - [x] langchain101.html — LangChain components + LCEL reference
+- [x] P3 ResearchBot — COMPLETE (Tickets #25-27, #65, #66, #28 closed, quiz 6.5/7)
+  - [x] graph_intro.py — LangGraph StateGraph basics
+  - [x] graph_intro_annotate.py — Annotated state + fan-out demo
+  - [x] langgraph101.html — full LangGraph reference
+  - [x] research_bot.py — DuckDuckGo search + conditional routing
+  - [x] hub_spoke.py — hub-and-spoke PoC invoke+stream
+  - [x] kafka_agents.py — agent-as-consumer on k3s Kafka
+  - [x] research_bot_hitl.py — checkpointing + HITL
+  - [x] hub_spoke_kafka_agents.html — Kafka reference doc
+- [ ] P4 StockSage — NEXT (Tickets #29-33)
 
 ## Related Projects
 - Onemyle / reel-analysis-lib: ~/ai/Onemyle/reel-analysis-lib (real-world agent deployment)

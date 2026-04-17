@@ -555,4 +555,293 @@ from google import genai          # new
 | Tool schema | explicit JSON Schema | explicit JSON Schema | Python functions or explicit |
 
 ---
-*Last updated: 2026-03-31 — covers P1 ToolBot (Phase A, A+, B, C)*
+
+## Embeddings
+
+### What an embedding is
+A list of floats that represents a string's position in semantic space.
+- Input: string
+- Output: `list[float]` — 1536 numbers for `text-embedding-3-small`
+- Vectors with similar meaning point in nearly the same direction
+
+### OpenAI embedding API call
+```python
+response = client.embeddings.create(input=text, model="text-embedding-3-small")
+vector = response.data[0].embedding   # list[float], length 1536
+```
+
+### Local embeddings (no API, no cost)
+```python
+from sentence_transformers import SentenceTransformer
+model = SentenceTransformer("all-MiniLM-L6-v2")  # 384 dimensions
+vector = model.encode("some text")   # runs on your machine
+```
+Use local when: cost matters, data is sensitive, or no internet.
+
+### Embedding model comparison
+| Model | Dims | Type | Cost |
+|---|---|---|---|
+| OpenAI `text-embedding-3-small` | 1536 | API | Per token |
+| OpenAI `text-embedding-3-large` | 3072 | API | Per token |
+| Google `text-embedding-004` | 768 | API | Per token |
+| `all-MiniLM-L6-v2` | 384 | Local | Free |
+| Anthropic Claude | — | N/A | **No embedding API** |
+
+### Hard rule: never mix embedding models
+You must use the same model for indexing AND querying. Different models produce vectors in incompatible spaces — mixing them makes cosine similarity scores meaningless.
+
+```
+✅  Index with text-embedding-3-small → query with text-embedding-3-small
+❌  Index with text-embedding-3-small → query with all-MiniLM-L6-v2
+```
+
+### Cosine similarity
+```python
+def cosine_similarity(a: list[float], b: list[float]) -> float:
+    dot = sum(a[i] * b[i] for i in range(len(a)))
+    mag_a = math.sqrt(sum(x**2 for x in a))
+    mag_b = math.sqrt(sum(x**2 for x in b))
+    return dot / (mag_a * mag_b)
+```
+- Measures the **angle** between two vectors, not distance
+- Dividing by magnitude normalizes for document length — you measure *meaning*, not *size*
+- Returns 1.0 for identical vectors (angle = 0°, cos(0°) = 1.0)
+- Score guide: 1.0 = identical, 0.8+ = very similar, 0.5–0.7 = related, <0.3 = unrelated
+
+---
+
+## RAG (Retrieval Augmented Generation)
+
+### What it solves
+LLMs don't know your private documents and can't fit a 100-page PDF in a prompt. RAG retrieves the relevant parts first, then sends only those to the LLM.
+
+### Two-phase pipeline
+```
+INDEXING (once):   document → chunk → embed each chunk → store in vector DB
+QUERYING (per Q):  question → embed → find top-K similar chunks → LLM → answer
+```
+
+### Why chunks, not full documents
+- Token limits on embedding APIs
+- A small focused chunk scores higher similarity than a large unfocused one
+- Precision: find 2–3 sentences that answer the question, not the whole document
+
+### Chunk size tradeoff
+| Smaller chunks | Larger chunks |
+|---|---|
+| More precise retrieval | More context per chunk |
+| May lose surrounding context | May dilute the similarity score |
+| More API calls to embed | Fewer chunks to manage |
+
+Typical starting point: 2–5 sentences, or 256–512 tokens.
+
+### Chunking strategy
+Never embed full documents or individual sentences — embed *chunks* (3–10 sentences / 256–512 tokens).
+
+| Granularity | Problem |
+|---|---|
+| Single sentences | Too little context — not self-contained |
+| Full document | Answer gets diluted in averaged vector |
+| **Chunks** | Self-contained + specific = high retrieval precision |
+
+**Default starting point:** 256–512 tokens, 50-token overlap between chunks.
+
+**Overlap matters:** consecutive chunks share 50 characters/tokens — so context at the end of one chunk is repeated at the start of the next. Answers that straddle a boundary aren't lost.
+
+**Self-contained test:** read the chunk in isolation — would it make sense as a standalone answer?
+
+**LangChain splitter:**
+```python
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+chunks = splitter.split_text(text)
+```
+
+### RAG vs fine-tuning
+| | RAG | Fine-tuning |
+|---|---|---|
+| Updates knowledge | Add to vector DB | Retrain model |
+| Cost | Embedding + retrieval | Expensive GPU training |
+| Accuracy | Cites sources | Bakes in knowledge |
+| Use when | Dynamic documents, Q&A | Style/behavior changes |
+
+### LangChain + Qdrant RAG stack (used in DocTalk)
+
+| Component | Package | Role |
+|---|---|---|
+| `PyPDFLoader` | `langchain-community` | Loads PDF → list of `Document` objects (one per page) |
+| `RecursiveCharacterTextSplitter` | `langchain-text-splitters` | Splits pages into chunks |
+| `OpenAIEmbeddings` | `langchain-openai` | Calls OpenAI API to convert text → 1536-float vector |
+| `QdrantClient` | `qdrant-client` | Creates/manages in-memory vector store |
+| `QdrantVectorStore` | `langchain-qdrant` | LangChain wrapper over Qdrant — add/search documents |
+
+**LangChain's role:** orchestration + unified API. Actual vector storage and cosine math is Qdrant's job. LangChain lets you swap Qdrant for Pinecone by changing one line.
+
+**In-memory Qdrant** (`QdrantClient(":memory:")`) — no API key, no server, runs in RAM. Only needs a key for Qdrant Cloud.
+
+**`text-embedding-3-small`** — preferred OpenAI embedding model (better and cheaper than `ada-002`). Outputs 1536 dimensions → `VectorParams(size=1536, distance=Distance.COSINE)`.
+
+### Full RAG pipeline with generation (doctalk.py pattern)
+
+```python
+# 1. Index
+loader = PyPDFLoader("doc.pdf")
+documents = loader.load()
+chunks = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50).split_documents(documents)
+client = QdrantClient(":memory:")
+client.create_collection("docs", vectors_config=VectorParams(size=1536, distance=Distance.COSINE))
+embedding = OpenAIEmbeddings(model="text-embedding-3-small")
+vector_store = QdrantVectorStore(client=client, collection_name="docs", embedding=embedding)
+vector_store.add_documents(chunks)
+
+# 2. Retrieve
+results = vector_store.similarity_search_with_score(question, k=3)
+
+# 3. Format context with citations
+context = ""
+for doc, score in results:
+    context += f"[Page {doc.metadata.get('page','?')}, score: {score:.4f}]\n{doc.page_content}\n\n---\n\n"
+
+# 4. Generate with Claude
+response = anthropic.Anthropic().messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=1024,
+    system="Answer using only the context provided. Cite page numbers.",
+    messages=[{"role": "user", "content": f"Context:\n{context}\n\nQuestion: {question}"}]
+)
+print(response.content[0].text)
+```
+
+**Why cosine similarity is fast:** embedding is slow (neural network + API call, done once at index time). Cosine similarity is just a dot product on vectors already in RAM — milliseconds regardless of corpus size.
+
+**Citation pattern:** page numbers come from `doc.metadata['page']` — injected into the context string so Claude can reference them in its answer.
+
+---
+
+## LangGraph
+
+### What it is
+A framework for building stateful multi-step agent workflows as directed graphs. Replaces LangChain's old Chains/agents API. Built on LangChain core.
+
+### Core pattern
+```
+State (TypedDict) → flows through → Nodes (functions) → connected by → Edges
+```
+
+### Key concepts
+
+| Concept | What it is |
+|---|---|
+| `StateGraph(Schema)` | Creates the graph. Argument is the state schema — NOT inheritance |
+| `TypedDict` | Defines the shape of the shared state dict |
+| Node | Plain Python function: takes full state, returns dict of changed fields only |
+| Fixed edge | `add_edge("a", "b")` — always go from a to b |
+| Conditional edge | `add_conditional_edges("a", router_fn)` — branch based on state |
+| `set_entry_point()` | Which node runs first |
+| `END` | Terminal constant — graph stops when an edge points here |
+| `compile()` | Validates graph, returns a Runnable with `.invoke()` |
+
+### State update rules
+- Scalar fields (`str`, `int`) — **overwritten** when a node returns them
+- List fields with `Annotated[list, operator.add]` — **appended** when a node returns them
+- Fields not returned by a node — **unchanged**
+
+```python
+from typing import TypedDict, Annotated
+import operator
+
+class ResearchState(TypedDict):
+    topic: str                                       # overwrite
+    search_queries: Annotated[list[str], operator.add]   # append
+    findings: Annotated[list[str], operator.add]         # append
+    summary: str                                     # overwrite
+```
+
+### Node signature
+```python
+def my_node(state: ResearchState) -> dict:
+    # read from state
+    topic = state['topic']
+    # return only what changed
+    return {"search_queries": ["query1", "query2"]}
+```
+
+### State passing — immutability rule
+Python passes dicts by object reference, so `state` inside a node *is* the live dict. But **never mutate it in place** — always return a delta:
+```python
+# CORRECT — return a delta dict
+def generate_queries(state: ResearchState) -> dict:
+    return {"search_queries": ["q1", "q2"]}
+
+# WRONG — mutating in place
+def generate_queries(state: ResearchState) -> dict:
+    state["search_queries"] = ["q1", "q2"]  # breaks reducers, checkpointing, parallel nodes
+    return {}
+```
+Why it breaks:
+- **Reducers** (`operator.add`) never run — the merge step is bypassed
+- **Checkpointing** — LangGraph saves state snapshots between nodes; in-place mutation corrupts them
+- **Parallel branches** — two nodes running concurrently would race on the same dict
+
+Mental model: treat state as **read-only inside a node**. Return only what changed. Same pattern as React's `setState`.
+
+### Execution flow
+```
+invoke(initial_state)
+    │
+    ▼
+Node 1 → reads state, returns partial update → LangGraph merges
+    │
+    ▼  (edge)
+Node 2 → reads updated state, returns partial update → LangGraph merges
+    │
+    ▼  (edge)
+Node 3 → reads updated state, returns partial update → LangGraph merges
+    │
+    ▼  (edge to END)
+invoke() returns final state dict
+```
+
+### Conditional edges — routing
+```python
+def route_summary(state: ResearchState) -> str:
+    if len(state['findings']) >= 11:
+        return "detailed_summary"
+    else:
+        return "brief_summary"
+
+# Without dict — router return values must match node names exactly
+graph.add_conditional_edges("research", route_summary)
+
+# With dict — translation layer (router returns readable strings, dict maps to node names)
+graph.add_conditional_edges("research", route_summary, {
+    "enough": "detailed_summary",
+    "not_enough": "brief_summary"
+})
+# The dict is a lookup table — LangGraph reads it, not Python
+```
+- Router is pure logic — reads state, returns a string, no side effects
+- Both terminal nodes need their own `add_edge(..., END)`
+
+### Mermaid diagram
+```python
+print(app.get_graph().draw_mermaid())  # paste output into mermaid.live
+```
+- `-->` solid arrow = fixed edge
+- `-.->` dashed arrow = conditional edge (decided at runtime by router)
+- Shows graph shape only — condition logic inside router is NOT in the diagram
+- Edge labels not auto-generated — edit raw Mermaid output by hand to add them
+
+### LangGraph vs LangChain Chains
+| | Chains | LangGraph |
+|---|---|---|
+| Structure | Linear only | Graph — branch + loop |
+| State | Implicit | Explicit TypedDict |
+| Human-in-the-loop | Awkward | Built-in |
+| Checkpointing | No | Yes |
+
+### "Runnable" — not a Python built-in
+`Runnable` is a LangChain/LangGraph concept — any object with `.invoke()`. `graph.compile()` returns a Runnable. In plain Python the equivalent is any callable (object with `__call__`). LangGraph standardises on `.invoke()` as the interface.
+
+---
+*Last updated: 2026-04-12 — P3 conditional routing, Mermaid diagrams (research_bot.py)*
