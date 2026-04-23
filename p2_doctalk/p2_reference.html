@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>P2 DocTalk — Reference Guide</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.7; }
+    .sidebar { position: fixed; top: 0; left: 0; width: 260px; height: 100vh; background: #1a1d2e; padding: 24px 16px; overflow-y: auto; border-right: 1px solid #2d3148; }
+    .sidebar h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #7c83a8; margin-bottom: 16px; }
+    .sidebar a { display: block; padding: 6px 10px; color: #a0aec0; text-decoration: none; font-size: 13.5px; border-radius: 6px; margin-bottom: 2px; }
+    .sidebar a:hover { background: #2d3148; color: #e2e8f0; }
+    .sidebar .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #4a5080; margin: 16px 0 6px 10px; }
+    main { margin-left: 260px; padding: 48px 56px; max-width: 900px; }
+    h1 { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .subtitle { color: #7c83a8; font-size: 14px; margin-bottom: 48px; }
+    h2 { font-size: 20px; font-weight: 600; color: #fff; margin: 48px 0 16px; padding-top: 48px; border-top: 1px solid #2d3148; }
+    h2:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+    h3 { font-size: 15px; font-weight: 600; color: #a0aec0; margin: 24px 0 10px; }
+    p { color: #cbd5e0; margin-bottom: 14px; font-size: 15px; }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; background: #1e2130; color: #7dd3fc; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    pre { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 20px; margin: 16px 0; overflow-x: auto; }
+    pre code { background: none; padding: 0; color: #e2e8f0; font-size: 13.5px; line-height: 1.6; }
+    .keyword { color: #c084fc; }
+    .string { color: #86efac; }
+    .comment { color: #4a5080; font-style: italic; }
+    .fn { color: #60a5fa; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+    th { background: #1e2130; color: #a0aec0; text-align: left; padding: 10px 14px; border-bottom: 1px solid #2d3148; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    td { padding: 10px 14px; border-bottom: 1px solid #1e2130; color: #cbd5e0; }
+    tr:hover td { background: #1a1d2e; }
+    .callout { border-left: 3px solid #3b82f6; background: #1e2130; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+    .callout.green { border-color: #22c55e; }
+    .callout.yellow { border-color: #eab308; }
+    .callout.red { border-color: #ef4444; }
+    .callout p { margin: 0; font-size: 14px; }
+    .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 600; margin-right: 6px; }
+    .tag.blue { background: #1d4ed8; color: #93c5fd; }
+    .tag.purple { background: #6d28d9; color: #c4b5fd; }
+    .tag.green { background: #166534; color: #86efac; }
+    .diagram { font-family: "JetBrains Mono", monospace; background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 20px; margin: 16px 0; color: #94a3b8; font-size: 13px; line-height: 1.8; white-space: pre; overflow-x: auto; }
+    .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+    .vs-box { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 20px; }
+    .vs-box h4 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+    .vs-box.blue h4 { color: #60a5fa; }
+    .vs-box.purple h4 { color: #c084fc; }
+    .vs-box ul { padding-left: 18px; color: #94a3b8; font-size: 14px; }
+    .vs-box li { margin-bottom: 6px; }
+    hr { border: none; border-top: 1px solid #2d3148; margin: 32px 0; }
+  </style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <h2>P2 DocTalk</h2>
+  <a href="#embeddings">What Are Embeddings?</a>
+  <a href="#why-not-python">Why Not a Python Function?</a>
+  <a href="#how-models-run">How Embedding Models Run</a>
+  <a href="#model-types">Encoder vs Generator</a>
+  <a href="#langchain-vs-langgraph">LangChain vs LangGraph</a>
+  <a href="#langchain-abstraction">LangChain Abstraction</a>
+  <div class="section-label">RAG Pipeline</div>
+  <a href="#rag">What Is RAG?</a>
+  <a href="#chunking">Chunking Strategy</a>
+  <a href="#cosine">Cosine Similarity</a>
+  <div class="section-label">Models</div>
+  <a href="#model-table">Embedding Model Comparison</a>
+  <a href="#mixing-models">Never Mix Models</a>
+  <div class="section-label">Python</div>
+  <a href="#zip">zip()</a>
+  <a href="#lambda">lambda</a>
+</nav>
+
+<main>
+  <h1>P2 DocTalk — Reference Guide</h1>
+  <p class="subtitle">Embeddings · RAG · Chunking · LangChain · LangGraph &nbsp;|&nbsp; Built during P2 sessions</p>
+
+  <!-- EMBEDDINGS -->
+  <h2 id="embeddings">What Are Embeddings?</h2>
+  <p>An embedding converts text into a fixed-length list of floats (a vector) such that <strong>similar meanings produce vectors that point in the same direction</strong>.</p>
+  <div class="diagram">Input:   "Python supports multiple programming paradigms"
+Output:  [-0.032, 0.118, -0.041, 0.076, 0.021, ...]  ← 384 or 1536 floats
+
+Input:   "What does Python support?"
+Output:  [-0.029, 0.112, -0.038, 0.071, 0.019, ...]  ← different numbers, similar direction</div>
+  <p>The numbers themselves are meaningless in isolation. What matters is the geometric relationship between vectors — similar meaning = small angle = high cosine similarity.</p>
+
+  <!-- WHY NOT PYTHON -->
+  <h2 id="why-not-python">Why Can't You Use a Plain Python Function?</h2>
+  <p>You can produce a vector with a Python function — but it would be useless for retrieval.</p>
+  <pre><code><span class="comment"># This makes a vector — but it's garbage for similarity search</span>
+<span class="keyword">def</span> <span class="fn">embed</span>(text):
+    <span class="keyword">return</span> [float(ord(c)) for c in text[:384]]  <span class="comment"># ASCII values</span></code></pre>
+  <p>The hard problem isn't <em>making</em> a vector — it's making vectors where <strong>similar meaning = similar direction</strong>.</p>
+  <table>
+    <thead><tr><th>Text A</th><th>Text B</th><th>Real Embeddings</th><th>Naive Function</th></tr></thead>
+    <tbody>
+      <tr><td>"car"</td><td>"automobile"</td><td>similarity: 0.95</td><td>similarity: ~0.02</td></tr>
+      <tr><td>"bank" (river)</td><td>"bank" (money)</td><td>different vectors</td><td>same vector</td></tr>
+      <tr><td>"Python paradigms"</td><td>"what does Python support?"</td><td>similarity: 0.72</td><td>similarity: ~0</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <p>The vector is only useful because of what the model <em>learned</em>, not because of the math that produces it. A model has encoded the statistical relationships between words across billions of examples into the geometry of vector space.</p>
+  </div>
+
+  <!-- HOW MODELS RUN -->
+  <h2 id="how-models-run">How Embedding Models Run — Inline vs Server</h2>
+  <p>Three ways to run an embedding model:</p>
+
+  <h3>1. API call (remote server)</h3>
+  <pre><code><span class="comment"># Hits OpenAI servers — costs money, requires internet</span>
+response = client.embeddings.create(input=text, model=<span class="string">"text-embedding-3-small"</span>)
+vector = response.data[0].embedding</code></pre>
+
+  <h3>2. Inline — runs inside your Python process</h3>
+  <pre><code><span class="keyword">from</span> sentence_transformers <span class="keyword">import</span> SentenceTransformer
+
+model = SentenceTransformer(<span class="string">"all-MiniLM-L6-v2"</span>)
+<span class="comment"># Downloads weights once, loads into RAM, runs locally</span>
+vector = model.encode(<span class="string">"Python supports multiple programming paradigms"</span>)
+print(len(vector))   <span class="comment"># 384</span>
+print(vector[:5])    <span class="comment"># [-0.032, 0.118, -0.041, 0.076, 0.021]</span></code></pre>
+  <div class="diagram">your script
+  └── LangChain HuggingFaceEmbeddings
+        └── sentence-transformers library
+              └── PyTorch / model weights (in RAM)
+                    └── runs on CPU (or GPU if available)</div>
+  <p>No separate server. No HTTP call. The model runs as part of your script.</p>
+
+  <h3>3. Via server (Ollama / LM Studio)</h3>
+  <pre><code><span class="comment"># Hits Ollama running as a separate process on port 11434</span>
+<span class="keyword">from</span> langchain_community.embeddings <span class="keyword">import</span> OllamaEmbeddings
+embeddings = OllamaEmbeddings(model=<span class="string">"nomic-embed-text"</span>)</code></pre>
+  <table>
+    <thead><tr><th>Approach</th><th>Setup</th><th>Cost</th><th>Best For</th></tr></thead>
+    <tbody>
+      <tr><td>API (OpenAI)</td><td>API key only</td><td>Per token</td><td>Production, quality</td></tr>
+      <tr><td>Inline (sentence-transformers)</td><td>pip install</td><td>Free</td><td>Privacy, small models (&lt;200MB)</td></tr>
+      <tr><td>Ollama / LM Studio</td><td>Separate process</td><td>Free</td><td>Larger local models, persistent</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ENCODER VS GENERATOR -->
+  <h2 id="model-types">Encoder Models vs Generative Models</h2>
+  <p>Embedding models and LLMs are fundamentally different architectures — they don't use prompts the same way.</p>
+  <div class="vs">
+    <div class="vs-box blue">
+      <h4>Generative LLMs (GPT-4, Claude)</h4>
+      <ul>
+        <li>Decoder-only transformer</li>
+        <li>Prompt in → tokens generated one at a time</li>
+        <li>Output: text</li>
+        <li>Used for: answering questions, writing, reasoning</li>
+      </ul>
+    </div>
+    <div class="vs-box purple">
+      <h4>Embedding Models (all-MiniLM, text-embedding-3)</h4>
+      <ul>
+        <li>Encoder-only transformer</li>
+        <li>Text in → single forward pass → fixed vector out</li>
+        <li>Output: list of floats</li>
+        <li>Used for: semantic search, clustering, classification</li>
+      </ul>
+    </div>
+  </div>
+  <p>No generation, no prompt-response loop. You feed raw text in, get a fixed-size vector out. Internally it's closer to image recognition than ChatGPT.</p>
+  <div class="callout yellow">
+    <p>Some embedding models (like OpenAI's) accept an optional instruction prefix — e.g. <code>"Represent this for retrieval: "</code> — but that's just a text prepend, not a prompt in the generative sense. No response is generated.</p>
+  </div>
+
+  <!-- LANGCHAIN VS LANGGRAPH -->
+  <h2 id="langchain-vs-langgraph">LangChain vs LangGraph</h2>
+  <div class="vs">
+    <div class="vs-box blue">
+      <h4>LangChain — Toolkit / Lego Bricks</h4>
+      <ul>
+        <li>Document loaders, text splitters, vector stores</li>
+        <li>Chains: pipe components together</li>
+        <li>Agents: LLM + tools, basic loop</li>
+        <li>Uniform interface — swap models without changing pipeline code</li>
+        <li>Think: <em>components</em></li>
+      </ul>
+    </div>
+    <div class="vs-box purple">
+      <h4>LangGraph — Control Flow Engine</h4>
+      <ul>
+        <li>Built on top of LangChain</li>
+        <li>Models your agent as a graph: nodes + edges</li>
+        <li>Handles branching, loops, human-in-the-loop, checkpointing</li>
+        <li>State machine / flowchart for agents</li>
+        <li>Think: <em>orchestration</em></li>
+      </ul>
+    </div>
+  </div>
+  <div class="diagram">LangGraph (control flow — when to run what)
+  └── Nodes use LangChain components (retrievers, LLMs, embeddings)
+        └── LangChain calls actual models (OpenAI, Claude, local)</div>
+  <p>Analogy: LangChain gives you the parts. LangGraph gives you the control flow to orchestrate those parts into something that can loop, branch, and recover from errors.</p>
+  <p>You'll use LangChain components (embeddings, retrievers, LLMs) as building blocks <em>inside</em> LangGraph nodes in P3 ResearchBot.</p>
+
+  <!-- LANGCHAIN ABSTRACTION -->
+  <h2 id="langchain-abstraction">LangChain's Abstraction Value</h2>
+  <p>LangChain doesn't replace the models — it gives them a uniform interface so the rest of your code doesn't change when you swap providers.</p>
+  <pre><code><span class="comment"># OpenAI embeddings</span>
+<span class="keyword">from</span> langchain_openai <span class="keyword">import</span> OpenAIEmbeddings
+embeddings = OpenAIEmbeddings()
+
+<span class="comment"># Swap to local — same interface, rest of code unchanged</span>
+<span class="keyword">from</span> langchain_community.embeddings <span class="keyword">import</span> HuggingFaceEmbeddings
+embeddings = HuggingFaceEmbeddings(model_name=<span class="string">"all-MiniLM-L6-v2"</span>)
+
+<span class="comment"># Or Ollama — still the same interface</span>
+<span class="keyword">from</span> langchain_community.embeddings <span class="keyword">import</span> OllamaEmbeddings
+embeddings = OllamaEmbeddings(model=<span class="string">"nomic-embed-text"</span>)</code></pre>
+  <p>The value LangChain adds over raw API calls:</p>
+  <ul style="color: #cbd5e0; padding-left: 20px; margin-bottom: 14px; font-size: 15px;">
+    <li style="margin-bottom: 8px;"><strong>Swappability</strong> — change one line to switch providers</li>
+    <li style="margin-bottom: 8px;"><strong>Pipeline glue</strong> — loaders → splitters → vector stores → retrievers chain together cleanly</li>
+    <li style="margin-bottom: 8px;"><strong>Less boilerplate</strong> — no manual <code>zip(chunks, embeddings)</code> loops like in <code>rag_simple.py</code></li>
+  </ul>
+
+  <!-- RAG -->
+  <h2 id="rag">What Is RAG?</h2>
+  <p><strong>RAG = Retrieval Augmented Generation</strong></p>
+  <p>Problem: LLMs don't know your private documents. You can't fit a 100-page PDF into a prompt. RAG is the standard solution — find the relevant parts first, then send only those to the LLM.</p>
+  <div class="diagram">INDEXING (done once)                    QUERYING (per user question)
+────────────────────────────            ─────────────────────────────
+Document                                User question
+    │                                       │
+    ▼                                       ▼
+Split into chunks                      Embed the question
+    │                                       │
+    ▼                                       ▼
+Embed each chunk                       Compare against chunk embeddings
+    │                                       │
+    ▼                                       ▼
+Store in vector DB                     Find top-K most similar chunks
+                                            │
+                                            ▼
+                                       Send chunks + question → LLM
+                                            │
+                                            ▼
+                                         Answer (with citations)</div>
+
+  <!-- CHUNKING -->
+  <h2 id="chunking">Chunking Strategy</h2>
+  <p>You almost never embed individual sentences or full documents. Chunks are the sweet spot — typically 256–512 tokens.</p>
+  <table>
+    <thead><tr><th>Granularity</th><th>Problem</th></tr></thead>
+    <tbody>
+      <tr><td>Single sentences</td><td>Too little context. "It was released in 1991." — released <em>what</em>?</td></tr>
+      <tr><td>Full document / page</td><td>Too much noise. Answer gets diluted into average of 500 sentences.</td></tr>
+      <tr><td><strong>Chunks (256–512 tokens)</strong></td><td>Self-contained. Small enough to score high against a focused query.</td></tr>
+    </tbody>
+  </table>
+  <h3>Overlap</h3>
+  <p>Use ~50 token overlap between chunks so answers that straddle boundaries aren't lost.</p>
+  <div class="diagram">Chunk 1: tokens   0–256
+Chunk 2: tokens 206–462  ← 50-token overlap with chunk 1
+Chunk 3: tokens 412–668  ← 50-token overlap with chunk 2</div>
+  <h3>LangChain RecursiveCharacterTextSplitter</h3>
+  <pre><code>splitter = RecursiveCharacterTextSplitter(
+    chunk_size=500,
+    chunk_overlap=50,
+    separators=[<span class="string">"\n\n"</span>, <span class="string">"\n"</span>, <span class="string">". "</span>, <span class="string">" "</span>]  <span class="comment"># tries in order</span>
+)</code></pre>
+  <p>Tries paragraph breaks first, then line breaks, then sentences, then words — preserving semantic boundaries.</p>
+  <h3>Self-contained test</h3>
+  <p>Read a chunk in isolation. Ask: <em>"If someone asked a question answered by this chunk, would this chunk alone make sense as an answer?"</em> If not, adjust chunk size.</p>
+
+  <!-- COSINE -->
+  <h2 id="cosine">Cosine Similarity</h2>
+  <pre><code>cosine_similarity(a, b) = dot(a, b) / (magnitude(a) * magnitude(b))</code></pre>
+  <p>Measures the <strong>angle</strong> between two vectors, not the distance. Dividing by magnitude normalizes for document length — you're measuring direction (meaning), not size.</p>
+  <table>
+    <thead><tr><th>Score</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>1.0</td><td>Identical direction (same meaning)</td></tr>
+      <tr><td>0.8–0.9</td><td>Very similar meaning</td></tr>
+      <tr><td>0.5–0.7</td><td>Related topic</td></tr>
+      <tr><td>0.1–0.3</td><td>Unrelated</td></tr>
+      <tr><td>0.0</td><td>Completely orthogonal</td></tr>
+      <tr><td>&lt; 0</td><td>Opposite meaning (rare)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- MODEL TABLE -->
+  <h2 id="model-table">Embedding Model Comparison</h2>
+  <table>
+    <thead><tr><th>Model</th><th>Dimensions</th><th>How it runs</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr><td><code>text-embedding-3-small</code></td><td>1536</td><td>OpenAI API</td><td>Per token</td></tr>
+      <tr><td><code>text-embedding-3-large</code></td><td>3072</td><td>OpenAI API</td><td>Per token (more)</td></tr>
+      <tr><td><code>text-embedding-004</code></td><td>768</td><td>Google API</td><td>Per token</td></tr>
+      <tr><td><code>all-MiniLM-L6-v2</code></td><td>384</td><td>Inline (sentence-transformers)</td><td>Free</td></tr>
+      <tr><td><code>nomic-embed-text</code></td><td>768</td><td>Ollama (local server)</td><td>Free</td></tr>
+      <tr><td>Anthropic Claude</td><td>—</td><td>No embedding API</td><td>N/A</td></tr>
+    </tbody>
+  </table>
+
+  <!-- MIXING MODELS -->
+  <h2 id="mixing-models">Never Mix Embedding Models</h2>
+  <div class="callout red">
+    <p><strong>Hard rule:</strong> you must use the same model for both indexing and querying. Each model creates its own "map" of semantic space. Mixing models is like comparing GPS coordinates from two different planets — the cosine scores are meaningless.</p>
+  </div>
+  <pre><code><span class="comment"># Correct</span>
+index documents  → text-embedding-3-small
+embed query      → text-embedding-3-small  ✅
+
+<span class="comment"># Wrong — results are garbage</span>
+index documents  → text-embedding-3-small
+embed query      → all-MiniLM-L6-v2        ❌</code></pre>
+
+  <!-- ZIP -->
+  <h2 id="zip">Python: zip()</h2>
+  <p>Pairs up two or more lists element by element, stopping at the shortest.</p>
+  <pre><code>chunks     = [<span class="string">"chunk A"</span>, <span class="string">"chunk B"</span>, <span class="string">"chunk C"</span>]
+embeddings = [[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]
+
+<span class="keyword">for</span> chunk, embedding <span class="keyword">in</span> zip(chunks, embeddings):
+    score = cosine_similarity(query_vec, embedding)
+    scores.append((score, chunk))</code></pre>
+  <p>Chunks and their embeddings are always parallel lists. <code>zip</code> iterates both together without index math.</p>
+
+  <!-- LAMBDA -->
+  <h2 id="lambda">Python: lambda</h2>
+  <p>A one-line anonymous function. Most common use: as a <code>key=</code> argument to <code>sort()</code>.</p>
+  <pre><code>scores = [(0.44, <span class="string">"chunk B"</span>), (0.73, <span class="string">"chunk A"</span>), (0.12, <span class="string">"chunk C"</span>)]
+
+<span class="comment"># Sort by score descending</span>
+scores.sort(key=<span class="keyword">lambda</span> x: x[0], reverse=<span class="keyword">True</span>)
+<span class="comment"># → [(0.73, "chunk A"), (0.44, "chunk B"), (0.12, "chunk C")]</span></code></pre>
+  <p>Use <code>lambda</code> only for simple one-liners. If the logic is more than one expression, write a proper <code>def</code>.</p>
+
+  <hr>
+  <p style="color: #4a5080; font-size: 13px;">P2 DocTalk · AI Engineer Program · Updated 2026-04-08</p>
+</main>
+
+</body>
+</html>

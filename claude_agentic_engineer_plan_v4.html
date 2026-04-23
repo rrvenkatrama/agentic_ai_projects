@@ -1,0 +1,488 @@
+<h1 id="agentic-ai-engineer-training-plan-v4">Agentic AI Engineer
+Training Plan — v4</h1>
+<blockquote>
+<p>Rajesh Ramani | Start: 2026-03-30 | Target: ~2026-07-30 | 16
+weeks</p>
+</blockquote>
+<hr />
+<h2 id="goal">Goal</h2>
+<p>Become hireable as an Agentic AI Engineer at mid-to-senior level
+within 4 months. Build 11 real projects. Cover all frameworks,
+protocols, security, deployment, and interview prep.</p>
+<hr />
+<h2 id="the-person">The Person</h2>
+<ul>
+<li>54, program manager background (infrastructure domain, Apple)</li>
+<li>CS degree 1989: C, C++, PHP, decent Python, web apps</li>
+<li>AWS Certified Solutions Architect Associate</li>
+<li>15+ years away from core dev, returning now</li>
+<li>Real-world agentic work at Onemyle startup (augments training)</li>
+<li>Local k3s cluster at 192.168.1.156 (control plane)</li>
+</ul>
+<hr />
+<h2 id="training-principles">Training Principles</h2>
+<ol type="1">
+<li><strong>Hands-on only</strong> — code every concept, no passive
+watching</li>
+<li><strong>All 3 LLMs</strong> — Claude, OpenAI, Gemini across
+projects</li>
+<li><strong>Quiz at end of every project</strong> — before moving to
+next</li>
+<li><strong>Daily tasks</strong> — ~2-3 hours focused work per
+session</li>
+<li><strong>Cheatsheet updated continuously</strong> — interview-ready
+reference</li>
+</ol>
+<hr />
+<h2 id="the-11-projects">The 11 Projects</h2>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+</colgroup>
+<thead>
+<tr>
+<th>#</th>
+<th>Folder</th>
+<th>Project</th>
+<th>Key Tech</th>
+<th>Kanban</th>
+<th>Month</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P1</td>
+<td>p1_toolbot</td>
+<td>ToolBot — CLI agent, 3 LLMs</td>
+<td>async, Pydantic v2, tool_use, streaming</td>
+<td>#17–20</td>
+<td>1</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>p2_doctalk</td>
+<td>DocTalk — PDF Q&amp;A + citations</td>
+<td>Embeddings, Chroma→Qdrant, RAG, LangChain</td>
+<td>#21–24</td>
+<td>1</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>p3_researchbot</td>
+<td>ResearchBot — multi-step web research</td>
+<td>LangGraph, checkpointing, human-in-loop, A2A intro</td>
+<td>#25–28</td>
+<td>2</td>
+</tr>
+<tr>
+<td>P4</td>
+<td>p4_stocksage</td>
+<td>StockSage — stock analysis agent</td>
+<td>Multi-agent, Mem0 memory, reasoning model selection</td>
+<td>#29–33</td>
+<td>2</td>
+</tr>
+<tr>
+<td>P5</td>
+<td>p5_reviewcrew</td>
+<td>ReviewCrew — GitHub PR reviewer</td>
+<td>CrewAI, OpenAI Agents SDK, parallel execution</td>
+<td>#34–36</td>
+<td>3</td>
+</tr>
+<tr>
+<td>P6</td>
+<td>p6_mcp</td>
+<td>MCP++ + A2A — Onemyle MCP server</td>
+<td>MCP spec, SSE, A2A protocol, agent interoperability</td>
+<td>#37–39</td>
+<td>3</td>
+</tr>
+<tr>
+<td>P7</td>
+<td>p7_observable</td>
+<td>ObservableAgent — observability + evals</td>
+<td>LangSmith, Langfuse, Arize Phoenix, security evals</td>
+<td>#40–42</td>
+<td>3</td>
+</tr>
+<tr>
+<td>P8</td>
+<td>p8_security</td>
+<td>SecurityGuard — agent security</td>
+<td>OWASP LLM Top 10, prompt injection, NeMo Guardrails, memory
+poisoning</td>
+<td>#48</td>
+<td>3</td>
+</tr>
+<tr>
+<td>P9</td>
+<td>p9_memory</td>
+<td>MemoryAgent — long-term memory</td>
+<td>Mem0, Zep, episodic/semantic/procedural memory, knowledge
+graphs</td>
+<td>#49</td>
+<td>3–4</td>
+</tr>
+<tr>
+<td>P10</td>
+<td>p10_platform</td>
+<td>AgentPlatform — production deploy</td>
+<td>Docker, k3s (local), AWS Bedrock, Terraform, GitHub Actions</td>
+<td>#43–45</td>
+<td>4</td>
+</tr>
+<tr>
+<td>P11</td>
+<td>p11_multimodal</td>
+<td>MultiModalBot — vision + audio agent</td>
+<td>GPT-4o vision, Gemini multimodal, document analysis, audio
+pipeline</td>
+<td>#50</td>
+<td>4</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="week-sprint-plan">16-Week Sprint Plan</h2>
+<h3 id="month-1-foundations-weeks-14">Month 1 — Foundations (Weeks
+1–4)</h3>
+<p><strong>Week 1</strong> — Tool loops, 3 LLMs, streaming - P1 ToolBot:
+Claude (tool_use + streaming), OpenAI (function calling), Gemini
+(google-genai) - Concepts: async/await, Pydantic v2, tool loop,
+streaming, TOOL_MAP pattern - Kanban: #17, #18, #19</p>
+<p><strong>Week 2</strong> — P1 wrap + embeddings intro - P1: System
+prompts, context management, multi-turn memory (#20) - P1 quiz → P2
+start: embeddings theory, first embed API call, manual PDF chunking -
+Concepts: system prompts, context window limits, tokenization, cosine
+similarity - Kanban: #20, #21</p>
+<p><strong>Week 3</strong> — PDF Q&amp;A + vector DB - P2 DocTalk:
+chunking strategies, Chroma pipeline, RAG with LangChain, citations -
+Upgrade: Qdrant as production alternative to Chroma - Concepts: chunking
+(fixed, semantic, recursive), embedding models, retrieval strategies -
+Kanban: #22, #23</p>
+<p><strong>Week 4</strong> — Prompt engineering depth - P2 complete +
+standalone prompt engineering module - Topics: system prompt design,
+few-shot examples, chain-of-thought, ReAct pattern - P2 quiz - Kanban:
+#24</p>
+<hr />
+<h3 id="month-2-orchestration-weeks-58">Month 2 — Orchestration (Weeks
+5–8)</h3>
+<p><strong>Week 5</strong> — LangGraph stateful agents - P3 ResearchBot:
+StateGraph, typed state, nodes/edges, conditional routing - Concepts:
+state machines, graph topology, LangGraph vs LangChain - Kanban: #25,
+#26</p>
+<p><strong>Week 6</strong> — Human-in-loop + A2A intro - P3:
+checkpointing, human-in-the-loop, Redis state persistence - A2A protocol
+intro: what it is, MCP vs A2A, when to use each - P3 quiz - Kanban: #27,
+#28</p>
+<p><strong>Week 7</strong> — Multi-agent + memory systems - P4
+StockSage: multi-tool orchestration, yfinance/Finnhub, domain RAG - Add
+Mem0 memory layer to agent - Concepts: Mem0 vs Zep vs LangMem, memory
+types (working/procedural/semantic/episodic) - Kanban: #29, #30, #31</p>
+<p><strong>Week 8</strong> — Reasoning model selection + P4 wrap - P4:
+structured output, agent synthesis, financial report generation -
+Concept: o3 vs Sonnet vs DeepSeek-R1 — cost/performance/latency
+tradeoffs - P4 quiz - Kanban: #32, #33</p>
+<hr />
+<h3 id="month-3-advanced-patterns-weeks-912">Month 3 — Advanced Patterns
+(Weeks 9–12)</h3>
+<p><strong>Week 9</strong> — CrewAI + OpenAI Agents SDK - P5 ReviewCrew:
+role-based agents, task decomposition, parallel execution - Build OpenAI
+Agents SDK version for comparison - Concepts: hierarchical vs flat
+multi-agent topologies, token overhead of orchestration - Kanban: #34,
+#35, #36</p>
+<p><strong>Week 10</strong> — MCP + A2A depth - P6 MCP++: extend Onemyle
+MCP server, SSE transport, resources, prompt templates - Add A2A
+protocol: build agent-to-agent communication - Concepts: MCP spec, tool
+schemas, resource protocol, A2A task lifecycle - Kanban: #37, #38,
+#39</p>
+<p><strong>Week 11</strong> — Observability + evals - P7
+ObservableAgent: LangSmith tracing, span hierarchy, eval datasets - Add
+Langfuse (self-hosted) + Arize Phoenix - Add security-focused evals
+(prompt injection detection) - P7 quiz - Kanban: #40, #41, #42</p>
+<p><strong>Week 12</strong> — Agent security - P8 SecurityGuard:
+implement and test prompt injection defenses - OWASP LLM Top 10 — cover
+each category with code examples - NeMo Guardrails integration, Llama
+Guard basics - Memory poisoning attack + defense demo - P8 quiz -
+Kanban: #48</p>
+<hr />
+<h3 id="month-4-production-interview-weeks-1316">Month 4 — Production +
+Interview (Weeks 13–16)</h3>
+<p><strong>Week 13</strong> — Long-term memory systems - P9 MemoryAgent:
+build agent with Mem0 persistent memory + Zep episodic memory -
+Implement all 4 memory types in a single agent - Concepts: knowledge
+graphs, temporal context, memory retrieval strategies - P9 quiz -
+Kanban: #49</p>
+<p><strong>Week 14</strong> — Containers + k3s + AWS Bedrock - P10
+AgentPlatform local: Docker multi-stage build, deploy to your k3s
+cluster at 192.168.1.156 - P10 AWS: deploy same agent to AWS Bedrock
+AgentCore + Terraform for infra - GitHub Actions CI/CD pipeline -
+Concepts: Terraform basics, Bedrock AgentCore vs self-hosted, cost
+modeling - Kanban: #43, #44, #45</p>
+<p><strong>Week 15</strong> — Multi-modal agents - P11 MultiModalBot:
+vision agent with GPT-4o (image analysis, document QA) - Audio pipeline
+with Gemini 3.1 Flash Live - Multi-modal RAG (images + text in same
+vector store) - P11 quiz - Kanban: #50</p>
+<p><strong>Week 16</strong> — Interview intensive - System design:
+design a production agentic system end-to-end (whiteboard style) - Mock
+interviews: 5 technical questions per day from cheatsheet - Portfolio
+review: README files, GitHub polish, talking points for each project -
+Salary research + negotiation prep - Final cheatsheet review</p>
+<hr />
+<h2 id="missing-topics-now-covered">Missing Topics (Now Covered)</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Where Covered</th>
+<th>Why Critical</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Agent security — OWASP LLM Top 10, prompt injection</td>
+<td>P8</td>
+<td>73% of prod deployments affected; interview topic</td>
+</tr>
+<tr>
+<td>A2A protocol</td>
+<td>P3 + P6</td>
+<td>Equal to MCP importance; 50+ enterprise partners</td>
+</tr>
+<tr>
+<td>Memory systems — Mem0, Zep, episodic/semantic</td>
+<td>P4 + P9</td>
+<td>Highly demanded, differentiator skill</td>
+</tr>
+<tr>
+<td>AWS Bedrock AgentCore</td>
+<td>P10</td>
+<td>Most in-demand cloud AI platform for agent roles</td>
+</tr>
+<tr>
+<td>Reasoning model selection (o3/DeepSeek-R1)</td>
+<td>P4 concept</td>
+<td>Employers ask when to use which model and why</td>
+</tr>
+<tr>
+<td>Qdrant (production vector DB)</td>
+<td>P2</td>
+<td>Chroma→Qdrant is the standard dev→prod path</td>
+</tr>
+<tr>
+<td>OpenAI Agents SDK</td>
+<td>P5</td>
+<td>Growing fast; counter to LangChain abstractions</td>
+</tr>
+<tr>
+<td>Prompt engineering module</td>
+<td>Week 4</td>
+<td>Foundation for all senior-level work</td>
+</tr>
+<tr>
+<td>Multi-modal agents</td>
+<td>P11</td>
+<td>$3.85B market, 29% YoY growth</td>
+</tr>
+<tr>
+<td>Interview prep intensive</td>
+<td>Week 16</td>
+<td>Dedicated time, not scattered</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="weekly-concept-deep-dives">Weekly Concept Deep-Dives</h2>
+<table>
+<thead>
+<tr>
+<th>Week</th>
+<th>Topic</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Pydantic v2, async patterns</td>
+</tr>
+<tr>
+<td>2</td>
+<td>RAG pipeline theory, tokenization</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Vector DB selection guide (Chroma/Qdrant/Pinecone/pgvector)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Chain-of-thought, few-shot, system prompt design</td>
+</tr>
+<tr>
+<td>5</td>
+<td>StateGraph, typed state, ReAct pattern</td>
+</tr>
+<tr>
+<td>6</td>
+<td>A2A vs MCP — protocol comparison</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Memory architecture (working/procedural/semantic/episodic)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Reasoning models: o3 vs Sonnet vs DeepSeek-R1</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Multi-agent topologies (hierarchical, flat, debate)</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Agent protocol ecosystem (MCP/A2A/ACP)</td>
+</tr>
+<tr>
+<td>11</td>
+<td>LLM-as-a-judge, eval datasets, regression suites</td>
+</tr>
+<tr>
+<td>12</td>
+<td>OWASP LLM Top 10 taxonomy</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Knowledge graphs, temporal memory, Zep architecture</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Terraform, Bedrock AgentCore, cost modeling</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Multi-modal pipelines, latency optimization</td>
+</tr>
+<tr>
+<td>16</td>
+<td>System design patterns for production agentic systems</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="infrastructure-used">Infrastructure Used</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Asset</th>
+<th>Project</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local k3s at 192.168.1.156</td>
+<td>P10 — deploy agent platform to own cluster</td>
+</tr>
+<tr>
+<td>AWS SAA certification</td>
+<td>P10 — Bedrock + Terraform</td>
+</tr>
+<tr>
+<td>Onemyle real-world project</td>
+<td>P6 MCP++ (direct), P9 memory layer</td>
+</tr>
+<tr>
+<td>MyKanban app</td>
+<td>All projects — dogfood your own tool</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="key-frameworks-covered">Key Frameworks Covered</h2>
+<table>
+<thead>
+<tr>
+<th>Framework</th>
+<th>Project</th>
+<th>Tier</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LangChain</td>
+<td>P2</td>
+<td>Production leader</td>
+</tr>
+<tr>
+<td>LangGraph</td>
+<td>P3, P4</td>
+<td>Production leader</td>
+</tr>
+<tr>
+<td>CrewAI</td>
+<td>P5</td>
+<td>Production leader</td>
+</tr>
+<tr>
+<td>OpenAI Agents SDK</td>
+<td>P5</td>
+<td>Growing fast</td>
+</tr>
+<tr>
+<td>MCP</td>
+<td>P6</td>
+<td>Non-negotiable</td>
+</tr>
+<tr>
+<td>A2A</td>
+<td>P3, P6</td>
+<td>Non-negotiable</td>
+</tr>
+<tr>
+<td>Mem0 / Zep</td>
+<td>P4, P9</td>
+<td>Differentiator</td>
+</tr>
+<tr>
+<td>LangSmith / Langfuse / Arize</td>
+<td>P7</td>
+<td>Required</td>
+</tr>
+<tr>
+<td>NeMo Guardrails</td>
+<td>P8</td>
+<td>Required</td>
+</tr>
+<tr>
+<td>AWS Bedrock</td>
+<td>P10</td>
+<td>Most in-demand cloud</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="target-job-profile">Target Job Profile</h2>
+<ul>
+<li>Title: Agentic AI Engineer / AI Engineer / LLM Engineer</li>
+<li>Level: Mid to Senior</li>
+<li>Stack: Python, LangGraph/CrewAI, Claude/GPT-4o/Gemini, MCP, A2A,
+AWS</li>
+<li>Salary target: ~$188K USD (US market average per 2026 data)</li>
+</ul>
+<hr />
+<p><em>Plan version 4 — approved 2026-04-01</em> <em>Previous versions:
+v1 (8 projects, 8 weeks implied) → v4 (11 projects, 16 weeks
+explicit)</em></p>

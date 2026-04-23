@@ -10,12 +10,11 @@ Build 11 real projects. Cover all frameworks, protocols, security, deployment, a
 ---
 
 ## The Person
-- 54, program manager background (infrastructure domain, Apple)
-- CS degree 1989: C, C++, PHP, decent Python, web apps
+- Program manager background (infrastructure domain, Apple)
+- CS degree: C, C++, PHP, decent Python, web apps
 - AWS Certified Solutions Architect Associate
-- 15+ years away from core dev, returning now
 - Real-world agentic work at Onemyle startup (augments training)
-- Local k3s cluster at 192.168.1.150 (control plane)
+- Local k3s cluster at 192.168.1.156 (control plane)
 
 ---
 
@@ -142,11 +141,15 @@ Build 11 real projects. Cover all frameworks, protocols, security, deployment, a
 - P9 quiz
 - Kanban: #49
 
-**Week 14** — Containers + k3s + AWS Bedrock
-- P10 AgentPlatform local: Docker multi-stage build, deploy to your k3s cluster at 192.168.1.150
+**Week 14** — Containers + k3s + GitHub Actions + AWS Bedrock
+- P10 AgentPlatform local: Docker multi-stage build, deploy to your k3s cluster at 192.168.1.156
 - P10 AWS: deploy same agent to AWS Bedrock AgentCore + Terraform for infra
-- GitHub Actions CI/CD pipeline
-- Concepts: Terraform basics, Bedrock AgentCore vs self-hosted, cost modeling
+- GitHub Actions CI/CD pipeline:
+  - Cloud-hosted runners: lint, test, build Docker image, push to registry
+  - Self-hosted runners on local servers (192.168.1.156 + Mac): pull image and deploy via systemd/k3s
+  - Secrets management in GitHub Actions (API keys, SSH keys)
+  - Multi-environment workflow: push to main → deploy to local; tag release → deploy to AWS
+- Concepts: Terraform basics, Bedrock AgentCore vs self-hosted, self-hosted runner setup, cost modeling
 - Kanban: #43, #44, #45
 
 **Week 15** — Multi-modal agents
@@ -160,7 +163,7 @@ Build 11 real projects. Cover all frameworks, protocols, security, deployment, a
 - System design: design a production agentic system end-to-end (whiteboard style)
 - Mock interviews: 5 technical questions per day from cheatsheet
 - Portfolio review: README files, GitHub polish, talking points for each project
-- Salary research + negotiation prep
+- Interview prep + negotiation prep
 - Final cheatsheet review
 
 ---
@@ -209,7 +212,7 @@ Build 11 real projects. Cover all frameworks, protocols, security, deployment, a
 
 | Asset | Project |
 |---|---|
-| Local k3s at 192.168.1.150 | P10 — deploy agent platform to own cluster |
+| Local k3s at 192.168.1.156 | P10 — deploy agent platform to own cluster |
 | AWS SAA certification | P10 — Bedrock + Terraform |
 | Onemyle real-world project | P6 MCP++ (direct), P9 memory layer |
 | MyKanban app | All projects — dogfood your own tool |
@@ -237,8 +240,138 @@ Build 11 real projects. Cover all frameworks, protocols, security, deployment, a
 - Title: Agentic AI Engineer / AI Engineer / LLM Engineer
 - Level: Mid to Senior
 - Stack: Python, LangGraph/CrewAI, Claude/GPT-4o/Gemini, MCP, A2A, AWS
-- Salary target: ~$188K USD (US market average per 2026 data)
+- Target: Mid to Senior level roles
 
 ---
+
+## Phase II — Beyond 4 Months (GPU + Local Model Training)
+
+> Requires: NVIDIA gaming GPU system added as k3s worker node at 192.168.1.156
+
+### Phase II Projects
+
+| # | Folder | Project | Key Tech | Focus |
+|---|--------|---------|----------|-------|
+| P12 | p12_gpu_cluster | GPUCluster — NVIDIA k3s worker | NVIDIA device plugin, GPU operator, CUDA containers, k3s GPU scheduling | Infrastructure |
+| P13 | p13_local_llm | LocalLLM — self-hosted model server | Ollama, vLLM, Llama 3.2 / Mistral / Phi-4-mini, OpenAI-compatible API | Inference |
+| P14 | p14_finetune | DocTuner — fine-tune on your documents | Hugging Face transformers, PEFT, QLoRA, Unsloth, Llama 3.2 1B/3B | Training |
+| P15 | p15_rag_vs_ft | RAG vs Fine-Tune — benchmark both | Compare P2 RAG pipeline vs P14 fine-tuned model on same document set | Evaluation |
+| P16 | p16_nanogpt | NanoGPT — build LLM from scratch | Pure PyTorch, multi-head attention, BPE tokenizer, training loop, text generation | Fundamentals |
+
+---
+
+### P12 — GPUCluster
+**Goal:** Add the NVIDIA gaming GPU machine as a k3s worker node and schedule GPU workloads on it.
+
+**What you'll build:**
+- Install k3s agent on GPU machine, join cluster at 192.168.1.156
+- Install NVIDIA Container Toolkit + NVIDIA device plugin for k3s
+- Deploy a test CUDA pod (`nvidia/cuda` image) and verify GPU access inside container
+- Configure node labels/taints so GPU pods route to GPU node automatically
+
+**Key concepts:** NVIDIA device plugin, resource limits (`nvidia.com/gpu: 1`), node selectors, GPU operator vs manual install, CUDA version compatibility
+
+---
+
+### P13 — LocalLLM
+**Goal:** Run open source LLMs locally on your GPU, served via OpenAI-compatible API.
+
+**What you'll build:**
+- Deploy Ollama in a CUDA container on the GPU k3s node
+- Serve Llama 3.2 3B, Mistral 7B, Phi-4-mini — all from local GPU
+- Compare inference speed, quality, memory usage across models
+- Expose via ClusterIP service so other agents in the cluster can call it
+
+**Key concepts:** Ollama vs vLLM, VRAM requirements per model, quantization (4-bit, 8-bit), OpenAI API compatibility, model selection trade-offs (speed vs quality vs size)
+
+---
+
+### P14 — DocTuner
+**Goal:** Fine-tune a small open source model on your own documents so it can answer questions about them directly — no retrieval, knowledge baked in.
+
+**What you'll build:**
+- Prepare a document dataset (your own docs, converted to instruction format)
+- Fine-tune Llama 3.2 1B or Phi-4-mini using QLoRA (fits on gaming GPU, even 8GB VRAM)
+- Use Unsloth for 2x faster training with lower memory
+- Evaluate before/after on domain-specific Q&A
+- Save as GGUF format, serve via Ollama
+
+**Key concepts:** Full fine-tune vs LoRA vs QLoRA, rank/alpha hyperparameters, instruction format (Alpaca/ChatML), overfitting on small datasets, GGUF quantization, Hugging Face Hub
+
+**Hardware requirement:** 8GB+ VRAM for 1B model with QLoRA; 12GB+ for 3B model
+
+---
+
+### P15 — RAG vs Fine-Tune
+**Goal:** Rigorous comparison of the two main approaches to domain Q&A — decide when to use which.
+
+**What you'll build:**
+- Same document set, same questions, two pipelines:
+  - Pipeline A: P2 RAG (Qdrant + Claude/GPT-4o)
+  - Pipeline B: P14 fine-tuned local model
+- Evaluation framework: correctness, latency, cost, hallucination rate
+- Decision matrix: when RAG wins, when fine-tuning wins
+
+**Key concepts:** Retrieval vs parametric knowledge, catastrophic forgetting, cost of fine-tuning vs cost of inference, knowledge freshness, hybrid approaches (RAG + fine-tuned retriever)
+
+---
+
+### Phase II Prerequisites
+| Requirement | Notes |
+|---|---|
+| GPU machine on LAN | Any NVIDIA GPU — GTX 1080 minimum, RTX 30xx/40xx ideal |
+| VRAM | 8GB minimum (1B QLoRA), 12GB+ recommended (3B QLoRA / 7B inference) |
+| CUDA 12.x | Install before adding to cluster |
+| Ubuntu 22.04+ | Same OS family as cluster |
+| Disk | 50GB+ free for model weights |
+
+---
+
+### P16 — NanoGPT — Build an LLM from Scratch
+
+**Goal:** Implement a GPT-style transformer from scratch in pure PyTorch — every component by hand, no HuggingFace shortcuts. Train it on a domain corpus. Watch it learn to generate text.
+
+**Why this project:** Once you've built every piece yourself, you understand every LLM forever. Attention mechanisms, positional encoding, the training loop — it stops being magic. This is the project that separates engineers who use LLMs from engineers who understand them.
+
+**What you'll build — every component from scratch:**
+
+| Component | What you implement |
+|---|---|
+| Tokenizer | BPE (byte-pair encoding) or character-level tokenizer |
+| Embedding layer | Token embeddings + positional encodings (learned or sinusoidal) |
+| Multi-head self-attention | Q/K/V projections, scaled dot-product attention, causal mask |
+| Feed-forward block | 2-layer MLP with GELU activation per transformer block |
+| Layer normalization | Pre-norm architecture (modern GPT style) |
+| Transformer blocks | Stack N blocks (attention + FFN + residual connections) |
+| Language model head | Linear projection → vocab logits |
+| Training loop | AdamW optimizer, cosine LR schedule, gradient clipping |
+| Text generation | Autoregressive sampling — temperature, top-k, top-p |
+| Evaluation | Perplexity on held-out set, qualitative text samples |
+
+**Model scale (realistic for gaming GPU):**
+
+| Config | Params | VRAM | Train time |
+|---|---|---|---|
+| Tiny (learn the concepts) | ~1M | <1GB | Minutes |
+| Small (actually useful) | ~10M | ~2GB | 1–2 hours |
+| Medium (GPT-2 small scale) | ~50M | ~4GB | 4–8 hours |
+
+Start tiny, verify it learns, scale up once the code is correct.
+
+**Training corpus options:**
+- Apple internal documentation (domain-specific, small, fast to train)
+- Your Onemyle codebase + docs (teaches it your project's language)
+- Wikipedia subset for a general-purpose mini-model
+- Financial filings (pairs with StockSage for a thematic arc)
+
+**Key concepts:** Attention is all you need (the paper), autoregressive language modeling, causal masking, why residual connections matter, the role of layer norm placement, loss = cross-entropy over next token prediction, why transformers scale but RNNs don't, the difference between pre-training and fine-tuning at the architecture level
+
+**Reference:** Andrej Karpathy's nanoGPT (study it after you've written your own — not before)
+
+**Hardware requirement:** Any NVIDIA GPU with 4GB+ VRAM. Even a CPU works for the tiny model to verify correctness.
+
+---
+
 *Plan version 4 — approved 2026-04-01*
+*Phase II added 2026-04-02 (P12–P16)*
 *Previous versions: v1 (8 projects, 8 weeks implied) → v4 (11 projects, 16 weeks explicit)*
