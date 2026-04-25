@@ -93,7 +93,7 @@ All three API keys are in .env: ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KE
 Each session: Claude gives the day's task, Rajesh codes it, concepts explained inline.
 Weekly plan tickets in Kanban track the week's goals.
 
-## Current Status (as of 2026-04-17)
+## Current Status (as of 2026-04-25)
 - [x] Repo created, venv set up, workspace file created
 - [x] Kanban project + 33 tickets created (IDs #17–#50, #65, #66)
 - [x] .env created with ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY
@@ -120,7 +120,12 @@ Weekly plan tickets in Kanban track the week's goals.
   - [x] kafka_agents.py — agent-as-consumer on k3s Kafka
   - [x] research_bot_hitl.py — checkpointing + HITL
   - [x] hub_spoke_kafka_agents.html — Kafka reference doc
-- [ ] P4 StockSage — NEXT (Tickets #29-33)
+- [x] P4 StockSage — COMPLETE (Tickets #29-33, quiz 6.5/8)
+  - [x] tools.py — yfinance, pandas-ta, distilbert sentiment, Chroma RAG
+  - [x] agent.py — LangGraph StateGraph, Claude synthesis, Pydantic output
+  - [x] app.py — FastAPI UI on port 8001
+  - [x] data/AAPL_earnings_Q1_2025.txt — sample earnings transcript
+- [ ] P5 ReviewCrew — NEXT (Tickets #34-36)
 
 ## Related Projects
 - Onemyle / reel-analysis-lib: ~/ai/Onemyle/reel-analysis-lib (real-world agent deployment)

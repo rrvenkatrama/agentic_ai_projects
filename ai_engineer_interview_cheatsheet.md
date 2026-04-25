@@ -844,4 +844,271 @@ print(app.get_graph().draw_mermaid())  # paste output into mermaid.live
 `Runnable` is a LangChain/LangGraph concept — any object with `.invoke()`. `graph.compile()` returns a Runnable. In plain Python the equivalent is any callable (object with `__call__`). LangGraph standardises on `.invoke()` as the interface.
 
 ---
-*Last updated: 2026-04-12 — P3 conditional routing, Mermaid diagrams (research_bot.py)*
+---
+
+## LangGraph — State Immutability Deep Dive
+
+### Two valid patterns for returning state
+
+**Pattern 1 — Immutable (create new dict):**
+```python
+def gather_data(state: AgentState) -> AgentState:
+    price = get_price_data(state["ticker"])
+    return {
+        **state,              # spread all existing key-value pairs
+        "price_data": price,  # override specific keys (last definition wins)
+    }
+```
+- `**state` unpacks the dict into key=value pairs inside the new `{}`
+- Creates a **brand new dict** — original state is untouched
+- Safest for parallel branches sharing the same state object
+
+**Pattern 2 — Mutable (modify in place):**
+```python
+def gather_data(state: AgentState) -> AgentState:
+    state["price_data"] = get_price_data(state["ticker"])
+    return state
+```
+- Modifies the **same dict** in memory (Python passes dicts by reference)
+- Simpler and more readable
+- Safe for linear graphs (nodes run one at a time)
+
+**When to use which:**
+| Situation | Pattern |
+|-----------|---------|
+| Linear graph, one node at a time | Either — use Pattern 2 for readability |
+| Parallel branches sharing state | Pattern 1 (immutable) — prevents race conditions |
+| Using `Annotated` reducers | Return a delta dict (not full state) |
+
+---
+
+## Python — `*` vs `**` Unpacking
+
+| Operator | Used with | Meaning |
+|----------|-----------|---------|
+| `*`  | list / tuple | Unpack into positional arguments |
+| `**` | dict | Unpack into keyword (key=value) arguments |
+
+```python
+# * unpacks a list into positional args
+nums = [1, 2, 3]
+print(*nums)           # same as print(1, 2, 3)
+
+# ** unpacks a dict into keyword args
+d = {"name": "Rajesh", "greeting": "Hi"}
+greet(**d)             # same as greet(name="Rajesh", greeting="Hi")
+
+# ** in a dict literal — spreads and overrides
+base = {"a": 1, "b": 2, "c": 3}
+merged = {**base, "b": 99}
+print(merged)          # {"a": 1, "b": 99, "c": 3}  ← b is overridden
+```
+
+`**` is NOT a pointer (no relation to C/C++). It is Python-only syntax for dict spreading.
+
+---
+
+## Python — Pass by Reference vs Value
+
+Python always passes objects (dicts, lists) **by reference**, not by value.
+
+```python
+def modify(state):
+    state["key"] = "new_value"   # modifies the ORIGINAL dict
+    return state
+
+s = {"key": "old"}
+modify(s)
+print(s["key"])   # "new_value" — original was changed
+```
+
+- **By reference:** same object in memory — function modifies the caller's dict
+- **By value (not Python):** would copy the dict — caller's dict unchanged
+- Primitive types (`int`, `str`, `float`) behave like pass-by-value because they are immutable
+
+---
+
+---
+
+## Multi-Tool Orchestration (P4 Pattern)
+
+### Routing vs Orchestration
+| | P3 Routing | P4 Orchestration |
+|---|---|---|
+| Tools called | One at a time, conditionally | All at once, always |
+| Decision | "Should I search again?" | "Synthesize all results" |
+| LLM role | Decides next step | Reasons over combined data |
+
+### Pattern
+```
+User request
+    → Call ALL tools (price, news, fundamentals, earnings)
+    → Feed ALL results to Claude in one prompt
+    → Claude returns structured recommendation
+```
+
+### Key design rule
+Build domain tools first (pure Python, no LLM), wire them into the agent after. Tools do one thing well — the LLM synthesizes.
+
+---
+
+## Technical Indicators (Stock Analysis)
+
+| Indicator | What it measures | Signal |
+|-----------|-----------------|--------|
+| RSI (14) | Momentum (0–100) | >70 overbought, <30 oversold |
+| MACD | Trend direction | MACD > signal line = bullish |
+| SMA50 | 50-day moving average | Support/resistance level |
+| SMA200 | 200-day moving average | Long-term trend |
+| Golden Cross | SMA50 > SMA200 | Bullish signal |
+
+**Data window matters:** SMA200 needs ~200 trading days (~1 year). 3 months = ~60 days = SMA200 is null.
+
+```python
+import yfinance as yf
+import pandas_ta as ta
+
+tick = yf.Ticker("AAPL")
+hist = tick.history(period="1y")   # need 1y for SMA200
+rsi = hist.ta.rsi(length=14)
+macd_df = hist.ta.macd()
+sma_50 = hist.ta.sma(length=50)
+sma_200 = hist.ta.sma(length=200)
+```
+
+---
+
+## Sentiment Models — Domain Mismatch
+
+**Problem:** General sentiment models trained on movie reviews score financial headlines incorrectly.
+
+| Model | Trained on | Use for |
+|-------|-----------|---------|
+| `distilbert-sst-2` | Movie reviews | General text only |
+| `ProsusAI/finbert` | Financial news | Stock/finance sentiment ✅ |
+
+```python
+# Production — use finbert
+from transformers import pipeline
+classifier = pipeline("sentiment-analysis", model="ProsusAI/finbert")
+```
+
+---
+
+## Local Embeddings (sentence-transformers)
+
+```python
+from sentence_transformers import SentenceTransformer
+model = SentenceTransformer("all-MiniLM-L6-v2")  # 384 dimensions, ~80MB, CPU-friendly
+vector = model.encode("some text")   # returns numpy array of 384 floats
+```
+
+**vs OpenAI embeddings:**
+| | sentence-transformers | OpenAI API |
+|---|---|---|
+| Cost | Free | Per token |
+| Dimensions | 384 (MiniLM) | 1536 (text-embedding-3-small) |
+| Offline | Yes | No |
+| Quality | Good | Better |
+
+---
+
+## Chroma Vector Store (local)
+
+```python
+import chromadb
+from sentence_transformers import SentenceTransformer
+
+client = chromadb.Client()          # in-memory, no server needed
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
+# Index
+collection = client.create_collection("earnings")
+embeddings = model.encode(chunks).tolist()
+collection.add(documents=chunks, embeddings=embeddings, ids=["chunk_0", "chunk_1"])
+
+# Query
+query_embedding = model.encode(["What did management say about AI?"]).tolist()
+results = collection.query(query_embeddings=query_embedding, n_results=3)
+chunks = results["documents"][0]    # list of top-3 matching chunks
+```
+
+**Which chunks are returned:** cosine similarity between query vector and every stored chunk vector. Highest scores win. `n_results` caps the count.
+
+---
+
+## Structured Output with Pydantic (LLM responses)
+
+Pattern: tell Claude to return JSON, parse + validate with Pydantic.
+
+```python
+class StockAnalysis(BaseModel):
+    ticker: str
+    recommendation: str    # "BUY" | "HOLD" | "SELL"
+    confidence: str        # "HIGH" | "MEDIUM" | "LOW"
+    reasoning: str
+
+# Strip markdown fences Claude sometimes adds
+raw = response.content[0].text.strip()
+if raw.startswith("```"):
+    raw = raw.split("```")[1]
+    if raw.startswith("json"):
+        raw = raw[4:]
+    raw = raw.strip()
+
+analysis = StockAnalysis(**json.loads(raw))   # parse + validate
+```
+
+**Gotcha:** Claude often wraps JSON in ` ```json ``` ` fences. Always strip before parsing.
+
+---
+
+## FastAPI — sync def vs async def
+
+```python
+# Use async def when you have real await calls
+@app.post("/data")
+async def get_data():
+    result = await async_db_query()   # actual I/O await
+    return result
+
+# Use plain def for blocking calls — FastAPI runs in threadpool automatically
+@app.post("/analyze")
+def analyze(request: AnalyzeRequest):
+    result = agent.invoke(...)        # blocking call — no await
+    return result
+```
+
+**Rule:** `async def` without any `await` inside is lying to FastAPI — it blocks the event loop on every request.
+
+---
+
+## async/await — How it works
+
+```
+Event Loop (one thread)
+    ├── Coroutine A: hits await → pauses, hands control back
+    ├── Coroutine B: runs now
+    └── Coroutine A: response arrived → resumes
+```
+
+- `async def` — marks a coroutine (can be paused)
+- `await` — pause here, let others run until this completes
+- Only helps for **I/O-bound** work (network, DB, files)
+- CPU-bound work (math, ML inference) — async does nothing, use threads/multiprocessing
+
+**Global variable danger in async:**
+```python
+current_ticker = ""   # shared across ALL users
+
+async def analyze(ticker: str):
+    current_ticker = ticker           # User A sets "AAPL"
+    result = await slow_api()         # yields here — User B sets "TSLA"
+    return analyze(current_ticker)    # User A gets TSLA's data!
+
+# Fix: always use local variables inside handlers
+```
+
+---
+
+*Last updated: 2026-04-25 — P4 StockSage complete: multi-tool orchestration, technical indicators, sentiment, Chroma RAG, structured output, FastAPI async patterns*
