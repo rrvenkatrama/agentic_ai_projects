@@ -1111,4 +1111,183 @@ async def analyze(ticker: str):
 
 ---
 
-*Last updated: 2026-04-25 — P4 StockSage complete: multi-tool orchestration, technical indicators, sentiment, Chroma RAG, structured output, FastAPI async patterns*
+---
+
+## CrewAI — Multi-Agent Teams (P5 ReviewCrew)
+
+### The Agentic AI Stack
+
+Three levels — you've worked at all of them:
+
+| Level | Framework | What you define |
+|-------|-----------|----------------|
+| Low | Raw tool_use / function_calling | Every token of the LLM loop |
+| Mid | LangGraph | Nodes, edges, typed state, routing |
+| High | CrewAI | Agent roles, task goals, crew process |
+
+CrewAI sits on top of LangGraph — in production they're often combined.
+
+### Core Concepts
+
+**Agent** — an AI worker with a role, goal, backstory, and tools:
+```python
+from crewai import Agent
+
+reviewer = Agent(
+    role="Senior Code Reviewer",
+    goal="Find bugs, security issues, and bad patterns in code changes",
+    backstory="You are an experienced engineer who has reviewed thousands of PRs.",
+    tools=[github_tool],
+    llm="claude-opus-4-6",
+    verbose=True,
+    allow_delegation=False   # True only for manager agents
+)
+```
+
+**Task** — a specific job assigned to an agent:
+```python
+from crewai import Task
+
+review_task = Task(
+    description="Review the following PR diff: {pr_diff}",
+    expected_output="Markdown list of issues with severity, file, line, explanation",
+    agent=reviewer,
+    context=[fetch_task],        # wait for this task, use its output
+    output_pydantic=ReviewResult # optional: validate output
+)
+```
+
+**Crew** — coordinates agents and tasks:
+```python
+from crewai import Crew, Process
+
+crew = Crew(
+    agents=[fetcher, reviewer, summarizer],
+    tasks=[fetch_task, review_task, summary_task],
+    process=Process.sequential,
+    verbose=True
+)
+result = crew.kickoff(inputs={"pr_url": "https://github.com/org/repo/pull/42"})
+print(result.raw)   # final output as string
+```
+
+### Process Modes
+
+| Mode | How it works | When to use |
+|------|-------------|-------------|
+| `Process.sequential` | Tasks run one after another in order | Default; task A output feeds task B |
+| `Process.parallel` | Independent tasks run simultaneously | Tasks don't depend on each other |
+| `Process.hierarchical` | Manager agent delegates to others | Complex workflows with dynamic routing |
+
+### CrewAI vs LangGraph
+
+| | LangGraph | CrewAI |
+|--|-----------|--------|
+| Mental model | State machine — nodes and edges | Team — agents and tasks |
+| Agent specialization | No — nodes are generic functions | Yes — role, goal, backstory per agent |
+| Tool scoping | All tools everywhere | Each agent gets its own tools list |
+| Parallelism | Manual (Annotated reducers) | Built-in `Process.parallel` |
+| Best for | HITL, checkpointing, complex branching | Rapid multi-agent prototyping, parallel work |
+
+### Output Passing with context=
+
+```python
+# CrewAI appends the output of fetch_task into review_task's prompt automatically
+review_task = Task(
+    description="Review the PR diff for bugs",
+    agent=reviewer,
+    context=[fetch_task]   # fetch_task must complete first; its output is injected here
+)
+```
+
+### Custom Tool
+
+```python
+from crewai import tool
+
+@tool("fetch_pr_diff")
+def fetch_pr_diff(pr_url: str) -> str:
+    """Fetches the diff for a GitHub pull request given its URL."""
+    # ... implementation ...
+    return diff_text
+```
+
+---
+
+---
+
+## CrewAI @tool Decorator — How It Works Internally
+
+### Docstrings are real Python objects
+
+```python
+def fetch_pr_details(pr_url: str) -> str:
+    """Fetches the title, description, changed files, and diff for a GitHub PR."""
+    pass
+
+print(fetch_pr_details.__doc__)          # "Fetches the title..."
+print(fetch_pr_details.__annotations__)  # {'pr_url': str, 'return': str}
+```
+
+Docstrings are not comments — they are string objects stored on the function, readable at runtime via `.__doc__`.
+
+### @tool replaces the function with a Tool object
+
+```python
+# This:
+@tool("fetch_pr_details")
+def fetch_pr_details(pr_url: str) -> str:
+    """Fetches the title..."""
+    return "..."
+
+# Is equivalent to:
+def fetch_pr_details(pr_url: str) -> str:
+    """Fetches the title..."""
+    return "..."
+fetch_pr_details = tool("fetch_pr_details")(fetch_pr_details)
+# Name now points to a Tool object — not the original function
+```
+
+Internally the Tool object does:
+```python
+self.description = func.__doc__           # from docstring
+self.args_schema = func.__annotations__   # from type hints
+self._func = func                         # stores original function
+
+def run(self, input):
+    return self._func(input)              # calls original body
+```
+
+### Execution sequence
+
+```
+Import time (once at startup):
+  1. def statement runs → function object created, __doc__ populated
+  2. @tool decorator runs → reads __doc__, builds Tool object
+  3. Name rebound → "fetch_pr_details" now points to Tool object
+
+Agent run time (every tool call):
+  4. LLM decides to call the tool
+  5. CrewAI calls fetch_pr_details.run(url)
+  6. Tool.run() calls original function body
+  7. Result returned to LLM
+```
+
+### How to call in tests vs agents
+
+```python
+fetch_pr_details.run(pr_url)    # correct — Tool object's .run() method
+fetch_pr_details(pr_url)        # TypeError — Tool object is not callable directly
+```
+
+### vs P1 tool_use — same idea, different API
+
+| | P1 Raw tool_use | P5 CrewAI @tool |
+|--|----------------|-----------------|
+| Tool description | Written manually as a dict | Read from docstring automatically |
+| Input schema | Written manually as JSON schema | Read from type hints automatically |
+| Tool call loop | You write it | CrewAI handles it |
+
+---
+
+*Last updated: 2026-04-25 — P5 ReviewCrew added: CrewAI agents/tasks/crew, process modes, @tool decorator internals, vs LangGraph*

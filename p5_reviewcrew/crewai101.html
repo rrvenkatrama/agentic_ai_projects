@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CrewAI 101 — Multi-Agent Teams</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.7; }
+    .sidebar { position: fixed; top: 0; left: 0; width: 260px; height: 100vh; background: #1a1d2e; padding: 24px 16px; overflow-y: auto; border-right: 1px solid #2d3148; }
+    .sidebar h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #7c83a8; margin-bottom: 16px; }
+    .sidebar a { display: block; padding: 6px 10px; color: #a0aec0; text-decoration: none; font-size: 13.5px; border-radius: 6px; margin-bottom: 2px; }
+    .sidebar a:hover { background: #2d3148; color: #e2e8f0; }
+    .sidebar .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #4a5080; margin: 16px 0 6px 10px; }
+    main { margin-left: 260px; padding: 48px 56px; max-width: 900px; }
+    h1 { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .subtitle { color: #7c83a8; font-size: 14px; margin-bottom: 48px; }
+    h2 { font-size: 20px; font-weight: 600; color: #fff; margin: 48px 0 16px; padding-top: 48px; border-top: 1px solid #2d3148; }
+    h2:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+    h3 { font-size: 15px; font-weight: 600; color: #a0aec0; margin: 24px 0 10px; }
+    p { color: #cbd5e0; margin-bottom: 14px; font-size: 15px; }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; background: #1e2130; color: #7dd3fc; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    pre { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 20px; margin: 16px 0; overflow-x: auto; }
+    pre code { background: none; padding: 0; color: #e2e8f0; font-size: 13.5px; line-height: 1.6; }
+    .keyword { color: #c084fc; }
+    .string { color: #86efac; }
+    .comment { color: #4a5080; font-style: italic; }
+    .fn { color: #60a5fa; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+    th { background: #1e2130; color: #a0aec0; text-align: left; padding: 10px 14px; border-bottom: 1px solid #2d3148; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    td { padding: 10px 14px; border-bottom: 1px solid #1e2130; color: #cbd5e0; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #1a1d2e; }
+    .note { background: #1e2130; border-left: 3px solid #7dd3fc; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; color: #a0aec0; }
+    .note strong { color: #7dd3fc; }
+    .warn { background: #1e2130; border-left: 3px solid #f59e0b; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; color: #a0aec0; }
+    .warn strong { color: #f59e0b; }
+    .flow { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 24px; margin: 16px 0; font-family: "JetBrains Mono", monospace; font-size: 13px; line-height: 2.2; }
+    .flow .node { color: #86efac; font-weight: 600; }
+    .flow .arrow { color: #4a5080; }
+    .flow .state { color: #7dd3fc; }
+    .flow .label { color: #a0aec0; font-size: 12px; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-right: 6px; }
+    .tag-green { background: #14532d; color: #86efac; }
+    .tag-blue { background: #1e3a5f; color: #7dd3fc; }
+    .tag-purple { background: #3b0764; color: #d8b4fe; }
+    .tag-orange { background: #431407; color: #fdba74; }
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h2>CrewAI 101</h2>
+  <a href="#what-is">What is CrewAI?</a>
+  <a href="#agentic-stack">The Agentic AI Stack</a>
+  <a href="#vs-langgraph">CrewAI vs LangGraph</a>
+  <div class="section-label">Core Concepts</div>
+  <a href="#agent">Agent</a>
+  <a href="#task">Task</a>
+  <a href="#tool">Tool</a>
+  <a href="#crew">Crew</a>
+  <div class="section-label">Execution Modes</div>
+  <a href="#sequential">Sequential Process</a>
+  <a href="#parallel">Parallel Process</a>
+  <a href="#hierarchical">Hierarchical Process</a>
+  <div class="section-label">Patterns</div>
+  <a href="#output-passing">Output Passing</a>
+  <a href="#context">context= in Tasks</a>
+  <a href="#pydantic-output">Pydantic Output</a>
+  <div class="section-label">P5 Project</div>
+  <a href="#reviewcrew">ReviewCrew Design</a>
+  <a href="#flow-diagram">Full Flow Diagram</a>
+</div>
+
+<main>
+  <h1>CrewAI 101</h1>
+  <p class="subtitle">Role-based multi-agent teams — P5 ReviewCrew reference &nbsp;·&nbsp; 2026-04-25</p>
+
+  <!-- WHAT IS -->
+  <h2 id="what-is">What is CrewAI?</h2>
+  <p>CrewAI is a high-level Python framework for building <strong>teams of AI agents</strong> that collaborate on tasks. Instead of thinking in nodes and edges (like LangGraph), you think in <strong>roles, goals, and responsibilities</strong> — like a small team of specialized workers.</p>
+
+  <p>Each agent has a role (who it is), a goal (what it's trying to achieve), and optionally a backstory (context that shapes its behavior). Agents are assigned tasks and can use tools. A <strong>Crew</strong> coordinates them.</p>
+
+  <div class="note"><strong>Install:</strong> <code>pip install crewai crewai-tools</code></div>
+
+  <!-- AGENTIC STACK -->
+  <h2 id="agentic-stack">The Agentic AI Stack</h2>
+  <p>Different frameworks solve different parts of the multi-agent problem. You've now worked at all three levels:</p>
+
+  <div class="flow">
+    <span class="node">CrewAI / AutoGen / Swarm</span>  <span class="label">← HIGH LEVEL: roles, tasks, teams</span><br>
+    <span class="arrow">    ↕  sits on top of</span><br>
+    <span class="node">LangGraph</span>                   <span class="label">← MID LEVEL: state machines, graphs, HITL</span><br>
+    <span class="arrow">    ↕  sits on top of</span><br>
+    <span class="node">tool_use / function_calling</span> <span class="label">← LOW LEVEL: raw LLM tool calls</span>
+  </div>
+
+  <table>
+    <tr><th>Project</th><th>Framework</th><th>Level</th><th>What you controlled</th></tr>
+    <tr><td>P1 ToolBot</td><td>Raw Anthropic tool_use</td><td>Low</td><td>Every token of the LLM loop</td></tr>
+    <tr><td>P3 ResearchBot</td><td>LangGraph</td><td>Mid</td><td>Nodes, edges, state, routing</td></tr>
+    <tr><td>P4 StockSage</td><td>LangGraph</td><td>Mid</td><td>Typed state, fixed edges, synthesize node</td></tr>
+    <tr><td>P5 ReviewCrew</td><td>CrewAI</td><td>High</td><td>Agent roles, task goals, crew process</td></tr>
+  </table>
+
+  <div class="note"><strong>Can they work together?</strong> Yes. CrewAI can use LangGraph as its execution backend. In production you often see CrewAI for team coordination and LangGraph inside a single complex agent for branching/retries.</div>
+
+  <!-- VS LANGGRAPH -->
+  <h2 id="vs-langgraph">CrewAI vs LangGraph</h2>
+  <table>
+    <tr><th></th><th>LangGraph</th><th>CrewAI</th></tr>
+    <tr><td>Mental model</td><td>State machine — nodes and edges</td><td>Team — agents and tasks</td></tr>
+    <tr><td>What you define</td><td>Nodes, edges, state TypedDict</td><td>Agent roles, task goals, crew process</td></tr>
+    <tr><td>Routing control</td><td>Explicit — you write every edge</td><td>Implicit — crew decides order based on process type</td></tr>
+    <tr><td>Parallelism</td><td>Manual fan-out with Annotated reducers</td><td>Built-in with <code>Process.parallel</code></td></tr>
+    <tr><td>Agent specialization</td><td>No — nodes are generic functions</td><td>Yes — each agent has role, goal, backstory</td></tr>
+    <tr><td>Tool scoping</td><td>All tools available everywhere</td><td>Each agent gets its own tools list</td></tr>
+    <tr><td>Output passing</td><td>Via shared state dict</td><td>Via <code>context=</code> in Task, or automatic chaining</td></tr>
+    <tr><td>Best for</td><td>Complex flows, branching, HITL, checkpointing</td><td>Specialized agent teams, rapid prototyping, parallel work</td></tr>
+  </table>
+
+  <!-- AGENT -->
+  <h2 id="agent">Agent — The Worker</h2>
+  <p>An Agent is an AI worker with a defined identity. The role, goal, and backstory are all passed as text to the LLM to shape its behavior.</p>
+
+  <pre><code><span class="keyword">from</span> crewai <span class="keyword">import</span> Agent
+
+reviewer = Agent(
+    role=<span class="string">"Senior Code Reviewer"</span>,
+    goal=<span class="string">"Find bugs, security issues, and bad patterns in code changes"</span>,
+    backstory=<span class="string">"You are an experienced software engineer who has reviewed "
+              "thousands of PRs. You are direct, precise, and constructive."</span>,
+    tools=[github_tool],          <span class="comment"># tools this agent can use</span>
+    llm=<span class="string">"claude-opus-4-6"</span>,          <span class="comment"># which LLM to use</span>
+    verbose=<span class="keyword">True</span>,                 <span class="comment"># print reasoning steps</span>
+    allow_delegation=<span class="keyword">False</span>,       <span class="comment"># can it assign work to other agents?</span>
+)</code></pre>
+
+  <table>
+    <tr><th>Parameter</th><th>What it does</th><th>Tips</th></tr>
+    <tr><td><code>role</code></td><td>Job title — shapes how LLM responds</td><td>Be specific: "Senior Python Engineer" not "Developer"</td></tr>
+    <tr><td><code>goal</code></td><td>What this agent is trying to achieve</td><td>One clear sentence, action-oriented</td></tr>
+    <tr><td><code>backstory</code></td><td>Background context — expertise, style</td><td>Helps LLM adopt the persona consistently</td></tr>
+    <tr><td><code>tools</code></td><td>List of tools this agent can call</td><td>Scope tightly — only what this agent needs</td></tr>
+    <tr><td><code>llm</code></td><td>Which model to use for this agent</td><td>Can give different agents different models</td></tr>
+    <tr><td><code>allow_delegation</code></td><td>Can this agent hand off tasks to others?</td><td>Set False for leaf agents; True for manager agents</td></tr>
+    <tr><td><code>verbose</code></td><td>Print reasoning chain (Thought/Action/Observation)</td><td>Set True during development</td></tr>
+  </table>
+
+  <!-- TASK -->
+  <h2 id="task">Task — The Assignment</h2>
+  <p>A Task is a specific job for an agent. It defines what needs to be done and what the output should look like.</p>
+
+  <pre><code><span class="keyword">from</span> crewai <span class="keyword">import</span> Task
+
+review_task = Task(
+    description=<span class="string">"Review the following PR diff for bugs, bad patterns, "
+                 "and security issues: {pr_diff}"</span>,
+    expected_output=<span class="string">"A markdown list of issues found, each with: "
+                     "severity (HIGH/MEDIUM/LOW), file, line, and explanation"</span>,
+    agent=reviewer,              <span class="comment"># which agent runs this task</span>
+    context=[fetch_task],        <span class="comment"># wait for these tasks first, use their output</span>
+    output_pydantic=ReviewResult <span class="comment"># optional: validate output against Pydantic model</span>
+)</code></pre>
+
+  <table>
+    <tr><th>Parameter</th><th>What it does</th></tr>
+    <tr><td><code>description</code></td><td>What the agent should do — can use <code>{variable}</code> placeholders filled by crew inputs</td></tr>
+    <tr><td><code>expected_output</code></td><td>Tells the LLM what format/content the output should be</td></tr>
+    <tr><td><code>agent</code></td><td>Which Agent runs this task</td></tr>
+    <tr><td><code>context</code></td><td>List of other Tasks whose outputs are passed as context to this task</td></tr>
+    <tr><td><code>output_pydantic</code></td><td>Validates the LLM output against a Pydantic model</td></tr>
+  </table>
+
+  <!-- TOOL -->
+  <h2 id="tool">Tool — What Agents Can Do</h2>
+  <p>Tools let agents interact with the outside world — fetch a URL, search the web, read a file, call an API. CrewAI has built-in tools and you can write custom ones.</p>
+
+  <pre><code><span class="comment"># Built-in tools from crewai_tools</span>
+<span class="keyword">from</span> crewai_tools <span class="keyword">import</span> GithubSearchTool, SerperDevTool, FileReadTool
+
+<span class="comment"># Custom tool — just a decorated function</span>
+<span class="keyword">from</span> crewai <span class="keyword">import</span> tool
+
+<span class="keyword">@tool</span>(<span class="string">"fetch_pr_diff"</span>)
+<span class="keyword">def</span> <span class="fn">fetch_pr_diff</span>(pr_url: str) -> str:
+    <span class="string">"""Fetches the diff for a GitHub pull request given its URL."""</span>
+    <span class="comment"># ... implementation ...</span>
+    <span class="keyword">return</span> diff_text</code></pre>
+
+  <div class="note"><strong>Tool scoping:</strong> assign each tool only to the agent that needs it. The agent's LLM decides when and how to call the tool — you don't call it directly.</div>
+
+  <!-- CREW -->
+  <h2 id="crew">Crew — The Team</h2>
+  <p>The Crew wires everything together: which agents exist, which tasks to run, and how to coordinate them.</p>
+
+  <pre><code><span class="keyword">from</span> crewai <span class="keyword">import</span> Crew, Process
+
+crew = Crew(
+    agents=[fetcher, reviewer, summarizer],
+    tasks=[fetch_task, review_task, summary_task],
+    process=Process.sequential,   <span class="comment"># or Process.parallel or Process.hierarchical</span>
+    verbose=<span class="keyword">True</span>
+)
+
+result = crew.kickoff(inputs={<span class="string">"pr_url"</span>: <span class="string">"https://github.com/org/repo/pull/42"</span>})
+print(result.raw)                 <span class="comment"># final task output as string</span></code></pre>
+
+  <!-- SEQUENTIAL -->
+  <h2 id="sequential">Sequential Process</h2>
+  <p>Tasks run one after another in the order they are listed. Each task's output is available to the next task via <code>context=</code>. This is the default and simplest mode.</p>
+
+  <div class="flow">
+    <span class="node">Task 1: Fetch PR</span>  <span class="arrow">──→</span>  <span class="node">Task 2: Review Code</span>  <span class="arrow">──→</span>  <span class="node">Task 3: Write Summary</span>
+    <br>
+    <span class="label">&nbsp;&nbsp;&nbsp;&nbsp;[fetcher agent]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[reviewer agent]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[summarizer agent]</span>
+  </div>
+
+  <pre><code>crew = Crew(
+    agents=[fetcher, reviewer, summarizer],
+    tasks=[fetch_task, review_task, summary_task],
+    process=Process.sequential
+)</code></pre>
+
+  <!-- PARALLEL -->
+  <h2 id="parallel">Parallel Process</h2>
+  <p>Multiple tasks run at the same time. Use when tasks are independent — e.g., analyzing security AND performance at the same time, then combining results.</p>
+
+  <div class="flow">
+    <span class="node">Task 1: Fetch PR</span>  <span class="arrow">──→</span>  <span class="node">Task 2a: Security Review</span>  <span class="arrow">──┐</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└──→</span>  <span class="node">Task 2b: Style Review</span>    <span class="arrow">──┤</span>  <span class="arrow">──→</span>  <span class="node">Task 3: Summary</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="arrow">──┘</span>
+  </div>
+
+  <pre><code>crew = Crew(
+    agents=[fetcher, security_agent, style_agent, summarizer],
+    tasks=[fetch_task, security_task, style_task, summary_task],
+    process=Process.parallel       <span class="comment"># security_task and style_task run simultaneously</span>
+)</code></pre>
+
+  <div class="warn"><strong>Parallel gotcha:</strong> tasks marked parallel run concurrently. If Task B depends on Task A's output, use <code>context=[task_a]</code> — CrewAI will wait for the dependency even in parallel mode.</div>
+
+  <!-- HIERARCHICAL -->
+  <h2 id="hierarchical">Hierarchical Process</h2>
+  <p>A <strong>manager agent</strong> (created automatically or by you) receives the goal and decides which agents to delegate tasks to and in what order. The manager uses <code>allow_delegation=True</code>.</p>
+
+  <div class="flow">
+    <span class="node">Manager Agent</span>  <span class="arrow">──→</span>  <span class="node">Delegate to CodeFetcher</span>  <span class="arrow">──→</span>  <span class="node">result</span><br>
+    <span class="arrow">│</span><br>
+    <span class="arrow">└──────────────→</span>  <span class="node">Delegate to Reviewer</span>     <span class="arrow">──→</span>  <span class="node">result</span><br>
+    <span class="arrow">└──────────────→</span>  <span class="node">Delegate to Summarizer</span>   <span class="arrow">──→</span>  <span class="node">final output</span>
+  </div>
+
+  <pre><code>crew = Crew(
+    agents=[fetcher, reviewer, summarizer],
+    tasks=[fetch_task, review_task, summary_task],
+    process=Process.hierarchical,
+    manager_llm=<span class="string">"claude-opus-4-6"</span>    <span class="comment"># LLM used by the auto-created manager</span>
+)</code></pre>
+
+  <!-- OUTPUT PASSING -->
+  <h2 id="output-passing">Output Passing Between Tasks</h2>
+  <p>In sequential mode, each task's output is automatically passed to the next. For explicit dependency, use <code>context=</code>.</p>
+
+  <pre><code><span class="comment"># Task 1: fetch the PR diff</span>
+fetch_task = Task(
+    description=<span class="string">"Fetch the diff for PR: {pr_url}"</span>,
+    expected_output=<span class="string">"The raw diff text of the pull request"</span>,
+    agent=fetcher
+)
+
+<span class="comment"># Task 2: review — depends on Task 1's output</span>
+review_task = Task(
+    description=<span class="string">"Review the PR diff for bugs and issues"</span>,
+    expected_output=<span class="string">"Markdown list of issues with severity and explanation"</span>,
+    agent=reviewer,
+    context=[fetch_task]     <span class="comment"># fetch_task output is injected into this task's prompt</span>
+)</code></pre>
+
+  <!-- CONTEXT -->
+  <h2 id="context">context= in Tasks</h2>
+  <p>When you set <code>context=[some_task]</code>, CrewAI appends that task's output to the current task's prompt automatically. The agent sees it as additional background information.</p>
+
+  <div class="note"><strong>Behind the scenes:</strong> CrewAI builds a prompt like: <em>"Here is context from previous tasks: [output of fetch_task]. Now do: review the PR diff for bugs..."</em></div>
+
+  <!-- PYDANTIC OUTPUT -->
+  <h2 id="pydantic-output">Pydantic Output Validation</h2>
+  <p>Just like P4's structured output pattern, you can validate a task's output against a Pydantic model.</p>
+
+  <pre><code><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel
+
+<span class="keyword">class</span> <span class="fn">ReviewResult</span>(BaseModel):
+    issues_found: int
+    severity_breakdown: dict[str, int]   <span class="comment"># {"HIGH": 2, "MEDIUM": 3, "LOW": 1}</span>
+    summary: str
+    recommendation: str                  <span class="comment"># "APPROVE" | "REQUEST_CHANGES" | "COMMENT"</span>
+
+review_task = Task(
+    description=<span class="string">"Review the PR diff..."</span>,
+    expected_output=<span class="string">"Structured review result"</span>,
+    agent=reviewer,
+    output_pydantic=ReviewResult         <span class="comment"># CrewAI validates and parses the output</span>
+)
+
+result = crew.kickoff(inputs={<span class="string">"pr_url"</span>: url})
+review = result.pydantic                 <span class="comment"># ReviewResult instance</span>
+print(review.recommendation)            <span class="comment"># "REQUEST_CHANGES"</span></code></pre>
+
+  <!-- REVIEWCREW -->
+  <h2 id="reviewcrew">P5 ReviewCrew — Design</h2>
+  <p>Three specialized agents collaborate to review a GitHub PR:</p>
+
+  <table>
+    <tr><th>Agent</th><th>Role</th><th>Tool</th><th>Task</th></tr>
+    <tr><td><span class="tag tag-blue">CodeFetcher</span></td><td>PR Data Retrieval Specialist</td><td>GitHub API tool</td><td>Fetch the PR diff and metadata</td></tr>
+    <tr><td><span class="tag tag-purple">CodeReviewer</span></td><td>Senior Code Reviewer</td><td>(none — pure analysis)</td><td>Find bugs, bad patterns, security issues</td></tr>
+    <tr><td><span class="tag tag-green">TechWriter</span></td><td>Technical Documentation Specialist</td><td>(none — pure writing)</td><td>Write the final review report in markdown</td></tr>
+  </table>
+
+  <!-- FLOW DIAGRAM -->
+  <h2 id="flow-diagram">Full Flow Diagram</h2>
+
+  <div class="flow">
+    <span class="state">Input: { pr_url: "github.com/org/repo/pull/42" }</span><br>
+    <span class="arrow">│</span><br>
+    <span class="arrow">▼</span><br>
+    <span class="node">Crew.kickoff()</span><br>
+    <span class="arrow">│</span><br>
+    <span class="arrow">▼  [Process.sequential]</span><br>
+    <span class="node">Task 1 → CodeFetcher Agent</span><br>
+    <span class="label">&nbsp;&nbsp;&nbsp;calls fetch_pr_diff tool → returns raw diff text</span><br>
+    <span class="arrow">│</span><br>
+    <span class="arrow">▼  [context=fetch_task]</span><br>
+    <span class="node">Task 2 → CodeReviewer Agent</span><br>
+    <span class="label">&nbsp;&nbsp;&nbsp;analyzes diff → returns markdown issue list</span><br>
+    <span class="arrow">│</span><br>
+    <span class="arrow">▼  [context=review_task]</span><br>
+    <span class="node">Task 3 → TechWriter Agent</span><br>
+    <span class="label">&nbsp;&nbsp;&nbsp;writes final report → returns formatted markdown</span><br>
+    <span class="arrow">│</span><br>
+    <span class="arrow">▼</span><br>
+    <span class="state">result.raw → final review report (markdown)</span>
+  </div>
+
+  <p style="margin-top: 48px; color: #4a5080; font-size: 13px; border-top: 1px solid #2d3148; padding-top: 16px;">
+    Last updated: 2026-04-25 — P5 ReviewCrew reference
+  </p>
+</main>
+</body>
+</html>
