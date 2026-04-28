@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MCP Inner Workings</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 960px; margin: 40px auto; padding: 0 24px; background: #f9f9fb; color: #1a1a2e; }
+    h1 { color: #2c3e7a; border-bottom: 3px solid #2c3e7a; padding-bottom: 8px; }
+    h2 { color: #2c3e7a; margin-top: 48px; border-left: 4px solid #2c3e7a; padding-left: 12px; }
+    h3 { color: #3a4a8a; margin-top: 28px; }
+    pre { background: #1e1e2e; color: #cdd6f4; padding: 18px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.7; }
+    code { font-family: 'Courier New', monospace; }
+    .keyword { color: #cba6f7; }
+    .str { color: #a6e3a1; }
+    .comment { color: #6c7086; font-style: italic; }
+    .fn { color: #89b4fa; }
+    .note { background: #e8f4fd; border-left: 4px solid #2980b9; padding: 12px 16px; margin: 16px 0; border-radius: 4px; }
+    .warn { background: #fef9e7; border-left: 4px solid #f39c12; padding: 12px 16px; margin: 16px 0; border-radius: 4px; }
+    .key { background: #eafaf1; border-left: 4px solid #27ae60; padding: 12px 16px; margin: 16px 0; border-radius: 4px; }
+    table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+    th { background: #2c3e7a; color: white; padding: 10px 14px; text-align: left; }
+    td { border: 1px solid #ddd; padding: 10px 14px; }
+    tr:nth-child(even) { background: #f2f2f2; }
+    .flow { background: #1e1e2e; color: #cdd6f4; padding: 20px; border-radius: 8px; font-family: monospace; font-size: 13px; line-height: 2; white-space: pre; overflow-x: auto; }
+    .phase { background: #2c3e7a; color: white; padding: 4px 12px; border-radius: 12px; font-size: 13px; display: inline-block; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+<h1>MCP Inner Workings — Complete Reference</h1>
+<p>How the Model Context Protocol works end-to-end: the three primitives, schema discovery, and the full tool call lifecycle between Client Agent, LLM, and MCP Server.</p>
+
+<h2>The Three Layers</h2>
+
+<div class="flow">┌─────────────────────────────────┐
+│  LLM (Claude, GPT-4o)           │  ← does reasoning, decides to call tools
+├─────────────────────────────────┤
+│  MCP Client / Host App          │  ← Claude Desktop, your Python script,
+│  (client_intro.py)              │    VS Code extension, agent code
+├─────────────────────────────────┤
+│  MCP Server (server_intro.py)   │  ← your FastMCP server
+└─────────────────────────────────┘</div>
+
+<div class="note"><strong>Key point:</strong> The LLM and MCP Server never talk directly. The Client Agent sits between them, translating between the Anthropic API protocol and the MCP protocol. The LLM only sees schemas — it never touches the MCP server.</div>
+
+<h2>The Three MCP Primitives</h2>
+
+<p>An MCP server exposes three types of capabilities. All three are discovered via schema — the client calls a list method and gets back metadata describing what's available.</p>
+
+<table>
+  <tr><th>Primitive</th><th>What it is</th><th>Who triggers it</th><th>Discovery call</th><th>Invocation call</th></tr>
+  <tr><td><strong>Tools</strong></td><td>Callable functions that perform actions or return data</td><td>LLM autonomously during reasoning</td><td>session.list_tools()</td><td>session.call_tool(name, args)</td></tr>
+  <tr><td><strong>Resources</strong></td><td>Readable data (files, DB rows, URIs) for context</td><td>Client explicitly, before/outside LLM conversation</td><td>session.list_resources()</td><td>session.read_resource(uri)</td></tr>
+  <tr><td><strong>Prompt Templates</strong></td><td>Named, reusable prompt strings stored on the server</td><td>Client fetches and injects into LLM message</td><td>session.list_prompts()</td><td>session.get_prompt(name, args)</td></tr>
+</table>
+
+<h3>Tools vs Resources — the key distinction</h3>
+
+<p>Both can return data. The difference is <strong>who calls them and when</strong>:</p>
+
+<table>
+  <tr><th></th><th>Tool</th><th>Resource</th></tr>
+  <tr><td>Triggered by</td><td>LLM (autonomous, mid-conversation)</td><td>Client (explicit, before conversation)</td></tr>
+  <tr><td>Args passed as</td><td>JSON payload</td><td>Embedded in URI path</td></tr>
+  <tr><td>Analogy</td><td>Function call / API endpoint</td><td>HTTP GET / file read</td></tr>
+  <tr><td>LLM awareness</td><td>LLM sees schema, decides to call</td><td>LLM sees data already in context — never "calls" it</td></tr>
+  <tr><td>Use for</td><td>Live data, actions, side effects</td><td>Static/semi-static context to pre-load</td></tr>
+</table>
+
+<div class="note">In practice, you could replace resources with tools and it would still work. Resources exist as a first-class primitive because host applications like Claude Desktop show them differently — as browsable context the user can explicitly load, not callable functions the LLM invokes.</div>
+
+<h2>Schema — How FastMCP Builds It</h2>
+
+<p>When FastMCP starts, it introspects all decorated functions and builds schemas automatically from type hints and docstrings. You never write JSON schemas manually.</p>
+
+<pre><code><span class="comment"># Your Python function</span>
+@mcp.<span class="fn">tool</span>()
+<span class="keyword">def</span> <span class="fn">get_stock_price</span>(ticker: str) -> str:
+    <span class="str">"""Get the current stock price for a given ticker symbol."""</span>
+    ...
+
+<span class="comment"># FastMCP generates this schema automatically:</span>
+{
+  <span class="str">"name"</span>: <span class="str">"get_stock_price"</span>,
+  <span class="str">"description"</span>: <span class="str">"Get the current stock price for a given ticker symbol."</span>,
+  <span class="str">"inputSchema"</span>: {
+    <span class="str">"type"</span>: <span class="str">"object"</span>,
+    <span class="str">"properties"</span>: {
+      <span class="str">"ticker"</span>: { <span class="str">"type"</span>: <span class="str">"string"</span> }
+    },
+    <span class="str">"required"</span>: [<span class="str">"ticker"</span>]
+  }
+}</code></pre>
+
+<table>
+  <tr><th>Python element</th><th>Maps to schema field</th></tr>
+  <tr><td>Function name</td><td>name</td></tr>
+  <tr><td>Docstring</td><td>description (what LLM reads to decide when to call)</td></tr>
+  <tr><td>Parameter type hints</td><td>inputSchema properties + types</td></tr>
+  <tr><td>Parameters with no default</td><td>required array</td></tr>
+</table>
+
+<h3>Resource Schema</h3>
+<pre><code><span class="comment"># Dynamic resource — URI has parameters</span>
+@mcp.<span class="fn">resource</span>(<span class="str">"stocks://earnings/{ticker}"</span>)
+<span class="keyword">def</span> <span class="fn">get_earnings_note</span>(ticker: str) -> str:
+    <span class="str">"""Returns analyst earnings notes for a given ticker."""</span>
+    ...
+
+<span class="comment"># Schema returned by list_resources():</span>
+{
+  <span class="str">"uri"</span>: <span class="str">"stocks://earnings/{ticker}"</span>,
+  <span class="str">"name"</span>: <span class="str">"get_earnings_note"</span>,
+  <span class="str">"description"</span>: <span class="str">"Returns analyst earnings notes for a given ticker."</span>,
+  <span class="str">"mimeType"</span>: <span class="str">"text/plain"</span>
+}
+
+<span class="comment"># Client fetches content:</span>
+content = <span class="keyword">await</span> session.<span class="fn">read_resource</span>(<span class="str">"stocks://earnings/AAPL"</span>)
+<span class="comment"># FastMCP extracts ticker="AAPL" from URI, calls get_earnings_note("AAPL")</span></code></pre>
+
+<h2>The Full Tool Call Lifecycle</h2>
+<p>A user asks "What's Apple's stock price?" — here's every interaction between all three layers:</p>
+
+<h3><span class="phase">Phase 1</span> — Client discovers tools from MCP Server</h3>
+
+<div class="flow">Client Agent                         MCP Server
+     |                                    |
+     |--- list_tools() ------------------>|
+     |                                    | scans @mcp.tool() decorators
+     |                                    | builds schemas from type hints + docstrings
+     |<-- [{name: "get_stock_price",      |
+     |      description: "...",           |
+     |      inputSchema: {                |
+     |        ticker: {type: "string"}    |
+     |      }}]                           |</div>
+
+<p>Client holds tool schemas in memory. MCP Server's job is done for now.</p>
+
+<h3><span class="phase">Phase 2</span> — Client sends question + schemas to LLM</h3>
+
+<div class="flow">Client Agent                         LLM (Claude API)
+     |                                    |
+     |--- messages.create() ------------>|
+     |    user: "What's AAPL price?"      |
+     |    tools: [{                       |
+     |      name: "get_stock_price",      | ← MCP schema translated to
+     |      description: "...",           |   Claude's tools[] format
+     |      input_schema: {               |
+     |        ticker: {type: "string"}    |
+     |      }                             |
+     |    }]                              |</div>
+
+<div class="note">The client <strong>translates</strong> MCP schemas into the LLM's native format. For Claude this means the Anthropic <code>tools=[]</code> parameter. The LLM never talks to the MCP server — it only sees schemas the client hands it.</div>
+
+<h3><span class="phase">Phase 3</span> — LLM responds with a tool call instruction</h3>
+
+<div class="flow">Client Agent                         LLM (Claude API)
+     |                                    |
+     |<-- response -----------------------|
+     |    stop_reason: "tool_use"         |
+     |    content: [{                     |
+     |      type: "tool_use",             |
+     |      id: "toolu_abc123",           |
+     |      name: "get_stock_price",      | ← LLM picked this tool
+     |      input: {                      |
+     |        ticker: "AAPL"             | ← LLM filled in args from context
+     |      }                             |
+     |    }]                              |</div>
+
+<div class="warn"><strong>The LLM does NOT call anything.</strong> It returns a JSON instruction saying "call this tool with these args." It's just text. The client is responsible for acting on it.</div>
+
+<h3><span class="phase">Phase 4</span> — Client maps LLM instruction to MCP tool call</h3>
+
+<div class="flow">Client Agent                         MCP Server
+     |                                    |
+     | reads: name="get_stock_price"      |
+     |        input={"ticker": "AAPL"}    |
+     |                                    |
+     |--- call_tool(                     |
+     |      "get_stock_price",            |
+     |      {"ticker": "AAPL"}            |
+     |    ) ------------------------------>|
+     |                                    | looks up function by name
+     |                                    | calls get_stock_price(ticker="AAPL")
+     |                                    | runs yfinance, gets price
+     |<-- "Apple Inc. (AAPL): $271.06" --|</div>
+
+<h3>Is the Phase 4 mapping hardcoded?</h3>
+<p><strong>No — it's completely generic.</strong> The client logic works for any tool:</p>
+
+<pre><code><span class="comment"># Generic dispatch — no hardcoding, works for ANY tool</span>
+<span class="keyword">if</span> response.stop_reason == <span class="str">"tool_use"</span>:
+    tool_call = response.content[0]
+    result = <span class="keyword">await</span> session.<span class="fn">call_tool</span>(
+        tool_call.name,    <span class="comment"># whatever name LLM returned</span>
+        tool_call.input    <span class="comment"># whatever args LLM returned</span>
+    )
+
+<span class="comment"># MCP server side is also generic:</span>
+<span class="comment"># call_tool("get_stock_price", {"ticker":"AAPL"})
+#   → looks up "get_stock_price" in registry
+#   → calls get_stock_price(ticker="AAPL")</span></code></pre>
+
+<div class="key"><strong>The only hardcoded part</strong> is the Python function itself on the server. Everything in between — LLM schema format, client dispatch, MCP routing — is generic infrastructure. This is why MCP is valuable as a standard: write the function once, the entire discovery-to-execution chain is automatic.</div>
+
+<h3><span class="phase">Phase 5</span> — Client sends tool result back to LLM</h3>
+
+<div class="flow">Client Agent                         LLM (Claude API)
+     |                                    |
+     |--- messages.create() ------------>|
+     |    [original messages]             |
+     |    + assistant: tool_use message   |
+     |    + user: {                       |
+     |        type: "tool_result",        |
+     |        tool_use_id: "toolu_abc123",|
+     |        content: "Apple: $271.06"   |
+     |      }                             |
+     |                                    |
+     |<-- "Apple Inc is trading at $271" -|</div>
+
+<p>Client sends full conversation history including the tool result. LLM now has the data it needed and generates a natural language response.</p>
+
+<h2>Complete Flow Summary</h2>
+
+<div class="flow">User: "What's Apple's stock price?"
+          ↓
+Client fetches schemas from MCP Server          [MCP protocol]
+          ↓
+Client sends question + schemas to LLM          [Anthropic API]
+          ↓
+LLM returns tool_use instruction (JSON only)    [Anthropic API]
+          ↓
+Client calls MCP Server with name + args        [MCP protocol]
+          ↓
+MCP Server runs Python function, returns data   [Python]
+          ↓
+Client sends result back to LLM                 [Anthropic API]
+          ↓
+LLM generates final natural language answer     [Anthropic API]
+          ↓
+User sees: "Apple Inc is trading at $271.06"</div>
+
+<h2>Resource Lifecycle — How Client, MCP Server, and LLM Interact</h2>
+
+<p>Unlike tools (where the LLM drives the call), resources are driven entirely by the <strong>client application</strong>. The LLM never calls a resource — it just sees the data already in its context.</p>
+
+<h3><span class="phase">Step 1</span> — Client fetches resource content from MCP Server</h3>
+
+<div class="flow">Client Agent                         MCP Server
+     |                                    |
+     |--- read_resource(                 |
+     |      "stocks://earnings/AAPL"      |
+     |    ) ------------------------------>|
+     |                                    | extracts ticker="AAPL" from URI
+     |                                    | calls get_earnings_note("AAPL")
+     |<-- "Q1 2025: Revenue $124B..."    |</div>
+
+<p>The client author hardcoded this URI — they already know what context the LLM will need. No discovery required for a purpose-built client.</p>
+
+<h3><span class="phase">Step 2</span> — Client injects resource content into LLM context</h3>
+
+<div class="flow">Client Agent                         LLM (Claude API)
+     |                                    |
+     |--- messages.create() ------------>|
+     |    system: "You are a stock        |
+     |     analyst. Earnings data:        |
+     |     Q1 2025: Revenue $124B..."     | ← resource content injected here
+     |    user: "Should I buy AAPL?"      |
+     |                                    |
+     |<-- "Based on Q1 earnings, AAPL..." |</div>
+
+<p>The LLM reads the earnings data as part of its context. From the LLM's perspective it was just there in the prompt — it never "called" anything to get it.</p>
+
+<h3>So why does list_resources() exist?</h3>
+
+<p>If the client already knows which resources to fetch (hardcoded), why discover them at all? Because <code>list_resources()</code> is for <strong>generic clients that don't know the server in advance</strong>:</p>
+
+<table>
+  <tr><th>Client type</th><th>Needs list_resources()?</th><th>Why</th></tr>
+  <tr><td>Hardcoded app (your client_intro.py)</td><td>No — redundant</td><td>Developer already knows the URIs</td></tr>
+  <tr><td>Claude Desktop</td><td>Yes</td><td>Connects to ANY MCP server, can't hardcode unknown URIs</td></tr>
+  <tr><td>Developer inspection tool</td><td>Yes</td><td>"What does this server expose?" exploration</td></tr>
+  <tr><td>Dynamic UI builder</td><td>Yes</td><td>Generates a browsable list of resources for the user</td></tr>
+</table>
+
+<div class="note"><strong>Claude Desktop example:</strong> User installs a new MCP server. Claude Desktop calls <code>list_resources()</code>, gets back the URI list, shows it as a browsable file tree. User clicks a file → client calls <code>read_resource(uri)</code> → content injected into context. The <em>human</em> is the decision-maker, not code and not the LLM.</div>
+
+  <h3>Static Resources vs Resource Templates (MCP 1.26+)</h3>
+  <p>MCP separates resources into two distinct types, each with its own discovery call:</p>
+
+  <table>
+    <tr><th></th><th>Static Resource</th><th>Resource Template</th></tr>
+    <tr><td>URI</td><td>Fixed: <code>stocks://market-hours</code></td><td>Parameterized: <code>stocks://earnings/{ticker}</code></td></tr>
+    <tr><td>Discovery call</td><td><code>session.list_resources()</code></td><td><code>session.list_resource_templates()</code></td></tr>
+    <tr><td>Fetch call</td><td><code>session.read_resource("stocks://market-hours")</code></td><td><code>session.read_resource("stocks://earnings/AAPL")</code></td></tr>
+    <tr><td>FastMCP decorator</td><td><code>@mcp.resource("stocks://market-hours")</code> — no {params}</td><td><code>@mcp.resource("stocks://earnings/{ticker}")</code> — has {params}</td></tr>
+  </table>
+
+  <pre><code><span class="comment"># Static — list_resources() finds this</span>
+@mcp.<span class="fn">resource</span>(<span class="str">"stocks://market-hours"</span>)
+<span class="keyword">def</span> <span class="fn">get_market_hours</span>() -> str:
+    <span class="keyword">return</span> <span class="str">"NYSE: Mon-Fri 9:30am-4:00pm ET"</span>
+
+<span class="comment"># Dynamic template — list_resource_templates() finds this</span>
+@mcp.<span class="fn">resource</span>(<span class="str">"stocks://earnings/{ticker}"</span>)
+<span class="keyword">def</span> <span class="fn">get_earnings_note</span>(ticker: str) -> str:
+    ...
+
+<span class="comment"># Client discovery</span>
+resources  = <span class="keyword">await</span> session.<span class="fn">list_resources</span>()           <span class="comment"># static only</span>
+templates  = <span class="keyword">await</span> session.<span class="fn">list_resource_templates</span>()   <span class="comment"># parameterized only</span>
+
+<span class="comment"># Fetching content — same call for both</span>
+content = <span class="keyword">await</span> session.<span class="fn">read_resource</span>(<span class="str">"stocks://earnings/AAPL"</span>)
+<span class="comment"># FastMCP extracts ticker="AAPL" from URI, calls get_earnings_note("AAPL")</span>
+print(content.contents[0].text)</code></pre>
+
+<h3>Tool vs Resource — who is in the driver's seat</h3>
+
+<div class="flow">TOOL flow:
+  User question
+       → LLM decides which tool to call (autonomous)
+       → Client calls MCP Server
+       → Result returned to LLM
+       → LLM answers
+
+RESOURCE flow:
+  Client decides what context to load (hardcoded policy OR human UI choice)
+       → Client calls MCP Server
+       → Content injected into context window
+       → User question
+       → LLM answers with context already available</div>
+
+<div class="key"><strong>The rule of thumb:</strong> If you need data mid-conversation based on what the user says → <strong>Tool</strong> (LLM decides). If you know upfront what context the LLM will need → <strong>Resource</strong> (client pre-loads it). In most simple agents you can use tools for everything — resources add value when a human or app logic, not the LLM, controls what context gets loaded.</div>
+
+<h2>Are Resources Redundant? — The Honest Answer</h2>
+
+<p>Yes — anything a resource does, a tool can do:</p>
+
+<pre><code><span class="comment"># As a resource</span>
+@mcp.<span class="fn">resource</span>(<span class="str">"stocks://earnings/{ticker}"</span>)
+<span class="keyword">def</span> <span class="fn">get_earnings_note</span>(ticker: str) -> str:
+    <span class="keyword">return</span> <span class="str">"Q1 2025: Revenue $124B..."</span>
+
+<span class="comment"># As a tool — does exactly the same thing</span>
+@mcp.<span class="fn">tool</span>()
+<span class="keyword">def</span> <span class="fn">get_earnings_note</span>(ticker: str) -> str:
+    <span class="str">"""Get earnings notes for a ticker."""</span>
+    <span class="keyword">return</span> <span class="str">"Q1 2025: Revenue $124B..."</span></code></pre>
+
+<p>Same data, same result. And tools can also be called directly by the client — the LLM doesn't have to initiate them:</p>
+
+<pre><code><span class="comment"># Client hardcoding a tool call directly — perfectly valid</span>
+result = <span class="keyword">await</span> session.<span class="fn">call_tool</span>(<span class="str">"get_stock_price"</span>, {<span class="str">"ticker"</span>: <span class="str">"AAPL"</span>})</code></pre>
+
+<p>So the distinction breaks down completely when examined:</p>
+
+<table>
+  <tr><th></th><th>Convention in spec</th><th>Reality</th></tr>
+  <tr><td>Tools</td><td>LLM calls them</td><td>Client can call them directly too</td></tr>
+  <tr><td>Resources</td><td>Client calls them</td><td>Nothing stops client calling a tool for the same data</td></tr>
+</table>
+
+<h3>Why does the spec separate them at all?</h3>
+
+<p>So generic host applications like Claude Desktop can present a coherent UI:</p>
+<ul>
+  <li><strong>Tools</strong> → shown as "things Claude can do during conversation"</li>
+  <li><strong>Resources</strong> → shown as "data you can browse and load into context"</li>
+</ul>
+
+<p>That's it. It's a <strong>labeling convention for UI purposes</strong>, not a technical enforcement. The spec was designed to serve Claude Desktop's sidebar UI as much as it was designed for programmatic agents.</p>
+
+<div class="warn"><strong>Known criticism of the MCP spec:</strong> The three primitives overlap heavily. The Tool vs Resource distinction only makes sense in the context of a graphical host application with separate UI panels. For agent developers writing code, the distinction adds complexity without adding capability.</div>
+
+<div class="key"><strong>Practical rule for agent development:</strong> Use tools for everything. Skip resources entirely unless you are building a host application with a UI where humans browse and select context. Many production MCP servers expose everything as tools. The spec supports resources — you don't have to use them.</div>
+
+<h2>Prompt Templates — What They Really Are</h2>
+
+<p>The best mental model: <strong>prompt templates are the MCP server's way of saying "for best results, use these prompt prefixes when talking to the LLM."</strong></p>
+
+<p>The server author built the tools and knows best how to use them. Prompt templates package that expertise so every client gets consistent, optimized prompts — instead of 5 different teams writing 5 slightly different versions.</p>
+
+<h3>What the server author is communicating</h3>
+<pre><code><span class="comment"># Server author is saying:
+# "I know this domain. Here's the prompt that gets the best results
+#  from the LLM when using my tools. Use this instead of guessing."</span>
+
+@mcp.<span class="fn">prompt</span>()
+<span class="keyword">def</span> <span class="fn">stock_analysis_prompt</span>(ticker: str, price: str) -> str:
+    <span class="str">"""Standard prompt for analyzing a stock given ticker and current price."""</span>
+    <span class="keyword">return</span> <span class="str">f"""You are a financial analyst. Analyze {ticker} at ${price}.
+Consider: recent earnings, market trends, and risk factors.
+Give a concise BUY / HOLD / SELL recommendation with 2-3 bullet point reasons."""</span></code></pre>
+
+<h3>Why this matters</h3>
+<table>
+  <tr><th>Benefit</th><th>Explanation</th></tr>
+  <tr><td>Consistency</td><td>Every client gets the same prompt — not 5 teams writing 5 slightly wrong versions</td></tr>
+  <tr><td>Expertise stays with the server</td><td>The person who built the tools knows what context the LLM needs to use them well</td></tr>
+  <tr><td>Single update point</td><td>Prompt needs tuning? Update server once — all clients benefit immediately</td></tr>
+</table>
+
+<h3>The spec-level details</h3>
+<ul>
+  <li><code>role</code> and <code>content</code> are <strong>fixed by the MCP spec</strong> — you cannot add custom fields to the response</li>
+  <li>Valid roles: <code>"user"</code> or <code>"assistant"</code> only. <code>"system"</code> is not an MCP role — the client decides to send the text as a system message to the LLM</li>
+  <li>When you return a plain <code>str</code>, FastMCP auto-wraps it as <code>PromptMessage(role="user", content=TextContent(type="text", text="..."))</code></li>
+  <li>What <strong>you define</strong>: the input parameters (names, types, defaults) — FastMCP builds the schema from type hints</li>
+</ul>
+
+<pre><code><span class="comment"># FastMCP hides this — returning a plain str auto-wraps as:</span>
+PromptMessage(
+    role=<span class="str">"user"</span>,          <span class="comment"># spec-fixed: "user" or "assistant" only</span>
+    content=TextContent(
+        type=<span class="str">"text"</span>,       <span class="comment"># spec-fixed: "text", "image", or "resource"</span>
+        text=<span class="str">"You are a financial analyst..."</span>   <span class="comment"># your content</span>
+    )
+)
+
+<span class="comment"># Client receives this and decides where to use it:</span>
+result = <span class="keyword">await</span> session.<span class="fn">get_prompt</span>(<span class="str">"stock_analysis_prompt"</span>, {<span class="str">"ticker"</span>: <span class="str">"AAPL"</span>, <span class="str">"price"</span>: <span class="str">"271"</span>})
+text = result.messages[0].content.text
+<span class="comment"># Client then sends text as system= or user= message to the LLM API</span></code></pre>
+
+<h3>The honest limitation</h3>
+<p>The "avoiding inconsistency" benefit only holds if clients actually use the prompt templates — which requires discipline. The client still has to hardcode which prompt name to use for which task. If a client ignores the templates and writes its own prompts, the server can't enforce anything.</p>
+
+<div class="note"><strong>Analogy:</strong> Prompt templates are like a Postman collection shipped with an API. The API author says "here are the recommended request templates — don't guess at the format, use these." Same idea for LLM interactions. Useful convention, not technical enforcement.</div>
+
+<h2>Why MCP Is a Standard (Not Just Another Library)</h2>
+
+<table>
+  <tr><th>Without MCP</th><th>With MCP</th></tr>
+  <tr><td>Every app wires tools differently</td><td>One standard protocol any client understands</td></tr>
+  <tr><td>Tool schemas hardcoded per app</td><td>Server publishes schemas, clients discover them</td></tr>
+  <tr><td>Switching LLMs breaks tool wiring</td><td>Client translates MCP schema to any LLM format</td></tr>
+  <tr><td>Tools tied to one host app</td><td>One MCP server works with Claude Desktop, Claude Code, your agent, any host</td></tr>
+</table>
+
+<div class="note">Think of MCP like <strong>USB for AI tools</strong> — or like OpenAPI/Swagger for REST APIs. The schema is the contract. Any compliant client can discover and use any compliant server without knowing implementation details.</div>
+
+<br><br>
+<p style="color: #4a5080; font-size: 13px;">Last updated: 2026-04-27 — P6 MCP++: full inner workings, three primitives, schema auto-generation, 5-phase tool call lifecycle, generic dispatch</p>
+</main>
+</body>
+</html>
