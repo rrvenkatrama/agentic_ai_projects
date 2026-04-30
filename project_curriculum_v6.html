@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Engineer Curriculum v6 — Rajesh Ramani</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 30px 40px;
+    color: #222;
+    line-height: 1.5;
+    background: #fafbfc;
+  }
+  header {
+    border-bottom: 3px solid #1a4d8f;
+    padding-bottom: 14px;
+    margin-bottom: 24px;
+  }
+  h1 {
+    margin: 0;
+    color: #1a4d8f;
+    font-size: 26pt;
+  }
+  .subtitle {
+    color: #666;
+    font-size: 11pt;
+    margin-top: 6px;
+  }
+  h2 {
+    color: #1a4d8f;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 4px;
+    margin-top: 32px;
+    font-size: 16pt;
+  }
+  h3 {
+    margin-top: 22px;
+    font-size: 13pt;
+    color: #333;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 14px 0;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+    font-size: 10pt;
+  }
+  th {
+    background: #f0f4fa;
+    color: #1a4d8f;
+    font-weight: 600;
+    border-bottom: 2px solid #1a4d8f;
+  }
+  tr:hover { background: #f9fbff; }
+  .status {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 9pt;
+    font-weight: 600;
+  }
+  .done { background: #d4edda; color: #155724; }
+  .next { background: #fff3cd; color: #856404; }
+  .progress { background: #cce5ff; color: #004085; }
+  .backlog { background: #e2e3e5; color: #383d41; }
+  .new { background: #f8d7da; color: #721c24; }
+  .quiz { color: #666; font-size: 9pt; }
+  ul li { margin: 4px 0; }
+  .changelog {
+    background: #fff8e1;
+    border-left: 4px solid #f9a825;
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 4px;
+  }
+  .changelog h3 { margin-top: 0; color: #6f5400; }
+  code {
+    background: #f1f3f5;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 90%;
+    color: #c7254e;
+  }
+  .pill {
+    display: inline-block;
+    background: #e7f0fa;
+    color: #1a4d8f;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 9pt;
+    margin: 2px 3px 2px 0;
+  }
+  .pill.new-tag { background: #ffe5e5; color: #b00020; font-weight: 600; }
+  .row-new { background: #fff5f5 !important; }
+  footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid #ddd;
+    color: #888;
+    font-size: 9pt;
+    text-align: center;
+  }
+  .progress-bar {
+    background: #e9ecef;
+    height: 24px;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 8px 0 16px 0;
+  }
+  .progress-fill {
+    background: linear-gradient(90deg, #28a745, #1a4d8f);
+    height: 100%;
+    width: 46%;
+    color: white;
+    text-align: center;
+    line-height: 24px;
+    font-size: 10pt;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>AI Engineer Curriculum — v6</h1>
+  <div class="subtitle">
+    Rajesh Ramani · 14 Projects · 4-Month Self-Training Program · Updated 2026-04-29
+  </div>
+</header>
+
+<h2>Progress</h2>
+<div class="progress-bar">
+  <div class="progress-fill">P1–P6 COMPLETE · 6 of 13 projects (46%)</div>
+</div>
+<p>
+  <span class="pill">Quiz scores</span>
+  P1: 7/7 &nbsp; P2: 6.5/8 &nbsp; P3: 6.5/7 &nbsp; P4: 6.5/8 &nbsp; P5: 6/6 &nbsp; P6: 5/7
+</p>
+
+<div class="changelog">
+  <h3>v6 Changes (2026-04-29) — Driven by 8 Real Job Postings</h3>
+  <p>Gap analysis run against Oracle Observability Principal, Oracle Health Senior + Principal AI Agent, Salesforce Agent Systems, Adobe Sr AI Systems, Airwallex AI Engineer, Creao AI Agent Engineer, Synopsys Sr AI Engineer.</p>
+  <ul>
+    <li><strong>P7 expanded</strong> — added Ragas, DeepEval, Promptfoo + regression suite (<code>#79</code>)</li>
+    <li><strong>P10 expanded</strong> — added FastAPI, Pinecone, multi-cloud LLM routing (Bedrock + Azure + Vertex), reliability patterns, cost tracking (<code>#74–#78</code>)</li>
+    <li><strong>P12 NEW</strong> — AutoGen vs LangGraph vs CrewAI framework showdown + LinkedIn blog (<code>#80</code>)</li>
+  </ul>
+</div>
+
+<h2>Project Roadmap</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Project</th>
+      <th>Folder</th>
+      <th>Key Tech</th>
+      <th>Tickets</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>P1</td>
+      <td>ToolBot — CLI agent, 3 LLMs</td>
+      <td>p1_toolbot</td>
+      <td>async, Pydantic v2, tool_use, streaming, multi-LLM</td>
+      <td>#17–20</td>
+      <td><span class="status done">DONE 7/7</span></td>
+    </tr>
+    <tr>
+      <td>P2</td>
+      <td>DocTalk — PDF Q&amp;A + citations</td>
+      <td>p2_doctalk</td>
+      <td>Embeddings, Chroma → Qdrant, RAG, LangChain</td>
+      <td>#21–24</td>
+      <td><span class="status done">DONE 6.5/8</span></td>
+    </tr>
+    <tr>
+      <td>P3</td>
+      <td>ResearchBot — multi-step web research</td>
+      <td>p3_researchbot</td>
+      <td>LangGraph StateGraph, checkpointing, HITL, Kafka, A2A intro</td>
+      <td>#25–28, #65, #66</td>
+      <td><span class="status done">DONE 6.5/7</span></td>
+    </tr>
+    <tr>
+      <td>P3-Adv</td>
+      <td>Advanced LangGraph — Send API, Orchestrator-Worker</td>
+      <td>p3_adv_langgraph</td>
+      <td>Send API, Flow Engineering, Temporal+LangGraph</td>
+      <td>#72</td>
+      <td><span class="status backlog">BACKLOG</span></td>
+    </tr>
+    <tr>
+      <td>P4</td>
+      <td>StockSage — stock analysis agent</td>
+      <td>p4_stocksage</td>
+      <td>Multi-tool, domain RAG, Mem0, structured output</td>
+      <td>#29–33</td>
+      <td><span class="status done">DONE 6.5/8</span></td>
+    </tr>
+    <tr>
+      <td>P5</td>
+      <td>ReviewCrew — GitHub PR reviewer</td>
+      <td>p5_reviewcrew</td>
+      <td>CrewAI, parallel execution, BaseTool, hierarchical</td>
+      <td>#34–36, #71</td>
+      <td><span class="status done">DONE 6/6</span></td>
+    </tr>
+    <tr>
+      <td>P6</td>
+      <td>MCP++ — StockSage MCP server + agentic client</td>
+      <td>p6_mcp</td>
+      <td>MCP spec, FastMCP, streamable-http, OAuth 2.1, A2A</td>
+      <td>#37–39, #73</td>
+      <td><span class="status done">DONE 5/7</span></td>
+    </tr>
+    <tr style="background:#fffbe6">
+      <td>—</td>
+      <td><strong>#69 Python Fundamentals</strong></td>
+      <td>p0_fundamentals</td>
+      <td>17 sections: lists, dicts, lambdas, decorators, async, ABC, Annotated, pathlib…</td>
+      <td>#69</td>
+      <td><span class="status next">NEXT</span></td>
+    </tr>
+    <tr>
+      <td>P7</td>
+      <td>Customer Health Monitor — observability + <strong>evals</strong></td>
+      <td>p7_observable</td>
+      <td>LangSmith, LangFuse, Faker, churn detection, <span class="pill new-tag">Ragas</span> <span class="pill new-tag">DeepEval</span> <span class="pill new-tag">Promptfoo</span></td>
+      <td>#40–42, <strong>#79</strong></td>
+      <td><span class="status backlog">QUEUED</span></td>
+    </tr>
+    <tr>
+      <td>P8</td>
+      <td>PII Compliance Agent — agent security</td>
+      <td>p8_security</td>
+      <td>OWASP LLM Top 10, PII detection, NeMo Guardrails, audit trails</td>
+      <td>#48</td>
+      <td><span class="status backlog">BACKLOG</span></td>
+    </tr>
+    <tr>
+      <td>P9</td>
+      <td>Account Memory Agent — long-term memory</td>
+      <td>p9_memory</td>
+      <td>Zep (Graphiti temporal KG), Mem0, LongMemEval benchmark</td>
+      <td>#49</td>
+      <td><span class="status backlog">BACKLOG</span></td>
+    </tr>
+    <tr class="row-new">
+      <td>P10</td>
+      <td>AgentPlatform — production deploy <span class="pill new-tag">EXPANDED v6</span></td>
+      <td>p10_platform</td>
+      <td>
+        Docker, k3s, GitHub Actions, AWS Bedrock, Terraform<br/>
+        <span class="pill new-tag">FastAPI + SSE</span>
+        <span class="pill new-tag">Pinecone</span>
+        <span class="pill new-tag">Multi-cloud routing</span>
+        <span class="pill new-tag">Reliability (tenacity, pybreaker)</span>
+        <span class="pill new-tag">Cost tracking</span>
+      </td>
+      <td>#43–45, <strong>#74–78</strong></td>
+      <td><span class="status backlog">BACKLOG</span></td>
+    </tr>
+    <tr>
+      <td>P11</td>
+      <td>Contract &amp; Invoice Analyzer — vision</td>
+      <td>p11_multimodal</td>
+      <td>PyMuPDF, Claude vision, base64 image blocks, multi-modal RAG</td>
+      <td>#50</td>
+      <td><span class="status backlog">BACKLOG</span></td>
+    </tr>
+    <tr class="row-new">
+      <td>P12</td>
+      <td>Multi-Agent Framework Showdown <span class="pill new-tag">NEW v6</span></td>
+      <td>p12_framework_showdown</td>
+      <td>Same task built in <span class="pill new-tag">AutoGen</span> + LangGraph + CrewAI; LoC, latency, cost comparison; LinkedIn blog</td>
+      <td><strong>#80</strong></td>
+      <td><span class="status new">NEW</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Concepts Mastered (P1–P6)</h2>
+
+<table>
+  <thead>
+    <tr><th>Project</th><th>Concepts</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>P1</strong></td>
+      <td>async / await, Pydantic v2 (BaseModel, field_validator, model_dump), tool_use loop, streaming responses, system prompts, context truncation, multi-turn memory</td>
+    </tr>
+    <tr>
+      <td><strong>P2</strong></td>
+      <td>embeddings (sentence-transformers), cosine similarity, chunking strategies, RAG pipeline (ingest → embed → store → retrieve → answer), citation tracking, LangChain abstractions, Chroma → Qdrant</td>
+    </tr>
+    <tr>
+      <td><strong>P3</strong></td>
+      <td>LangGraph StateGraph, typed state, nodes/edges, conditional routing, MemorySaver / SqliteSaver checkpointing, Human-in-the-Loop (interrupt + update_state), <code>Annotated[list, operator.add]</code> reducer pattern, Kafka event streaming</td>
+    </tr>
+    <tr>
+      <td><strong>P4</strong></td>
+      <td>multi-tool orchestration, structured output, domain RAG, agent synthesis, financial APIs (yfinance), persistent ChromaDB</td>
+    </tr>
+    <tr>
+      <td><strong>P5</strong></td>
+      <td>CrewAI agents/tasks/crew, agent specialization (role/goal/backstory), parallel execution (Process.parallel), BaseTool subclassing, Pydantic args_schema, hierarchical agents, post-crew Python dispatch</td>
+    </tr>
+    <tr>
+      <td><strong>P6</strong></td>
+      <td>MCP spec (3 primitives — Tools, Resources, Prompts), FastMCP, streamable-http transport (vs deprecated SSE), tool schemas via inputSchema, resource templates ({param}), prompt template double-wrapping bug, generic tool dispatch (<code>session.call_tool(name, input)</code>), async with context managers, asyncio.gather concurrent tool calls</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Concepts Coming Up (P7–P12)</h2>
+
+<table>
+  <thead>
+    <tr><th>Project</th><th>Concepts</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>P7</strong></td>
+      <td>LangSmith tracing, span hierarchy, evaluator functions, LangFuse self-hosted dashboards, Faker synthetic data, <strong>Ragas (context precision, faithfulness, answer relevancy), DeepEval (LLM unit tests), Promptfoo (A/B prompt testing), regression suite that fails PR on quality drop</strong></td>
+    </tr>
+    <tr>
+      <td><strong>P8</strong></td>
+      <td>OWASP LLM Top 10, PII detection (Presidio), prompt injection blocking, NeMo Guardrails, audit trails</td>
+    </tr>
+    <tr>
+      <td><strong>P9</strong></td>
+      <td>Zep temporal knowledge graphs (Graphiti), Mem0 semantic facts, LongMemEval benchmark comparison (63.8% vs 49%)</td>
+    </tr>
+    <tr>
+      <td><strong>P10</strong></td>
+      <td>Docker multi-stage builds, k8s manifests, secrets management, GitHub Actions CI/CD, AWS Bedrock, Terraform IaC, <strong>FastAPI + SSE streaming endpoints, Pinecone (cloud vector DB), multi-cloud LLM routing (Bedrock + Azure OpenAI + GCP Vertex), tenacity exponential backoff, pybreaker circuit breaker, automatic provider fallback (Claude 429 → GPT-4o), per-request token + USD cost tracking with budget alerts</strong></td>
+    </tr>
+    <tr>
+      <td><strong>P11</strong></td>
+      <td>PyMuPDF page rendering as images, Claude vision API, base64 image content blocks, multi-modal RAG</td>
+    </tr>
+    <tr>
+      <td><strong>P12</strong></td>
+      <td>AutoGen conversational multi-agent pattern, framework comparison methodology (LoC, latency, cost, debuggability), technical writing for LinkedIn</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Job-Posting Drivers for v6</h2>
+
+<table>
+  <thead>
+    <tr><th>Posting</th><th>Curriculum addition triggered</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Oracle Principal SE — Agentic AI (Observability)</td><td>FastAPI, multi-cloud routing, reliability patterns</td></tr>
+    <tr><td>Oracle Health Senior + Principal AI Agent</td><td>Eval frameworks, governance, model selection</td></tr>
+    <tr><td>Salesforce AI Engineer — Agent Systems</td><td>Eval, observability, cost optimization, AutoGen</td></tr>
+    <tr><td>Adobe Sr AI Systems — Agentic + Productivity</td><td>Evaluation pipelines, multi-model routing</td></tr>
+    <tr><td>Airwallex AI Engineer</td><td>Framework comparison, RAG variations, Pinecone</td></tr>
+    <tr><td>Creao AI Agent Engineer</td><td>Vector DB choices (Pinecone), evaluation methods</td></tr>
+    <tr><td>Synopsys Sr AI Engineer — Enterprise Agentic</td><td>MCP + A2A (already in P6)</td></tr>
+  </tbody>
+</table>
+
+<h2>Supplementary Tickets (non-blocking)</h2>
+<ul>
+  <li><code>#67</code> Raw ReAct Loop (react_agent.py)</li>
+  <li><code>#68</code> Reflection / Self-Critique Pattern</li>
+  <li><code>#69</code> <strong>Python Fundamentals for AI Engineering</strong> — DOING NEXT (17 sections in p0_fundamentals/)</li>
+  <li><code>#71</code> P5 ReviewCrew Hierarchical process</li>
+  <li><code>#72</code> P3-Adv LangGraph Send API</li>
+  <li><code>#73</code> P6 OAuth 2.1</li>
+  <li><strong><code>#74–78</code></strong> P10 expansions (FastAPI, Pinecone, multi-cloud, reliability, cost)</li>
+  <li><strong><code>#79</code></strong> P7 eval frameworks deep dive</li>
+  <li><strong><code>#80</code></strong> P12 framework showdown</li>
+</ul>
+
+<h2>Multi-LLM Coverage</h2>
+<p>All three major LLMs are used across the curriculum — not Claude-only:</p>
+<ul>
+  <li><strong>Anthropic Claude</strong> (claude-sonnet-4-6 / claude-opus-4-7) — primary, tool_use, MCP, vision</li>
+  <li><strong>OpenAI</strong> (gpt-4o) — function calling, multi-modal comparison</li>
+  <li><strong>Google Gemini</strong> — function calling, multi-modal</li>
+</ul>
+
+<footer>
+  Curriculum v6 · Last updated 2026-04-29<br/>
+  Tracking: <a href="http://192.168.1.156:3002">MyKanban "AI Engineering Readiness"</a> · Repo: <a href="https://github.com/rrvenkatrama/agentic_ai_projects">github.com/rrvenkatrama/agentic_ai_projects</a>
+</footer>
+
+</body>
+</html>

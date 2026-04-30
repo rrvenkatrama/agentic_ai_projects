@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Python Fundamentals for Agentic AI Engineering</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    max-width: 1100px; margin: 0 auto; padding: 30px 40px;
+    color: #222; line-height: 1.55; background: #fafbfc;
+  }
+  header { border-bottom: 3px solid #1a4d8f; padding-bottom: 14px; margin-bottom: 24px; }
+  h1 { margin: 0; color: #1a4d8f; font-size: 26pt; }
+  .subtitle { color: #666; font-size: 11pt; margin-top: 6px; }
+  h2 {
+    color: #1a4d8f; border-bottom: 2px solid #1a4d8f; padding-bottom: 6px;
+    margin-top: 50px; font-size: 19pt; padding-top: 10px;
+  }
+  h3 { margin-top: 28px; font-size: 14pt; color: #333; border-bottom: 1px solid #e0e0e0; padding-bottom: 3px; }
+  h4 { font-size: 12pt; color: #555; margin-top: 18px; margin-bottom: 6px; }
+  pre {
+    background: #1e1e1e; color: #d4d4d4; padding: 12px 14px;
+    border-radius: 5px; overflow-x: auto; font-size: 10pt; line-height: 1.4;
+  }
+  code { background: #f1f3f5; padding: 1px 5px; border-radius: 3px; font-size: 90%; color: #c7254e; }
+  pre code { background: none; padding: 0; color: inherit; }
+  table {
+    border-collapse: collapse; width: 100%; margin: 12px 0; background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); font-size: 10.5pt;
+  }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #eee; vertical-align: top; }
+  th { background: #f0f4fa; color: #1a4d8f; font-weight: 600; border-bottom: 2px solid #1a4d8f; }
+  tr:hover { background: #f9fbff; }
+  .gotcha { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+  .gotcha-title { font-weight: 600; color: #856404; margin-bottom: 6px; }
+  .tip { background: #d4edda; border-left: 4px solid #28a745; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+  .tip-title { font-weight: 600; color: #155724; margin-bottom: 6px; }
+  .danger { background: #f8d7da; border-left: 4px solid #dc3545; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+  .danger-title { font-weight: 600; color: #721c24; margin-bottom: 6px; }
+  .info { background: #d1ecf1; border-left: 4px solid #17a2b8; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+  .info-title { font-weight: 600; color: #0c5460; margin-bottom: 6px; }
+  .toc { background: #f0f4fa; border: 1px solid #d4e0f0; padding: 14px 22px; border-radius: 4px; margin: 16px 0 36px 0; }
+  .toc h3 { margin-top: 0; border: none; }
+  .toc ul { margin: 4px 0 0 0; padding-left: 20px; }
+  .toc li { margin: 3px 0; font-size: 10.5pt; }
+  .toc a { color: #1a4d8f; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .part { background: #1a4d8f; color: white; padding: 14px 24px; margin-top: 60px; border-radius: 6px; font-size: 17pt; font-weight: 600; }
+  footer { margin-top: 50px; padding-top: 16px; border-top: 1px solid #ddd; color: #888; font-size: 9pt; text-align: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Python Fundamentals for Agentic AI Engineering</h1>
+  <div class="subtitle">Comprehensive reference · Section 2 (#69 Python Fundamentals) · Lists, Dicts, Functional Programming, Iteration, Classes, Dunders</div>
+</header>
+
+<div class="toc">
+  <h3>Contents</h3>
+  <strong>PART 1 — Data Structures</strong>
+  <ul>
+    <li><a href="#lists-vs-dicts">Lists vs Dicts — When to Use Which</a></li>
+    <li><a href="#lists">Lists — Operations & Tricks</a></li>
+    <li><a href="#list-comp">List Comprehensions</a></li>
+    <li><a href="#nested-lists">Nested Lists (Lists of Lists)</a></li>
+    <li><a href="#dicts">Dicts — Operations & Tricks</a></li>
+    <li><a href="#dict-keys">Dict Keys — What's Allowed</a></li>
+    <li><a href="#dict-values">Dict Values — Anything Goes</a></li>
+    <li><a href="#dict-merge">Dict Merging with the | Operator</a></li>
+    <li><a href="#dict-comp">Dict Comprehensions</a></li>
+    <li><a href="#nested-dicts">Nested Dicts</a></li>
+    <li><a href="#multiple-values">Multiple Values per Key (defaultdict, Counter)</a></li>
+  </ul>
+  <strong>PART 2 — Mutability</strong>
+  <ul>
+    <li><a href="#mutable-immutable">Mutable vs Immutable — The Foundation</a></li>
+    <li><a href="#immutable-types">Immutable Types (literals you write)</a></li>
+    <li><a href="#mutable-types">Mutable Types</a></li>
+    <li><a href="#rebind-vs-mutate">Rebinding vs Mutating</a></li>
+    <li><a href="#mutability-gotchas">Mutability Gotchas</a></li>
+  </ul>
+  <strong>PART 3 — Functional Programming</strong>
+  <ul>
+    <li><a href="#lambda">Lambdas — Anonymous Functions</a></li>
+    <li><a href="#lambda-limits">Lambda Limitations</a></li>
+    <li><a href="#map">map(func, iterable)</a></li>
+    <li><a href="#filter">filter(func, iterable)</a></li>
+    <li><a href="#unequal-iterables">Map / Zip with Unequal-Length Iterables</a></li>
+    <li><a href="#sorted">sorted(iterable, key=…)</a></li>
+    <li><a href="#sort-objects">Sorting Dicts and Objects (itemgetter, attrgetter)</a></li>
+    <li><a href="#multi-key">Multi-Key Sorting</a></li>
+    <li><a href="#reduce">reduce()</a></li>
+    <li><a href="#decision-fp">Decision Matrix — Comprehension vs map vs for-loop</a></li>
+  </ul>
+  <strong>PART 4 — Iteration Protocol</strong>
+  <ul>
+    <li><a href="#iterable-vs-iterator">Iterable vs Iterator — The Distinction</a></li>
+    <li><a href="#iter-protocol">How for-loops Actually Work</a></li>
+    <li><a href="#why-iterators">Why Iterators Exist (Laziness)</a></li>
+    <li><a href="#range">range — A Lazy Sequence</a></li>
+    <li><a href="#generators">Generators — yield</a></li>
+    <li><a href="#print-iterator">Why print(list) Shows Contents but print(map) Doesn't</a></li>
+  </ul>
+  <strong>PART 5 — Classes & Objects</strong>
+  <ul>
+    <li><a href="#three-method-types">The 3 Method Types — Instance, Class, Static</a></li>
+    <li><a href="#staticmethod">@staticmethod</a></li>
+    <li><a href="#classmethod">@classmethod (and the Factory Pattern)</a></li>
+    <li><a href="#class-vs-instance-attrs">Class Attributes vs Instance Attributes</a></li>
+    <li><a href="#instance-defaults">Default Values for Instance Variables</a></li>
+    <li><a href="#self-is-just-a-name">self is Just a Parameter Name</a></li>
+    <li><a href="#no-overloading">Why Python Doesn't Support Method Overloading</a></li>
+    <li><a href="#cpp-comparison">Quick C++ Comparison Table</a></li>
+  </ul>
+  <strong>PART 6 — Dunder Methods (Python's Data Model)</strong>
+  <ul>
+    <li><a href="#what-dunders">What Dunders Are</a></li>
+    <li><a href="#builtin-mapping">How Built-ins Map to Dunders</a></li>
+    <li><a href="#dunder-on-class">Dunders Must Live on the Class</a></li>
+    <li><a href="#monkey-patching">Monkey-Patching the Class (vs Instance)</a></li>
+    <li><a href="#dunder-categories">All Dunders by Category</a></li>
+    <li><a href="#module-dunders">Module-Level Dunders</a></li>
+    <li><a href="#main-idiom">The if __name__ == "__main__" Idiom</a></li>
+    <li><a href="#example-class">Worked Example — A Stock Class</a></li>
+    <li><a href="#agentic-dunders">Most-Used Dunders in Agentic AI Code</a></li>
+  </ul>
+  <strong>CHEATSHEETS</strong>
+  <ul>
+    <li><a href="#cheat-collections">Lists vs Dicts Cheatsheet</a></li>
+    <li><a href="#cheat-fp">Functional Programming Cheatsheet</a></li>
+    <li><a href="#cheat-dunders">Dunder Methods Cheatsheet</a></li>
+  </ul>
+</div>
+
+<!-- ====================================================================== -->
+<div class="part">PART 1 — Data Structures</div>
+
+<h2 id="lists-vs-dicts">Lists vs Dicts — When to Use Which</h2>
+
+<table>
+  <thead><tr><th>Aspect</th><th>List</th><th>Dict</th></tr></thead>
+  <tbody>
+    <tr><td>Indexed by</td><td>Integer position (<code>0, 1, 2…</code>)</td><td>Hashable key (<code>"AAPL"</code>, <code>150</code>, …)</td></tr>
+    <tr><td>Order</td><td>Yes — explicit positions</td><td>Yes (insertion order, Python 3.7+) — but you don't index by position</td></tr>
+    <tr><td>Duplicates</td><td>Allowed</td><td>Keys unique; assignment overwrites</td></tr>
+    <tr><td>Lookup speed</td><td>By index O(1); by value O(n)</td><td>By key O(1) (hash table)</td></tr>
+    <tr><td>Use when</td><td>Order matters, sequential processing</td><td>Lookup by name, key-value pairs</td></tr>
+  </tbody>
+</table>
+
+<h4>Examples from agentic AI code</h4>
+<pre><code># List in P1 ToolBot — message history (order matters)
+messages = [
+    {"role": "user", "content": "What's AAPL?"},
+    {"role": "assistant", "content": "..."},
+]
+
+# Dict in P6 MCP — tool name → schema (lookup by name)
+claude_tools = {
+    "get_stock_price": {"input_schema": ...},
+    "get_news_sentiment": {"input_schema": ...},
+}</code></pre>
+
+<h2 id="lists">Lists — Operations & Tricks</h2>
+
+<h3>Creating</h3>
+<pre><code>tickers = ["AAPL", "GOOGL", "MSFT"]
+empty = []
+from_range = list(range(5))     # [0, 1, 2, 3, 4]
+repeated = [0] * 3              # [0, 0, 0]</code></pre>
+
+<h3>Indexing & Slicing</h3>
+<pre><code>tickers[0]       # "AAPL"          first
+tickers[-1]      # "MSFT"          last (negative from end)
+tickers[0:2]     # ["AAPL", "GOOGL"]   stop is exclusive
+tickers[1:]      # ["GOOGL", "MSFT"]
+tickers[:2]      # ["AAPL", "GOOGL"]
+tickers[::-1]    # reversed
+tickers[::2]     # every other</code></pre>
+
+<h3>Adding</h3>
+<pre><code>tickers.append("AMD")              # one item at end
+tickers.insert(0, "TSLA")          # at index 0
+tickers.extend(["NVDA", "META"])   # multiple
+
+a + b                              # NEW list (doesn't mutate)</code></pre>
+
+<div class="gotcha">
+  <div class="gotcha-title">⚠️ append vs extend</div>
+  <pre><code>tickers.append(["X", "Y"])   # → [..., ["X", "Y"]]   nested!
+tickers.extend(["X", "Y"])   # → [..., "X", "Y"]    flat</code></pre>
+</div>
+
+<h3>Removing</h3>
+<pre><code>tickers.remove("AAPL")    # by VALUE (first occurrence)
+del tickers[0]            # by INDEX
+tickers.pop()             # remove + return last
+tickers.pop(0)            # remove + return at index
+tickers.clear()           # empties</code></pre>
+
+<h3>Searching</h3>
+<pre><code>"AAPL" in tickers         # True / False
+tickers.index("AAPL")     # int index, ValueError if missing
+tickers.count("AAPL")     # how many times</code></pre>
+
+<h3>Sorting</h3>
+<pre><code>tickers.sort()                       # in-place
+sorted(tickers)                      # NEW list
+sorted(tickers, reverse=True)
+sorted(tickers, key=len)             # by length</code></pre>
+
+<h3>Combining / Splitting</h3>
+<pre><code>[1, 2] + [3, 4]            # [1, 2, 3, 4]
+[0] * 3                    # [0, 0, 0]
+",".join(tickers)          # "AAPL,GOOGL,MSFT"
+"AAPL,GOOGL".split(",")    # ["AAPL", "GOOGL"]</code></pre>
+
+<h3>Aggregation</h3>
+<pre><code>sum([1, 2, 3])      # 6
+min(tickers)        # alphabetical min
+max([1, 2, 3])      # 3
+any([0, 0, 1])      # True
+all([1, 1, 0])      # False</code></pre>
+
+<h2 id="list-comp">List Comprehensions</h2>
+
+<p>Pattern: <code>[expression for item in iterable if condition]</code></p>
+
+<pre><code>tickers = ["AAPL", "GOOGL", "MSFT", "AMD", "TSLA"]
+
+# Filter
+a_only = [t for t in tickers if t.startswith("A")]
+
+# Transform
+lower = [t.lower() for t in tickers]
+
+# Both
+short_lower = [t.lower() for t in tickers if len(t) <= 4]
+
+# Equivalent to this loop
+result = []
+for t in tickers:
+    if t.startswith("A"):
+        result.append(t)</code></pre>
+
+<div class="tip">
+  <div class="tip-title">Why use comprehensions</div>
+  Faster than equivalent loop (less bytecode, no <code>.append</code> method lookup), and more readable for transform/filter operations. Idiomatic Python.
+</div>
+
+<h2 id="nested-lists">Nested Lists (Lists of Lists)</h2>
+
+<pre><code>matrix = [
+    ["AAPL", 150.0, "BUY"],
+    ["GOOGL", 2800.0, "HOLD"],
+]
+
+matrix[0]        # ["AAPL", 150.0, "BUY"]
+matrix[0][1]     # 150.0
+matrix[-1][-1]   # "HOLD"
+
+# Iterate with unpacking
+for ticker, price, signal in matrix:
+    print(f"{ticker}: ${price} → {signal}")</code></pre>
+
+<div class="danger">
+  <div class="danger-title">🚨 The classic [[0]*N]*M trap</div>
+  <pre><code>grid = [[0] * 3] * 3     # ❌ all 3 rows are the SAME inner list
+grid[0][0] = 9
+print(grid)
+# [[9, 0, 0], [9, 0, 0], [9, 0, 0]]   ← all rows mutated!</code></pre>
+  <p>The outer <code>* 3</code> creates 3 references to the same inner list. <code>id()</code> proves it:</p>
+  <pre><code>grid = [[0] * 3] * 3
+print(id(grid[0]), id(grid[1]), id(grid[2]))
+# 4399876928 4399876928 4399876928   ← SAME id for all three rows</code></pre>
+  <strong>Fix — use a comprehension to create fresh inner lists:</strong>
+  <pre><code>grid = [[0] * 3 for _ in range(3)]   # ✅ correct
+grid[0][0] = 9
+# [[9, 0, 0], [0, 0, 0], [0, 0, 0]]</code></pre>
+</div>
+
+<h2 id="dicts">Dicts — Operations & Tricks</h2>
+
+<h3>Creating</h3>
+<pre><code>prices = {"AAPL": 150.0, "GOOGL": 2800.0}
+empty = {}
+from_pairs = dict([("AAPL", 150), ("GOOGL", 2800)])</code></pre>
+
+<h3>Lookup</h3>
+<pre><code>prices["AAPL"]                    # raises KeyError if missing
+prices.get("AAPL")                # returns None if missing
+prices.get("UNKNOWN", "N/A")      # default value if missing
+"AAPL" in prices                  # True / False</code></pre>
+
+<h3>Add / Update / Delete</h3>
+<pre><code>prices["MSFT"] = 300.0           # add
+prices["AAPL"] = 175.0           # update (same syntax)
+
+del prices["GOOGL"]              # delete by key
+prices.pop("MSFT", None)         # delete + return value (or None default)
+prices.clear()                   # empty</code></pre>
+
+<h3>Iterating</h3>
+<pre><code>for key in prices:                       # keys
+    ...
+for key in prices.keys():                # explicit keys
+    ...
+for value in prices.values():            # values
+    ...
+for key, value in prices.items():        # pairs (most common)
+    ...</code></pre>
+
+<h2 id="dict-keys">Dict Keys — What's Allowed</h2>
+
+<p>Keys must be <strong>hashable</strong> (immutable).</p>
+
+<table>
+  <thead><tr><th>Type</th><th>Hashable?</th><th>Can be a key?</th></tr></thead>
+  <tbody>
+    <tr><td><code>int</code>, <code>float</code></td><td>✅</td><td>✅ <code>{150: "AAPL"}</code></td></tr>
+    <tr><td><code>str</code></td><td>✅</td><td>✅ <code>{"AAPL": 150}</code></td></tr>
+    <tr><td><code>tuple</code> (of hashables)</td><td>✅</td><td>✅ <code>{("AAPL", "Q1"): 150}</code></td></tr>
+    <tr><td><code>bool</code>, <code>None</code></td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>list</code></td><td>❌</td><td>❌ TypeError</td></tr>
+    <tr><td><code>dict</code></td><td>❌</td><td>❌ TypeError</td></tr>
+    <tr><td><code>set</code></td><td>❌</td><td>❌ (use <code>frozenset</code>)</td></tr>
+  </tbody>
+</table>
+
+<div class="gotcha">
+  <div class="gotcha-title">⚠️ 1, 1.0, and True share a slot</div>
+  <pre><code>weird = {1: "int", 1.0: "float", True: "bool"}
+print(weird)
+# {1: 'bool'}    — only one entry!</code></pre>
+  Why? <code>1 == 1.0 == True</code> AND they hash to the same value. Don't mix numeric types as keys.
+</div>
+
+<h3>Tuple keys for compound lookups</h3>
+<pre><code>revenue = {
+    ("AAPL", "Q1"): 124_000_000_000,
+    ("AAPL", "Q2"): 96_000_000_000,
+    ("MSFT", "Q1"): 65_000_000_000,
+}
+revenue[("AAPL", "Q1")]   # 124000000000</code></pre>
+
+<h2 id="dict-values">Dict Values — Anything Goes</h2>
+
+<p>Values are <strong>unconstrained</strong>. Different types within the same dict are fine if they represent structured data.</p>
+
+<pre><code># Mixed value types — totally legal
+chaos = {
+    "ticker": "AAPL",                       # string
+    "price": 150.0,                         # float
+    "history": [148, 149, 150],             # list
+    "metadata": {"sector": "tech"},         # nested dict
+    "callback": lambda x: x * 2,            # function
+    "buyer": None,                          # None
+}</code></pre>
+
+<div class="tip">
+  <div class="tip-title">Mixed values are appropriate when</div>
+  <ul>
+    <li>The dict represents one structured record (like JSON, MCP tool input)</li>
+    <li>Keys have fixed meanings — not interchangeable</li>
+  </ul>
+  <strong>When NOT to mix:</strong> If you're using the dict as a lookup table (homogeneous keys → values), mixed types make consumers type-check everything. Switch to Pydantic / dataclass.
+</div>
+
+<h2 id="dict-merge">Dict Merging with the <code>|</code> Operator</h2>
+
+<p>Python 3.9+ — merge dicts with <code>|</code>. Right side wins on key collision.</p>
+
+<pre><code>defaults = {"period": "3mo", "lang": "en"}
+overrides = {"period": "1y"}
+
+merged = defaults | overrides
+# {'period': '1y', 'lang': 'en'}    — overrides won
+
+# In-place
+config = defaults.copy()
+config |= overrides
+
+# Pre-3.9 way (still works, more verbose)
+merged = {**defaults, **overrides}</code></pre>
+
+<h3>The full rule for <code>a | b</code></h3>
+<table>
+  <thead><tr><th>Key location</th><th>Result</th></tr></thead>
+  <tbody>
+    <tr><td>Only in <code>a</code></td><td>Kept from <code>a</code></td></tr>
+    <tr><td>Only in <code>b</code></td><td>Added from <code>b</code></td></tr>
+    <tr><td>In both</td><td>Value from <code>b</code> wins (right side)</td></tr>
+  </tbody>
+</table>
+
+<h3>The <code>|</code> operator is overloaded</h3>
+<table>
+  <thead><tr><th>Operand types</th><th>What <code>|</code> does</th></tr></thead>
+  <tbody>
+    <tr><td><code>bool, bool</code></td><td>Logical OR (but prefer <code>or</code> — it short-circuits)</td></tr>
+    <tr><td><code>int, int</code></td><td>Bitwise OR (<code>5 | 3</code> = 7)</td></tr>
+    <tr><td><code>set, set</code></td><td>Set union</td></tr>
+    <tr><td><code>dict, dict</code></td><td>Merge with right side winning</td></tr>
+    <tr><td>Custom class</td><td>Whatever <code>__or__</code> defines (LangGraph edges)</td></tr>
+  </tbody>
+</table>
+
+<h2 id="dict-comp">Dict Comprehensions</h2>
+
+<p>Pattern: <code>{key_expr: value_expr for k, v in dict.items() if cond}</code></p>
+
+<pre><code>prices = {"AAPL": 150, "GOOGL": 2800, "MSFT": 300, "AMD": 100}
+
+# Filter — keep only expensive
+expensive = {t: p for t, p in prices.items() if p > 200}
+# {'GOOGL': 2800, 'MSFT': 300}
+
+# Transform values
+in_thousands = {t: p / 1000 for t, p in prices.items()}
+
+# Build dict from a list
+tickers = ["AAPL", "GOOGL", "MSFT"]
+init_zero = {t: 0.0 for t in tickers}
+
+# Invert keys/values
+inverted = {v: k for k, v in prices.items()}</code></pre>
+
+<div class="tip">
+  <div class="tip-title">Critical: use <code>.items()</code> for unpacking</div>
+  <pre><code># Wrong — iterates KEYS only
+{t: ??? for t in prices if ???}
+
+# Right — iterates (key, value) pairs
+{t: p for t, p in prices.items() if p > 200}</code></pre>
+</div>
+
+<h2 id="nested-dicts">Nested Dicts</h2>
+
+<pre><code>portfolio = {
+    "AAPL": {"price": 270.0, "pe": 34.3, "signal": "BUY"},
+    "GOOGL": {"price": 2800.0, "pe": 28.5, "signal": "HOLD"},
+}
+
+portfolio["AAPL"]["price"]                 # 270.0   direct
+portfolio.get("AMD", {}).get("signal")     # None    safe chain — no KeyError</code></pre>
+
+<h3>Three idiomatic ways to store multiple values per key</h3>
+<table>
+  <thead><tr><th>Use</th><th>When</th><th>Example</th></tr></thead>
+  <tbody>
+    <tr><td>Tuple value</td><td>Small, fixed, positional</td><td><code>{"AAPL": (150, 23)}</code></td></tr>
+    <tr><td>List value</td><td>Can grow / shrink</td><td><code>{"AAPL": [148, 149, 150]}</code></td></tr>
+    <tr><td>Nested dict value</td><td>Named fields, readability</td><td><code>{"AAPL": {"price": 150, "pe": 23}}</code></td></tr>
+    <tr><td>Pydantic model value</td><td>4+ fields with validation</td><td><code>{"AAPL": Stock(price=150, pe=23)}</code></td></tr>
+  </tbody>
+</table>
+
+<h2 id="multiple-values">Multiple Values per Key</h2>
+
+<p>Dict keys are unique — assigning to an existing key overwrites. To "store multiple per key," make the value a list.</p>
+
+<pre><code>from collections import defaultdict
+
+trades = defaultdict(list)        # auto-creates [] if key missing
+trades["AAPL"].append(150.0)
+trades["AAPL"].append(175.0)
+trades["MSFT"].append(300.0)
+# defaultdict(list, {'AAPL': [150.0, 175.0], 'MSFT': [300.0]})</code></pre>
+
+<h3>Counter for "how many of each"</h3>
+<pre><code>from collections import Counter
+
+trades_ticker = ["AAPL", "MSFT", "AAPL", "GOOGL", "AAPL"]
+counts = Counter(trades_ticker)
+# Counter({'AAPL': 3, 'MSFT': 1, 'GOOGL': 1})
+
+counts.most_common(2)            # [('AAPL', 3), ('MSFT', 1)]</code></pre>
+
+<!-- ====================================================================== -->
+<div class="part">PART 2 — Mutability</div>
+
+<h2 id="mutable-immutable">Mutable vs Immutable — The Foundation</h2>
+
+<p><strong>Mutable</strong> = you can change the object's contents <strong>without creating a new object</strong>.<br>
+<strong>Immutable</strong> = once created, contents are sealed. "Modifying" actually creates a new object.</p>
+
+<table>
+  <thead><tr><th></th><th>Mutable</th><th>Immutable</th></tr></thead>
+  <tbody>
+    <tr><td>Can change contents in-place?</td><td>✅ Yes</td><td>❌ No</td></tr>
+    <tr><td>Can change size?</td><td>✅ Yes</td><td>❌ No</td></tr>
+    <tr><td>Modification creates new object?</td><td>❌ No — same object, new contents</td><td>✅ Yes — entirely new object</td></tr>
+  </tbody>
+</table>
+
+<h3>See it with id()</h3>
+
+<h4>Mutable — same object, contents change</h4>
+<pre><code>nums = [1, 2, 3]
+print(id(nums))     # 4399876928
+
+nums.append(4)      # modify in-place
+print(nums)         # [1, 2, 3, 4]
+print(id(nums))     # 4399876928   ← SAME id — same object, new contents
+
+nums[0] = 99        # change one element — also in-place
+print(id(nums))     # 4399876928   ← STILL same id</code></pre>
+
+<h4>Immutable — modification creates a brand new object</h4>
+<pre><code>s = "hello"
+print(id(s))        # 4399890432
+
+s = s + "!"         # looks like modification, but...
+print(s)            # 'hello!'
+print(id(s))        # 4399897856   ← DIFFERENT id — entirely new string</code></pre>
+
+<h2 id="immutable-types">Immutable Types (literals you write)</h2>
+
+<table>
+  <thead><tr><th>Type</th><th>Example</th><th>Why immutable</th></tr></thead>
+  <tbody>
+    <tr><td><code>int</code></td><td><code>42</code></td><td>Numbers can't change value</td></tr>
+    <tr><td><code>float</code></td><td><code>3.14</code>, <code>12.0</code></td><td>Same</td></tr>
+    <tr><td><code>complex</code></td><td><code>1+2j</code></td><td>Same</td></tr>
+    <tr><td><code>bool</code></td><td><code>True</code>, <code>False</code></td><td>Singleton constants</td></tr>
+    <tr><td><code>str</code></td><td><code>"hellothere"</code></td><td>Sealed character sequence</td></tr>
+    <tr><td><code>tuple</code></td><td><code>(1, 2, 3)</code></td><td>Sealed sequence</td></tr>
+    <tr><td><code>frozenset</code></td><td><code>frozenset({1, 2})</code></td><td>Immutable set</td></tr>
+    <tr><td><code>bytes</code></td><td><code>b"hello"</code></td><td>Sealed byte sequence</td></tr>
+    <tr><td><code>None</code></td><td><code>None</code></td><td>Singleton</td></tr>
+  </tbody>
+</table>
+
+<p>Every literal you type — <code>"hellothere"</code>, <code>12.0</code>, <code>True</code>, <code>(1, 2)</code> — is an immutable object.</p>
+
+<h2 id="mutable-types">Mutable Types</h2>
+
+<table>
+  <thead><tr><th>Type</th><th>Why mutable</th></tr></thead>
+  <tbody>
+    <tr><td><code>list</code></td><td>append, pop, sort, slice assignment, item assignment</td></tr>
+    <tr><td><code>dict</code></td><td>add/remove/update keys</td></tr>
+    <tr><td><code>set</code></td><td>add, remove, discard</td></tr>
+    <tr><td><code>bytearray</code></td><td>mutable byte sequence</td></tr>
+    <tr><td>Custom classes</td><td>usually mutable — <code>obj.x = new_value</code> works</td></tr>
+  </tbody>
+</table>
+
+<h2 id="rebind-vs-mutate">Rebinding vs Mutating</h2>
+
+<p>This is the subtle part that trips people up:</p>
+
+<pre><code>x = "hello"             # x points to "hello"
+x = "world"             # x now points to "world" — original "hello" unchanged
+
+nums = [1, 2, 3]        # nums points to a list
+nums = [4, 5, 6]        # rebound — original [1, 2, 3] gets garbage-collected
+nums.append(7)          # mutated — same list as above, now contains [4, 5, 6, 7]</code></pre>
+
+<table>
+  <thead><tr><th>Operation</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>x = something</code></td><td><strong>Rebind</strong> — point variable at a different object</td></tr>
+    <tr><td><code>x.method()</code> (on mutable)</td><td><strong>Mutate</strong> — change the object x already points to</td></tr>
+  </tbody>
+</table>
+
+<h3>Why this matters — function argument behavior</h3>
+
+<pre><code>def modify(items):
+    items.append(99)        # mutates the caller's list
+
+nums = [1, 2, 3]
+modify(nums)
+print(nums)                  # [1, 2, 3, 99]  ← caller's list mutated!
+
+def modify_str(s):
+    s += "!"                 # rebinds local variable — caller's s unchanged
+
+text = "hello"
+modify_str(text)
+print(text)                  # 'hello'  — unchanged</code></pre>
+
+<p>Mutable arguments can be modified by the function and the caller sees the change. Immutable arguments can't be — modifications inside the function only affect the local binding.</p>
+
+<h2 id="mutability-gotchas">Mutability Gotchas</h2>
+
+<div class="danger">
+  <div class="danger-title">🚨 1. Assignment is NOT a copy</div>
+  <pre><code>a = [1, 2, 3]
+b = a               # b and a point to the SAME list
+b.append(4)
+print(a)            # [1, 2, 3, 4]  — mutated through b</code></pre>
+  <strong>Fix:</strong> <code>b = a.copy()</code> · <code>b = a[:]</code> · <code>b = list(a)</code>. For nested: <code>copy.deepcopy(a)</code>.
+</div>
+
+<div class="danger">
+  <div class="danger-title">🚨 2. Modifying a dict during iteration</div>
+  <pre><code>for k in prices:
+    if prices[k] < 200:
+        del prices[k]      # RuntimeError: dictionary changed size during iteration</code></pre>
+  <strong>Fix:</strong> iterate over a copy: <code>for k in list(prices.keys()):</code>
+</div>
+
+<div class="danger">
+  <div class="danger-title">🚨 3. Nested list multiplication trap</div>
+  <pre><code>grid = [[0] * 3] * 3     # all rows share the SAME inner list
+grid[0][0] = 9
+# [[9, 0, 0], [9, 0, 0], [9, 0, 0]]</code></pre>
+  <strong>Fix:</strong> <code>[[0] * 3 for _ in range(3)]</code>
+</div>
+
+<div class="danger">
+  <div class="danger-title">🚨 4. Mutable default arguments</div>
+  <pre><code>def add_trade(ticker, history=[]):     # ❌ default created ONCE at function def
+    history.append(ticker)
+    return history
+
+add_trade("AAPL")     # ['AAPL']
+add_trade("MSFT")     # ['AAPL', 'MSFT']  — surprised?</code></pre>
+  <strong>Fix:</strong> use <code>None</code> sentinel:
+  <pre><code>def add_trade(ticker, history=None):
+    if history is None:
+        history = []
+    history.append(ticker)
+    return history</code></pre>
+</div>
+
+<div class="danger">
+  <div class="danger-title">🚨 5. Dict key collisions (numeric)</div>
+  <pre><code>{1: "a", 1.0: "b", True: "c"}    # → {1: 'c'}    only ONE entry</code></pre>
+  Don't mix numeric types as keys.
+</div>
+
+<div class="danger">
+  <div class="danger-title">🚨 6. .append() returns None</div>
+  <pre><code>tickers = ["AAPL"].append("MSFT")      # ❌ tickers is None!</code></pre>
+  <strong>Fix:</strong> mutate then read separately. Same for <code>.sort()</code>, <code>.extend()</code>, <code>.clear()</code>, <code>.update()</code>.
+</div>
+
+<!-- ====================================================================== -->
+<div class="part">PART 3 — Functional Programming</div>
+
+<h2 id="lambda">Lambdas — Anonymous Functions</h2>
+
+<p>A <strong>lambda</strong> is a tiny one-line function with no name.</p>
+
+<pre><code>def square(x):
+    return x * x
+
+square_lambda = lambda x: x * x
+
+square(5)         # 25
+square_lambda(5)  # 25</code></pre>
+
+<h3>Syntax</h3>
+<pre><code>lambda &lt;args&gt;: &lt;single expression&gt;
+
+# Examples
+lambda x: x * 2
+lambda a, b: a + b
+lambda name, prefix="Hello": f"{prefix}, {name}"
+lambda x: x if x >= 0 else -x      # ternary OK</code></pre>
+
+<div class="tip">
+  <div class="tip-title">When to use lambda vs def</div>
+  <ul>
+    <li><strong>Use lambda</strong> when passing a tiny one-shot function as an argument: <code>sorted(x, key=lambda t: t.price)</code></li>
+    <li><strong>Use def</strong> when the function has a name worth referring to, has multiple lines, or is used in more than one place</li>
+  </ul>
+</div>
+
+<h2 id="lambda-limits">Lambda Limitations</h2>
+
+<table>
+  <thead><tr><th>Allowed</th><th>Not allowed</th></tr></thead>
+  <tbody>
+    <tr><td>One expression</td><td>Statements (assign, loop, print, return)</td></tr>
+    <tr><td>Conditional expression (<code>x if cond else y</code>)</td><td>Multi-line bodies</td></tr>
+    <tr><td>Default arguments</td><td>Annotations easily</td></tr>
+  </tbody>
+</table>
+
+<h2 id="map">map(func, iterable)</h2>
+
+<p>Apply a function to every item. Returns an <strong>iterator</strong> (lazy), not a list.</p>
+
+<pre><code>prices = [100, 200, 300]
+
+doubled_iter = map(lambda x: x * 2, prices)
+print(doubled_iter)         # &lt;map object at 0x...&gt;   ← iterator, not list
+print(list(doubled_iter))   # [200, 400, 600]         ← consume to see</code></pre>
+
+<h3>Map over multiple iterables</h3>
+<pre><code>a = [1, 2, 3]
+b = [10, 20, 30]
+list(map(lambda x, y: x + y, a, b))   # [11, 22, 33]</code></pre>
+
+<div class="info">
+  <div class="info-title">"iterable" parameter accepts any iterable, not just list</div>
+  The signature <code>map(func, iterable)</code> uses "iterable" because <code>map</code> works with anything you can loop over: list, tuple, set, str, dict, range, generator, file. A list IS an iterable — but so are many other types.
+</div>
+
+<h2 id="filter">filter(func, iterable)</h2>
+
+<pre><code>prices = [100, 250, 175, 300, 50]
+expensive = list(filter(lambda x: x > 200, prices))
+print(expensive)   # [250, 300]
+
+# filter(None, ...) — drop falsy values
+mixed = [1, 0, "hello", "", None, [1], []]
+list(filter(None, mixed))   # [1, 'hello', [1]]</code></pre>
+
+<h2 id="unequal-iterables">Map / Zip with Unequal-Length Iterables</h2>
+
+<p><code>map</code> and <code>zip</code> stop at the SHORTEST iterable — silently dropping extras.</p>
+
+<pre><code>a = [1, 2, 3]
+b = [10, 20, 30, 40]
+list(map(lambda x, y: x + y, a, b))   # [11, 22, 33]   ← 40 silently dropped
+list(zip(a, b))                        # [(1, 10), (2, 20), (3, 30)]</code></pre>
+
+<table>
+  <thead><tr><th>You want…</th><th>Use</th></tr></thead>
+  <tbody>
+    <tr><td>Silently truncate to shortest</td><td><code>map(func, a, b)</code> or <code>zip(a, b)</code></td></tr>
+    <tr><td>Error if lengths differ</td><td><code>zip(a, b, strict=True)</code> (Python 3.10+)</td></tr>
+    <tr><td>Pad shorter to longer</td><td><code>itertools.zip_longest(a, b, fillvalue=...)</code></td></tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <div class="tip-title">For agentic code — prefer strict=True</div>
+  Silent data loss in agent dispatch (e.g., zipping tool names with inputs and dropping one) is a nightmare to debug.
+</div>
+
+<h2 id="sorted">sorted(iterable, key=…, reverse=…)</h2>
+
+<p>Returns a NEW sorted list. Doesn't mutate the input.</p>
+
+<pre><code>nums = [3, 1, 4, 1, 5, 9, 2, 6]
+sorted(nums)                  # [1, 1, 2, 3, 4, 5, 6, 9]
+sorted(nums, reverse=True)    # [9, 6, 5, 4, 3, 2, 1, 1]
+
+# Sort by length using key
+sorted(["MSFT", "AAPL", "GOOGL"], key=len)    # ['MSFT', 'AAPL', 'GOOGL']</code></pre>
+
+<h3>list.sort() vs sorted()</h3>
+<table>
+  <thead><tr><th>Function</th><th>Mutates?</th><th>Returns?</th></tr></thead>
+  <tbody>
+    <tr><td><code>x.sort()</code></td><td>Yes — modifies x</td><td><code>None</code></td></tr>
+    <tr><td><code>sorted(x)</code></td><td>No — leaves x alone</td><td>New sorted list</td></tr>
+  </tbody>
+</table>
+
+<div class="danger">
+  <div class="danger-title">🚨 list.sort() returns None</div>
+  <pre><code>tickers = ["MSFT", "AAPL"].sort()    # ❌ tickers is None!
+
+# ✅ Either:
+sorted_tickers = sorted(["MSFT", "AAPL"])
+# Or:
+tickers = ["MSFT", "AAPL"]
+tickers.sort()</code></pre>
+</div>
+
+<h2 id="sort-objects">Sorting Dicts and Objects</h2>
+
+<h3>Sort list of tuples by element index</h3>
+<pre><code>prices = [("AAPL", 150), ("GOOGL", 2800), ("MSFT", 300)]
+sorted(prices, key=lambda x: x[1])
+
+# Same with operator.itemgetter (faster, more idiomatic)
+from operator import itemgetter
+sorted(prices, key=itemgetter(1))</code></pre>
+
+<h3>Sort list of dicts by key</h3>
+<pre><code>portfolio = [
+    {"ticker": "AAPL", "price": 150, "pe": 34},
+    {"ticker": "GOOGL", "price": 2800, "pe": 28},
+]
+
+sorted(portfolio, key=lambda x: x["pe"])</code></pre>
+
+<h3>Sort list of objects by attribute</h3>
+<pre><code>from operator import attrgetter
+sorted(stocks, key=attrgetter("price"))</code></pre>
+
+<h2 id="multi-key">Multi-Key Sorting</h2>
+
+<p>Return a <strong>tuple</strong> from the key function. Python compares tuples lexicographically.</p>
+
+<pre><code>sorted(portfolio, key=lambda x: (x["pe"], x["price"]))</code></pre>
+
+<h3>Mixed asc/desc — negate numeric fields</h3>
+<pre><code>sorted(portfolio, key=lambda x: (x["pe"], -x["price"]))</code></pre>
+
+<div class="tip">
+  <div class="tip-title">Stable sort matters</div>
+  Python's <code>sorted</code> is <strong>stable</strong> — items with equal keys keep original order. So sorting twice (last-key-first) gives correct multi-key results.
+</div>
+
+<h2 id="reduce">reduce()</h2>
+
+<pre><code>from functools import reduce
+
+nums = [1, 2, 3, 4, 5]
+reduce(lambda acc, x: acc + x, nums)         # 15
+reduce(lambda acc, x: acc * x, nums)         # 120
+reduce(lambda acc, x: acc + x, nums, 100)    # 115 (with initial)</code></pre>
+
+<div class="tip">
+  Use <code>sum()</code>, <code>max()</code>, <code>min()</code>, <code>any()</code>, <code>all()</code> instead when possible — clearer.
+</div>
+
+<h2 id="decision-fp">Decision Matrix — Comprehension vs map vs for-loop</h2>
+
+<table>
+  <thead><tr><th>Need</th><th>Use</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Transform every item</td><td><code>[expr for x in items]</code></td><td>Comprehension — most readable</td></tr>
+    <tr><td>Filter items</td><td><code>[x for x in items if cond]</code></td><td>Comprehension</td></tr>
+    <tr><td>Transform + filter</td><td><code>[expr for x in items if cond]</code></td><td>One pass, idiomatic</td></tr>
+    <tr><td>Sort by computed key</td><td><code>sorted(items, key=lambda)</code></td><td>Canonical lambda use</td></tr>
+    <tr><td>Sort by attribute/index</td><td><code>itemgetter</code> / <code>attrgetter</code></td><td>Cleaner than lambda</td></tr>
+    <tr><td>One-shot anonymous func</td><td>lambda</td><td>Saves a line</td></tr>
+    <tr><td>Side effects (call, log, save)</td><td>For loop</td><td>Comprehensions for transforms only</td></tr>
+    <tr><td>Lazy chain over huge data</td><td>map/filter (stay as iterators)</td><td>Memory efficiency</td></tr>
+  </tbody>
+</table>
+
+<!-- ====================================================================== -->
+<div class="part">PART 4 — Iteration Protocol</div>
+
+<h2 id="iterable-vs-iterator">Iterable vs Iterator — The Distinction</h2>
+
+<p>Every iterator IS an iterable — but not every iterable is an iterator.</p>
+
+<pre><code>┌─────────────────────────────────┐
+│ ITERABLE (has __iter__)         │
+│   Examples: list, tuple, str,   │
+│   set, dict, range              │
+│                                 │
+│   ┌───────────────────────────┐ │
+│   │ ITERATOR                  │ │
+│   │ (also has __next__)       │ │
+│   │                           │ │
+│   │ - has internal bookmark   │ │
+│   │ - one-shot only           │ │
+│   │                           │ │
+│   │ Examples: map, filter,    │ │
+│   │ generator, file, iter([]) │ │
+│   └───────────────────────────┘ │
+└─────────────────────────────────┘</code></pre>
+
+<table>
+  <thead><tr><th></th><th>Iterable</th><th>Iterator</th></tr></thead>
+  <tbody>
+    <tr><td>Has <code>__iter__</code></td><td>✅</td><td>✅ (returns itself)</td></tr>
+    <tr><td>Has <code>__next__</code></td><td>❌</td><td>✅</td></tr>
+    <tr><td>Works in <code>for x in ...</code></td><td>✅</td><td>✅</td></tr>
+    <tr><td>Works with <code>next(...)</code></td><td>❌</td><td>✅</td></tr>
+    <tr><td>Reusable</td><td>✅</td><td>❌ (one-shot)</td></tr>
+    <tr><td>Examples</td><td>list, str, dict, range, set, tuple</td><td>map, filter, generator, file, <code>iter(anything)</code></td></tr>
+  </tbody>
+</table>
+
+<h3>Test which is which</h3>
+<pre><code>from collections.abc import Iterable, Iterator
+
+isinstance([1, 2, 3], Iterable)         # True
+isinstance([1, 2, 3], Iterator)         # False  ← list is NOT an iterator
+
+it = iter([1, 2, 3])
+isinstance(it, Iterator)                # True   ← now it's both
+
+m = map(lambda x: x*2, [1, 2, 3])
+isinstance(m, Iterator)                 # True</code></pre>
+
+<h2 id="iter-protocol">How for-loops Actually Work</h2>
+
+<p>A <code>for</code> loop is just <code>iter()</code> + <code>next()</code> + catch <code>StopIteration</code>:</p>
+
+<pre><code># This loop:
+for x in [1, 2, 3]:
+    print(x)
+
+# Is equivalent to:
+it = iter([1, 2, 3])
+while True:
+    try:
+        x = next(it)
+        print(x)
+    except StopIteration:
+        break</code></pre>
+
+<h3>The mental model — iterator as a bookmark</h3>
+<pre><code>Stream:  [1, 2, 3, 4, 5]
+              ↑
+           bookmark (advances on each next())
+
+After 3 calls to next():
+Stream:  [1, 2, 3, 4, 5]
+                    ↑
+                 bookmark
+
+When the bookmark falls off the end → StopIteration</code></pre>
+
+<h2 id="why-iterators">Why Iterators Exist (Laziness)</h2>
+
+<p>Iterators don't hold all values in memory at once.</p>
+
+<pre><code># List: ALL 1 billion ints exist in RAM at once → ~8GB
+nums = [x * 2 for x in range(1_000_000_000)]   # crashes
+
+# Iterator: values produced on demand → constant memory
+nums = (x * 2 for x in range(1_000_000_000))   # ✅ instant, ~zero memory
+for n in nums:
+    if n > 100: break    # only computed first ~50 values</code></pre>
+
+<div class="gotcha">
+  <div class="gotcha-title">⚠️ Iterators are exhausted after one pass</div>
+  <pre><code>m = map(lambda x: x * 2, [1, 2, 3])
+list(m)        # [2, 4, 6]
+list(m)        # []  ← already consumed</code></pre>
+  Use a list (or call <code>iter(original)</code> again) if you need to iterate twice.
+</div>
+
+<h2 id="range">range — A Lazy Sequence</h2>
+
+<p><code>range</code> is its own type — iterable AND reusable AND lazy. Best of all worlds.</p>
+
+<pre><code>r = range(5)
+print(type(r))    # &lt;class 'range'&gt;
+print(r)          # range(0, 5)    ← doesn't show contents
+print(list(r))    # [0, 1, 2, 3, 4]
+
+# Reusable (unlike iterators)
+for x in range(3): print(x)   # 0 1 2
+for x in range(3): print(x)   # 0 1 2  ← works again
+
+# Supports indexing (unlike generators)
+r[100]      # 100
+r[10:20]    # slice → another range object
+len(r)      # length without iterating
+500 in range(1000)    # O(1) — uses arithmetic, not iteration</code></pre>
+
+<p><code>range</code> stores just 3 numbers (start, stop, step) and computes values on demand.</p>
+
+<h2 id="generators">Generators — yield</h2>
+
+<p>A function with <code>yield</code> is a generator function. Calling it returns a generator (an iterator).</p>
+
+<pre><code>def count_up_to(n):
+    i = 0
+    while i < n:
+        yield i        # pause here, return value, resume on next()
+        i += 1
+
+gen = count_up_to(3)
+print(next(gen))   # 0
+print(next(gen))   # 1
+print(next(gen))   # 2
+print(next(gen))   # StopIteration
+
+for x in count_up_to(5):
+    print(x)       # 0 1 2 3 4</code></pre>
+
+<h3>Generator expression — like comprehension but lazy</h3>
+<pre><code># List comprehension — eagerly builds full list
+squares = [x**2 for x in range(10)]    # [0, 1, 4, 9, ..., 81]
+
+# Generator expression — lazy iterator (parens instead of brackets)
+squares = (x**2 for x in range(10))    # &lt;generator object&gt;
+print(list(squares))  # only now materialized</code></pre>
+
+<h2 id="print-iterator">Why print(list) Shows Contents but print(map) Doesn't</h2>
+
+<p><code>print()</code> calls <code>__repr__</code> on the object. Different types implement it differently.</p>
+
+<pre><code>prices = [100, 200, 300]
+print(prices)                # [100, 200, 300]
+                             # list.__repr__ walks elements — safe (in memory already)
+
+doubled = map(lambda x: x * 2, prices)
+print(doubled)               # &lt;map object at 0x10c8b3940&gt;
+                             # map.__repr__ shows placeholder
+                             # — showing values would CONSUME the iterator!</code></pre>
+
+<div class="info">
+  <div class="info-title">Iterator __repr__ design rationale</div>
+  Iterators don't show contents in <code>repr</code> — that would require consuming them. Imagine an infinite iterator: <code>itertools.count(1)</code> would loop forever trying to print. The <code>&lt;...&gt;</code> placeholder is the only safe answer.
+</div>
+
+<h3>Same for all iterators</h3>
+<pre><code>print(map(lambda x: x, [1, 2, 3]))           # &lt;map object at 0x...&gt;
+print(filter(lambda x: x, [1, 2, 3]))        # &lt;filter object at 0x...&gt;
+print(zip([1], [2]))                          # &lt;zip object at 0x...&gt;
+print(enumerate([1, 2, 3]))                  # &lt;enumerate object at 0x...&gt;
+print((x for x in [1, 2, 3]))                # &lt;generator object at 0x...&gt;</code></pre>
+
+<p>To see contents — wrap with <code>list(...)</code> to materialize (this exhausts the iterator).</p>
+
+<!-- ====================================================================== -->
+<div class="part">PART 5 — Classes & Objects</div>
+
+<h2 id="three-method-types">The 3 Method Types — Instance, Class, Static</h2>
+
+<table>
+  <thead><tr><th>Type</th><th>Decorator</th><th>First arg</th><th>Use for</th></tr></thead>
+  <tbody>
+    <tr><td>Instance method</td><td>(none)</td><td><code>self</code></td><td>Operations on a specific object</td></tr>
+    <tr><td>Class method</td><td><code>@classmethod</code></td><td><code>cls</code></td><td>Factory methods, subclass-aware logic</td></tr>
+    <tr><td>Static method</td><td><code>@staticmethod</code></td><td>(nothing)</td><td>Utility functions namespaced under the class</td></tr>
+  </tbody>
+</table>
+
+<pre><code>class Stock:
+    market = "NYSE"                    # class attribute (shared)
+
+    def __init__(self, ticker, price):
+        self.ticker = ticker
+        self.price = price
+
+    # 1. INSTANCE METHOD
+    def describe(self):
+        return f"{self.ticker}: ${self.price} on {self.market}"
+
+    # 2. CLASS METHOD
+    @classmethod
+    def from_string(cls, s):
+        ticker, price = s.split(":")
+        return cls(ticker, float(price))
+
+    # 3. STATIC METHOD
+    @staticmethod
+    def is_valid_ticker(ticker):
+        return ticker.isupper() and 1 <= len(ticker) <= 5
+
+s = Stock("AAPL", 150)
+s.describe()                        # instance method
+Stock.from_string("AAPL:150")        # class method
+Stock.is_valid_ticker("AAPL")        # static method</code></pre>
+
+<h2 id="staticmethod">@staticmethod</h2>
+
+<p>Just a regular function namespaced under the class — receives no implicit first argument.</p>
+
+<pre><code>class TempConverter:
+    @staticmethod
+    def f_to_c(f): return (f - 32) * 5 / 9
+    @staticmethod
+    def c_to_f(c): return c * 9 / 5 + 32
+
+TempConverter.f_to_c(212)    # 100.0</code></pre>
+
+<p>Use when the function is logically related to the class but doesn't need any instance or class state. Pure organizational decoration.</p>
+
+<h2 id="classmethod">@classmethod (and the Factory Pattern)</h2>
+
+<p>Receives the class itself (<code>cls</code>) as first argument. Can create new instances with <code>cls(...)</code> — automatically subclass-aware.</p>
+
+<pre><code>class Stock:
+    def __init__(self, ticker, price):
+        self.ticker = ticker
+        self.price = price
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(ticker=data["ticker"], price=data["price"])
+
+    @classmethod
+    def from_csv(cls, row):
+        ticker, price = row.split(",")
+        return cls(ticker, float(price))
+
+    @classmethod
+    def from_yfinance(cls, ticker):
+        info = yfinance.Ticker(ticker).info
+        return cls(ticker, info["currentPrice"])
+
+# Multiple "constructors", clearly named
+Stock("AAPL", 150)
+Stock.from_dict({"ticker": "AAPL", "price": 150})
+Stock.from_csv("AAPL,150")
+Stock.from_yfinance("AAPL")</code></pre>
+
+<p>You see this pattern <strong>everywhere</strong>:</p>
+<ul>
+  <li><code>dict.fromkeys(...)</code></li>
+  <li><code>datetime.fromtimestamp(...)</code>, <code>datetime.fromisoformat(...)</code></li>
+  <li><code>Path.cwd()</code>, <code>Path.home()</code></li>
+  <li>Pydantic <code>Model.model_validate(dict)</code>, <code>Model.model_validate_json(str)</code></li>
+  <li>LangChain <code>HumanMessage.from_dict(...)</code></li>
+</ul>
+
+<div class="tip">
+  <div class="tip-title">Why cls (vs hardcoding the class)</div>
+  <pre><code>class Stock:
+    @staticmethod
+    def from_dict_static(data):
+        return Stock(...)        # ❌ HARDCODED Stock
+
+    @classmethod
+    def from_dict_cls(cls, data):
+        return cls(...)          # ✅ uses whatever class called this
+
+class TechStock(Stock): pass
+
+TechStock.from_dict_static({...})    # → Stock instance (WRONG)
+TechStock.from_dict_cls({...})       # → TechStock instance (CORRECT)</code></pre>
+  Class methods are subclass-aware automatically.
+</div>
+
+<h2 id="class-vs-instance-attrs">Class Attributes vs Instance Attributes</h2>
+
+<p>Python supports static variables natively as <strong>class attributes</strong>.</p>
+
+<pre><code>class Stock:
+    market = "NYSE"                    # ← class attribute (shared)
+    instance_count = 0                  # ← class attribute
+
+    def __init__(self, ticker, price):
+        self.ticker = ticker            # ← instance attribute (per object)
+        self.price = price
+        Stock.instance_count += 1       # increment shared counter</code></pre>
+
+<h3>Visual</h3>
+<pre><code>class Stock:                    Stock class
+    market = "NYSE"        ──→  ┌─────────────────┐
+    instance_count = 0          │ market = "NYSE" │
+                                │ instance_count=2│
+    def __init__(...):          │ __init__        │
+        self.ticker = ...       │ __str__         │
+                                └─────────────────┘
+                                         ↑
+              ┌──────────────────────────┴──────────────────────────┐
+              │                                                      │
+        s1 instance                                          s2 instance
+        ┌──────────────┐                                  ┌──────────────┐
+        │ ticker=AAPL  │                                  │ ticker=GOOGL │
+        │ price=150    │                                  │ price=2800   │
+        └──────────────┘                                  └──────────────┘</code></pre>
+
+<div class="gotcha">
+  <div class="gotcha-title">⚠️ Instance assignment SHADOWS the class attribute</div>
+  <pre><code>s1.market = "NASDAQ"        # ← creates an INSTANCE attribute on s1
+print(s1.market)    # 'NASDAQ'   (instance shadows class)
+print(s2.market)    # 'NYSE'     (s2 still uses class)
+print(Stock.market) # 'NYSE'     (class itself unchanged)
+
+# To actually change the class attribute:
+Stock.market = "NASDAQ"     # ✅ now changes for ALL instances</code></pre>
+</div>
+
+<div class="danger">
+  <div class="danger-title">🚨 Mutable class attributes are SHARED across instances</div>
+  <pre><code>class Stock:
+    history = []                 # ❌ DANGEROUS — shared mutable list
+
+    def __init__(self, ticker):
+        self.ticker = ticker
+
+    def buy(self, price):
+        self.history.append(price)
+
+s1 = Stock("AAPL"); s1.buy(150)
+s2 = Stock("GOOGL"); s2.buy(2800)
+print(s1.history)    # [150, 2800]   — both prices in BOTH stocks!</code></pre>
+  <strong>Fix:</strong> initialize mutable state in <code>__init__</code> (each instance gets its own):
+  <pre><code>def __init__(self, ticker):
+    self.ticker = ticker
+    self.history = []         # ✅ each instance gets its own list</code></pre>
+</div>
+
+<h2 id="instance-defaults">Default Values for Instance Variables</h2>
+
+<p>Set defaults in <code>__init__</code> parameter list (same as any function).</p>
+
+<pre><code>class Stock:
+    def __init__(self, ticker, price=0.0, signal="HOLD", currency="USD"):
+        self.ticker = ticker          # required
+        self.price = price            # default 0.0
+        self.signal = signal          # default "HOLD"
+        self.currency = currency      # default "USD"
+
+Stock("AAPL")                          # ticker only
+Stock("AAPL", 150.0)                   # ticker + price
+Stock("AAPL", currency="GBP")          # skip middle, set last by name</code></pre>
+
+<h3>Mutable defaults — use the None sentinel pattern</h3>
+<pre><code>class Stock:
+    def __init__(self, ticker, history=None):
+        self.ticker = ticker
+        if history is None:
+            history = []                # fresh list per call
+        self.history = history</code></pre>
+
+<h3>Even cleaner — @dataclass</h3>
+<pre><code>from dataclasses import dataclass, field
+
+@dataclass
+class Stock:
+    ticker: str                                    # required
+    price: float = 0.0                             # default
+    signal: str = "HOLD"
+    history: list = field(default_factory=list)    # mutable default — uses factory</code></pre>
+
+<h3>Cleanest for agentic AI — Pydantic</h3>
+<pre><code>from pydantic import BaseModel, Field
+
+class Stock(BaseModel):
+    ticker: str
+    price: float = 0.0
+    signal: str = "HOLD"
+    history: list[float] = Field(default_factory=list)</code></pre>
+
+<h2 id="self-is-just-a-name">self is Just a Parameter Name</h2>
+
+<p><code>self</code> is NOT a Python keyword. It's just a regular parameter name — convention only.</p>
+
+<pre><code>class Stock:
+    def __init__(me, ticker):       # 'me' instead of 'self' — works
+        me.ticker = ticker
+
+    def describe(this):              # 'this' (C++ style) — also works
+        return this.ticker
+
+s = Stock("AAPL")
+print(s.describe())                  # 'AAPL'</code></pre>
+
+<p>Python doesn't care about the name. <strong>It just passes the instance as the first positional argument</strong>, whatever you name that parameter.</p>
+
+<div class="info">
+  <div class="info-title">Why self gets passed automatically — the descriptor protocol</div>
+  <p>When you access <code>s.describe</code>, Python doesn't return the raw function — it returns a <strong>bound method</strong> (instance pre-wired). This is the <strong>descriptor protocol</strong> at work. Functions defined in a class body are descriptors; their <code>__get__</code> method returns a bound version when accessed via an instance.</p>
+  <pre><code>print(s.describe)         # &lt;bound method Stock.describe of &lt;Stock object&gt;&gt;
+                          # ← BOUND — self already wired in
+print(Stock.describe)     # &lt;function Stock.describe at 0x...&gt;
+                          # ← UNBOUND — must pass self explicitly
+
+s.describe()              # auto-passes s
+Stock.describe(s)         # explicit pass — same result</code></pre>
+</div>
+
+<h3>By convention, ALWAYS use self</h3>
+<p>PEP 8 and every Python style guide say: <code>self</code> for instance methods, <code>cls</code> for class methods. Renaming works but breaks every reader's expectation.</p>
+
+<h2 id="no-overloading">Why Python Doesn't Support Method Overloading</h2>
+
+<p>You <strong>cannot</strong> define the same method twice with different signatures — the second definition overwrites the first.</p>
+
+<pre><code>class Stock:
+    def __init__(self, ticker: str):
+        ...
+    def __init__(self, ticker: str, price: float):    # OVERWRITES
+        ...
+
+# Only the second __init__ exists
+s = Stock("AAPL")          # ❌ TypeError: missing 'price'</code></pre>
+
+<p><strong>Why:</strong> Python is dynamically typed — no compile-time type info to dispatch on. Every name in a class is a regular dict entry; defining the same name twice just overwrites.</p>
+
+<h3>The 4 Pythonic alternatives</h3>
+
+<h4>1. Default arguments (most common)</h4>
+<pre><code>def __init__(self, ticker, price=0.0, signal="HOLD"):
+    ...</code></pre>
+
+<h4>2. @classmethod factories (most Pythonic)</h4>
+<pre><code>Stock.from_dict({...})
+Stock.from_string("AAPL:150")
+Stock.from_yfinance("AAPL")</code></pre>
+
+<h4>3. Type checking inside one method (rarely)</h4>
+<pre><code>def __init__(self, value):
+    if isinstance(value, str): ...
+    elif isinstance(value, dict): ...</code></pre>
+
+<h4>4. functools.singledispatchmethod</h4>
+<pre><code>from functools import singledispatchmethod
+
+class Stock:
+    @singledispatchmethod
+    def update(self, value): raise NotImplementedError
+    @update.register
+    def _(self, value: str): self.ticker = value
+    @update.register
+    def _(self, value: float): self.price = value</code></pre>
+
+<h2 id="cpp-comparison">Quick C++ Comparison Table</h2>
+
+<table>
+  <thead><tr><th>C++</th><th>Python</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>Member function with <code>this</code></td><td>Instance method with <code>self</code></td><td>Same concept; Python makes <code>self</code> explicit</td></tr>
+    <tr><td><code>static</code> member function</td><td><code>@staticmethod</code></td><td>Same — no instance, no class reference</td></tr>
+    <tr><td>Static factory function</td><td><code>@classmethod</code></td><td>C++ has no direct equivalent — <code>cls</code> parameter unique to Python</td></tr>
+    <tr><td>Constructor <code>Stock(...)</code></td><td><code>__init__</code> (after <code>__new__</code>)</td><td>C++ allocates+initializes in one step; Python splits</td></tr>
+    <tr><td>Destructor <code>~Stock()</code></td><td><code>__del__</code></td><td>C++ deterministic; Python non-deterministic — use <code>with</code> for RAII</td></tr>
+    <tr><td><code>operator+</code>, <code>operator==</code></td><td><code>__add__</code>, <code>__eq__</code></td><td>Operator overloading via methods</td></tr>
+    <tr><td>Method overloading</td><td>NOT supported</td><td>Use defaults / @classmethod / singledispatch</td></tr>
+    <tr><td>Class member layout fixed at compile time</td><td>Class is a mutable dict</td><td>Add/remove methods at runtime</td></tr>
+    <tr><td>Pure virtual function</td><td><code>@abstractmethod</code></td><td>Same intent</td></tr>
+    <tr><td><code>private:</code>, <code>protected:</code></td><td>No enforcement (convention only)</td><td><code>_name</code> = "private", <code>__name</code> = name-mangled</td></tr>
+  </tbody>
+</table>
+
+<!-- ====================================================================== -->
+<div class="part">PART 6 — Dunder Methods (Python's Data Model)</div>
+
+<h2 id="what-dunders">What Dunders Are</h2>
+
+<p><strong>Dunder</strong> = "double underscore." Methods like <code>__init__</code>, <code>__str__</code>, <code>__iter__</code> are <strong>not called by you directly</strong>. They are called <strong>automatically by Python</strong> when you use built-in syntax like <code>str(x)</code>, <code>len(x)</code>, <code>x + y</code>, <code>for x in y</code>.</p>
+
+<p>Dunders are how Python's <strong>data model</strong> works — they let your custom classes participate in built-in syntax just like lists, dicts, and ints do.</p>
+
+<h2 id="builtin-mapping">How Built-ins Map to Dunders</h2>
+
+<table>
+  <thead><tr><th>Built-in syntax</th><th>What Python calls under the hood</th></tr></thead>
+  <tbody>
+    <tr><td><code>str(x)</code></td><td><code>type(x).__str__(x)</code></td></tr>
+    <tr><td><code>repr(x)</code></td><td><code>type(x).__repr__(x)</code></td></tr>
+    <tr><td><code>len(x)</code></td><td><code>type(x).__len__(x)</code></td></tr>
+    <tr><td><code>iter(x)</code></td><td><code>type(x).__iter__(x)</code></td></tr>
+    <tr><td><code>next(it)</code></td><td><code>type(it).__next__(it)</code></td></tr>
+    <tr><td><code>hash(x)</code></td><td><code>type(x).__hash__(x)</code></td></tr>
+    <tr><td><code>bool(x)</code></td><td><code>type(x).__bool__(x)</code> (or <code>__len__</code>)</td></tr>
+    <tr><td><code>x + y</code></td><td><code>type(x).__add__(x, y)</code></td></tr>
+    <tr><td><code>x[k]</code></td><td><code>type(x).__getitem__(x, k)</code></td></tr>
+    <tr><td><code>k in x</code></td><td><code>type(x).__contains__(x, k)</code></td></tr>
+    <tr><td><code>obj(args)</code></td><td><code>type(obj).__call__(obj, args)</code></td></tr>
+    <tr><td><code>with x as y:</code></td><td><code>x.__enter__()</code> ... <code>x.__exit__()</code></td></tr>
+    <tr><td><code>for v in x:</code></td><td><code>x.__iter__()</code> then repeated <code>__next__()</code></td></tr>
+    <tr><td><code>print(x)</code> / <code>f"{x}"</code></td><td><code>__str__</code> (falls back to <code>__repr__</code>)</td></tr>
+  </tbody>
+</table>
+
+<h2 id="dunder-on-class">Dunders Must Live on the Class</h2>
+
+<p>Dunders are looked up via <code>type(x).__method__</code>, NOT <code>x.__method__</code>. This means adding them to an instance after creation does NOT affect built-in syntax.</p>
+
+<pre><code>class Stock:
+    def __str__(self): return "stock"
+
+s = Stock()
+
+# ❌ Adding to instance — IGNORED for built-in syntax
+s.__str__ = lambda: "instance dunder"
+print(str(s))                # 'stock' — class method still wins
+
+# ✅ Adding to class — TAKES EFFECT for ALL instances
+Stock.__str__ = lambda self: "patched class dunder"
+print(str(s))                # 'patched class dunder'</code></pre>
+
+<div class="info">
+  <div class="info-title">Why bypass instance lookup</div>
+  <p>For performance, Python's built-in operations (<code>str</code>, <code>len</code>, <code>+</code>, <code>print</code>) go straight to the type's slot table in C. Skipping instance lookup makes every operation faster — but means dunders MUST be on the class.</p>
+</div>
+
+<h2 id="monkey-patching">Monkey-Patching the Class (vs Instance)</h2>
+
+<p>You CAN reassign <code>__str__</code> on the class — but include <code>self</code> in the lambda since Python passes the instance.</p>
+
+<pre><code># ❌ Forgot self — TypeError
+Stock.__str__ = lambda: "different"
+print(str(s))
+# TypeError: <lambda>() takes 0 positional arguments but 1 was given
+
+# ✅ Include self — works
+Stock.__str__ = lambda self: "different"
+print(str(s))    # 'different'</code></pre>
+
+<h3>This is monkey-patching</h3>
+<p>Modifying a class at runtime — adding, replacing, or removing methods. Python allows it because classes are mutable dicts under the hood.</p>
+
+<table>
+  <thead><tr><th>Use case</th><th>Example</th></tr></thead>
+  <tbody>
+    <tr><td>Testing — replace a method with a mock</td><td><code>Stock.fetch_price = lambda self: 99.0</code></td></tr>
+    <tr><td>Patching third-party libs</td><td>Library has a bug; patch it without forking</td></tr>
+    <tr><td>Hot-fixing in REPL</td><td>Fast iteration during development</td></tr>
+  </tbody>
+</table>
+
+<div class="gotcha">
+  <div class="gotcha-title">⚠️ Patches affect ALL instances, including existing ones</div>
+  <pre><code>s1 = Stock(); s2 = Stock()
+print(str(s1))                  # 'stock'
+
+Stock.__str__ = lambda self: "patched"
+print(str(s1))                  # 'patched' — even s1 affected
+print(str(s2))                  # 'patched'</code></pre>
+  Because <code>str(s1)</code> looks up <code>__str__</code> at call time on the class, not at object creation.
+</div>
+
+<h2 id="dunder-categories">All Dunders by Category</h2>
+
+<h3>1. Object lifecycle</h3>
+<table>
+  <thead><tr><th>Method</th><th>When called</th></tr></thead>
+  <tbody>
+    <tr><td><code>__init__(self, ...)</code></td><td>Object is created — initialize attributes</td></tr>
+    <tr><td><code>__new__(cls, ...)</code></td><td>Before <code>__init__</code> — actually allocates the object</td></tr>
+    <tr><td><code>__del__(self)</code></td><td>GC time (don't rely on it)</td></tr>
+  </tbody>
+</table>
+
+<h3>2. String representation</h3>
+<table>
+  <thead><tr><th>Method</th><th>When called</th><th>Returns</th></tr></thead>
+  <tbody>
+    <tr><td><code>__repr__</code></td><td><code>repr(x)</code>, list/dict display, <code>!r</code></td><td>Unambiguous, ideally code that recreates object</td></tr>
+    <tr><td><code>__str__</code></td><td><code>str(x)</code>, <code>print(x)</code>, <code>f"{x}"</code></td><td>Human-friendly text</td></tr>
+    <tr><td><code>__format__(self, spec)</code></td><td><code>f"{x:spec}"</code></td><td>Custom formatting</td></tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  If you only define one, define <code>__repr__</code> — Python falls back to it when <code>__str__</code> is missing.
+</div>
+
+<h3>3. Iteration</h3>
+<table>
+  <thead><tr><th>Method</th><th>When called</th></tr></thead>
+  <tbody>
+    <tr><td><code>__iter__(self)</code></td><td><code>iter(x)</code>, <code>for x in obj</code></td></tr>
+    <tr><td><code>__next__(self)</code></td><td><code>next(it)</code> — returns next or raises <code>StopIteration</code></td></tr>
+  </tbody>
+</table>
+
+<h3>4. Container behavior</h3>
+<table>
+  <thead><tr><th>Method</th><th>When called</th></tr></thead>
+  <tbody>
+    <tr><td><code>__len__</code></td><td><code>len(x)</code></td></tr>
+    <tr><td><code>__getitem__</code></td><td><code>x[key]</code></td></tr>
+    <tr><td><code>__setitem__</code></td><td><code>x[key] = value</code></td></tr>
+    <tr><td><code>__delitem__</code></td><td><code>del x[key]</code></td></tr>
+    <tr><td><code>__contains__</code></td><td><code>item in x</code></td></tr>
+  </tbody>
+</table>
+
+<h3>5. Comparison and hashing</h3>
+<table>
+  <thead><tr><th>Method</th><th>Operator</th></tr></thead>
+  <tbody>
+    <tr><td><code>__eq__</code></td><td><code>==</code></td></tr>
+    <tr><td><code>__ne__</code></td><td><code>!=</code></td></tr>
+    <tr><td><code>__lt__</code> / <code>__le__</code> / <code>__gt__</code> / <code>__ge__</code></td><td><code>&lt;</code> <code>&lt;=</code> <code>&gt;</code> <code>&gt;=</code></td></tr>
+    <tr><td><code>__hash__</code></td><td><code>hash(x)</code> — required for dict key / set member</td></tr>
+  </tbody>
+</table>
+
+<div class="danger">
+  <div class="danger-title">🚨 Define __hash__ when you define __eq__</div>
+  Defining <code>__eq__</code> automatically sets <code>__hash__ = None</code>, making the object unhashable. If you want it usable as a dict key, define both — and equal objects must have equal hashes.
+</div>
+
+<h3>6. Operator overloading</h3>
+<table>
+  <thead><tr><th>Method</th><th>Operator</th></tr></thead>
+  <tbody>
+    <tr><td><code>__add__</code></td><td><code>+</code></td></tr>
+    <tr><td><code>__sub__</code> / <code>__mul__</code> / <code>__truediv__</code> / <code>__floordiv__</code> / <code>__mod__</code> / <code>__pow__</code></td><td>arithmetic</td></tr>
+    <tr><td><code>__or__</code> / <code>__and__</code></td><td><code>|</code> <code>&</code></td></tr>
+    <tr><td><code>__neg__</code></td><td><code>-x</code></td></tr>
+  </tbody>
+</table>
+
+<h3>7. Context managers (with statement)</h3>
+<table>
+  <thead><tr><th>Method</th><th>When called</th></tr></thead>
+  <tbody>
+    <tr><td><code>__enter__(self)</code></td><td><code>with obj as x:</code> — entering</td></tr>
+    <tr><td><code>__exit__(self, exc_type, exc_val, tb)</code></td><td>Leaving (even via exception)</td></tr>
+  </tbody>
+</table>
+
+<h3>8. Async equivalents</h3>
+<table>
+  <thead><tr><th>Method</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>__aiter__</code> / <code>__anext__</code></td><td><code>async for x in obj</code></td></tr>
+    <tr><td><code>__aenter__</code> / <code>__aexit__</code></td><td><code>async with obj as x:</code></td></tr>
+    <tr><td><code>__await__</code></td><td><code>await obj</code></td></tr>
+  </tbody>
+</table>
+
+<p>Used heavily in our P6 MCP code: <code>async with streamablehttp_client(SERVER_URL) as ...</code></p>
+
+<h3>9. Callable</h3>
+<pre><code>class Multiplier:
+    def __init__(self, factor): self.factor = factor
+    def __call__(self, x): return x * self.factor
+
+triple = Multiplier(3)
+triple(10)      # 30 — instance is callable</code></pre>
+
+<h3>10. Attribute access</h3>
+<table>
+  <thead><tr><th>Method</th><th>When called</th></tr></thead>
+  <tbody>
+    <tr><td><code>__getattr__</code></td><td>When attribute is <strong>not found</strong> normally</td></tr>
+    <tr><td><code>__setattr__</code></td><td>Every attribute assignment</td></tr>
+    <tr><td><code>__getattribute__</code></td><td>Every attribute access (rare to override)</td></tr>
+    <tr><td><code>__delattr__</code></td><td><code>del obj.name</code></td></tr>
+  </tbody>
+</table>
+
+<h3>11. Class introspection (read these as variables)</h3>
+<table>
+  <thead><tr><th>Attribute</th><th>What it gives</th></tr></thead>
+  <tbody>
+    <tr><td><code>obj.__class__</code></td><td>The class of an instance</td></tr>
+    <tr><td><code>obj.__dict__</code></td><td>All instance attributes as a dict</td></tr>
+    <tr><td><code>cls.__name__</code></td><td>The class name (string)</td></tr>
+    <tr><td><code>cls.__bases__</code></td><td>Tuple of parent classes</td></tr>
+    <tr><td><code>cls.__mro__</code></td><td>Method resolution order</td></tr>
+    <tr><td><code>func.__name__</code></td><td>Function name</td></tr>
+    <tr><td><code>func.__doc__</code></td><td>Docstring</td></tr>
+    <tr><td><code>func.__annotations__</code></td><td>Type hints</td></tr>
+  </tbody>
+</table>
+
+<h2 id="module-dunders">Module-Level Dunders</h2>
+
+<p>These are <strong>variables</strong>, not methods. Set automatically by Python when a module is loaded.</p>
+
+<table>
+  <thead><tr><th>Attribute</th><th>Set when</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td><code>__name__</code></td><td>Module loaded</td><td><code>"__main__"</code> if script, otherwise module's filename</td></tr>
+    <tr><td><code>__file__</code></td><td>Module loaded</td><td>Absolute path to the .py file</td></tr>
+    <tr><td><code>__doc__</code></td><td>Module loaded</td><td>First string literal in the file (or <code>None</code>)</td></tr>
+    <tr><td><code>__package__</code></td><td>Module loaded</td><td>Containing package name (or <code>""</code>)</td></tr>
+    <tr><td><code>__builtins__</code></td><td>Module loaded</td><td>Reference to builtins module</td></tr>
+  </tbody>
+</table>
+
+<div class="info">
+  <div class="info-title">Module dunders vs class dunders</div>
+  <table>
+    <thead><tr><th></th><th>Module dunders</th><th>Class dunders</th></tr></thead>
+    <tbody>
+      <tr><td>What</td><td>Variables on the module</td><td>Methods on the class</td></tr>
+      <tr><td>Set by</td><td>Python interpreter at load time</td><td>You define them</td></tr>
+      <tr><td>Called</td><td>You read them: <code>__name__</code></td><td>Triggered by syntax: <code>print(x)</code> calls <code>__str__</code></td></tr>
+      <tr><td>Has parens</td><td>❌ No — they're attributes</td><td>✅ Yes — methods</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 id="main-idiom">The if __name__ == "__main__" Idiom</h2>
+
+<p><code>__name__</code> is <code>"__main__"</code> ONLY when you launch that file directly. When the file is imported, <code>__name__</code> becomes the module's name.</p>
+
+<h3>Demo</h3>
+<pre><code># tools.py
+print(f"tools.py loaded — __name__ is: {__name__}")
+
+def get_price(ticker):
+    return 150.0
+
+if __name__ == "__main__":
+    print("Running tools.py as a script")
+    print(get_price("AAPL"))</code></pre>
+
+<pre><code># client.py
+from tools import get_price
+print(f"client.py — __name__ is: {__name__}")
+print(get_price("AAPL"))</code></pre>
+
+<p><strong>Run tools.py directly:</strong></p>
+<pre><code>$ python tools.py
+tools.py loaded — __name__ is: __main__
+Running tools.py as a script
+150.0</code></pre>
+
+<p><strong>Run client.py:</strong></p>
+<pre><code>$ python client.py
+tools.py loaded — __name__ is: tools          ← imported, NOT __main__
+client.py — __name__ is: __main__              ← the launched file IS __main__
+150.0</code></pre>
+
+<table>
+  <thead><tr><th>Scenario</th><th>File launched</th><th><code>__name__</code> in launched</th><th><code>__name__</code> in imported</th></tr></thead>
+  <tbody>
+    <tr><td><code>python tools.py</code></td><td>tools.py</td><td><code>"__main__"</code></td><td>(none)</td></tr>
+    <tr><td><code>python client.py</code></td><td>client.py</td><td><code>"__main__"</code></td><td>tools.py: <code>"tools"</code></td></tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <div class="tip-title">Why this idiom matters</div>
+  Lets a file be <strong>two things at once</strong>:
+  <ul>
+    <li>A <strong>library</strong> when imported (only definitions loaded)</li>
+    <li>A <strong>script</strong> when run directly (also runs the test/demo block)</li>
+  </ul>
+</div>
+
+<h3>Real example — p6_mcp/server.py</h3>
+<pre><code>mcp = FastMCP("StockSage Analysis Server", host="0.0.0.0", port=8002)
+
+@mcp.tool()
+def stock_price_data(ticker, period="3mo"):
+    return str(get_price_data(ticker, period))
+
+if __name__ == "__main__":
+    mcp.run(transport="streamable-http")    # only when run directly</code></pre>
+
+<h3>__file__ in real code — Chroma persistence path</h3>
+<pre><code>from pathlib import Path
+import chromadb
+
+# Resolve path relative to THIS file's location (works regardless of CWD)
+_chroma_client = chromadb.PersistentClient(
+    path=str(Path(__file__).parent / "data" / "chroma_db")
+)</code></pre>
+
+<h2 id="example-class">Worked Example — A Stock Class with Several Dunders</h2>
+
+<pre><code>class Stock:
+    """A simple stock with ticker + price."""
+
+    # ──── DUNDER #1: __init__ — constructor ────
+    def __init__(self, ticker, price):
+        self.ticker = ticker
+        self.price = price
+
+    # ──── DUNDER #2: __str__ — human-friendly text ────
+    def __str__(self):
+        return f"{self.ticker}: ${self.price}"
+
+    # ──── DUNDER #3: __repr__ — debug-friendly text ────
+    def __repr__(self):
+        return f"Stock(ticker={self.ticker!r}, price={self.price})"
+
+    # ──── DUNDER #4: __eq__ — equality comparison ────
+    def __eq__(self, other):
+        return self.ticker == other.ticker and self.price == other.price
+
+    # ──── REGULAR INSTANCE METHOD ────
+    def is_expensive(self):
+        return self.price > 200
+
+    def apply_discount(self, percent):
+        self.price = self.price * (1 - percent / 100)
+        return self.price
+
+s1 = Stock("AAPL", 150)
+s2 = Stock("GOOGL", 2800)
+
+# What each line triggers
+print(str(s1))             # 'AAPL: $150'             — __str__
+print(s1)                  # 'AAPL: $150'             — print uses __str__
+print(repr(s1))            # "Stock(ticker='AAPL'..)"  — __repr__
+print([s1, s2])            # [Stock(...), Stock(...)] — list shows __repr__
+print(s1 == Stock("AAPL", 150))   # True              — __eq__
+print(s1.is_expensive())   # False                    — regular instance method
+s2.apply_discount(50)
+print(s2)                  # 'GOOGL: $1400.0'         — __str__</code></pre>
+
+<table>
+  <thead><tr><th>You write</th><th>Python calls (under the hood)</th></tr></thead>
+  <tbody>
+    <tr><td><code>Stock("AAPL", 150)</code></td><td><code>__init__(new_instance, "AAPL", 150)</code></td></tr>
+    <tr><td><code>str(s1)</code></td><td><code>Stock.__str__(s1)</code></td></tr>
+    <tr><td><code>print(s1)</code></td><td><code>Stock.__str__(s1)</code></td></tr>
+    <tr><td><code>repr(s1)</code></td><td><code>Stock.__repr__(s1)</code></td></tr>
+    <tr><td><code>[s1, s2]</code> printed</td><td>List uses <code>__repr__</code> for each item</td></tr>
+    <tr><td><code>s1 == s1_copy</code></td><td><code>Stock.__eq__(s1, s1_copy)</code></td></tr>
+    <tr><td><code>s1.is_expensive()</code></td><td><code>Stock.is_expensive(s1)</code> — regular method</td></tr>
+  </tbody>
+</table>
+
+<h2 id="agentic-dunders">Most-Used Dunders in Agentic AI Code</h2>
+
+<table>
+  <thead><tr><th>Dunder</th><th>Why critical for agent work</th></tr></thead>
+  <tbody>
+    <tr><td><code>__init__</code></td><td>Every class needs it</td></tr>
+    <tr><td><code>__repr__</code></td><td>Debug agent objects, log tool calls</td></tr>
+    <tr><td><code>__call__</code></td><td>Tool wrappers, callable agents (CrewAI, LangChain)</td></tr>
+    <tr><td><code>__enter__</code> / <code>__exit__</code></td><td><code>with</code> for files, sessions</td></tr>
+    <tr><td><code>__aenter__</code> / <code>__aexit__</code></td><td><code>async with</code> for MCP, HTTP clients</td></tr>
+    <tr><td><code>__iter__</code> / <code>__next__</code></td><td>Custom streaming responses, agent state machines</td></tr>
+    <tr><td><code>__getitem__</code> / <code>__setitem__</code></td><td>State containers (LangGraph state, dict-like agents)</td></tr>
+    <tr><td><code>__eq__</code> / <code>__hash__</code></td><td>Dedup messages, tool calls, search results</td></tr>
+    <tr><td><code>__add__</code> / <code>__or__</code></td><td>Reducer patterns (LangGraph's <code>Annotated[list, operator.add]</code>)</td></tr>
+    <tr><td><code>__name__</code></td><td>The <code>if __name__ == "__main__":</code> idiom</td></tr>
+    <tr><td><code>__file__</code></td><td>Locating data files relative to code (Chroma path)</td></tr>
+  </tbody>
+</table>
+
+<!-- ====================================================================== -->
+<div class="part">CHEATSHEETS</div>
+
+<h2 id="cheat-collections">Lists vs Dicts Cheatsheet</h2>
+
+<table>
+  <thead><tr><th>Need</th><th>List</th><th>Dict</th></tr></thead>
+  <tbody>
+    <tr><td>Create</td><td><code>[1, 2]</code></td><td><code>{"a": 1}</code></td></tr>
+    <tr><td>Read</td><td><code>x[0]</code></td><td><code>x["a"]</code> or <code>x.get("a", default)</code></td></tr>
+    <tr><td>Add</td><td><code>x.append(v)</code></td><td><code>x["k"] = v</code></td></tr>
+    <tr><td>Remove</td><td><code>x.remove(v)</code> · <code>del x[i]</code></td><td><code>del x["k"]</code> · <code>x.pop("k", None)</code></td></tr>
+    <tr><td>Membership</td><td><code>v in x</code> (O(n))</td><td><code>"k" in x</code> (O(1))</td></tr>
+    <tr><td>Iterate</td><td><code>for v in x:</code></td><td><code>for k, v in x.items():</code></td></tr>
+    <tr><td>Comprehension</td><td><code>[expr for v in x if cond]</code></td><td><code>{k: v for k, v in x.items() if cond}</code></td></tr>
+    <tr><td>Merge</td><td><code>a + b</code></td><td><code>a | b</code> (3.9+)</td></tr>
+    <tr><td>Sort</td><td><code>sorted(x)</code></td><td><code>sorted(x.items(), key=lambda kv: kv[1])</code></td></tr>
+    <tr><td>Copy</td><td><code>x.copy()</code> · <code>x[:]</code></td><td><code>x.copy()</code> · <code>dict(x)</code></td></tr>
+  </tbody>
+</table>
+
+<h2 id="cheat-fp">Functional Programming Cheatsheet</h2>
+
+<table>
+  <thead><tr><th>Operation</th><th>Syntax</th><th>Returns</th></tr></thead>
+  <tbody>
+    <tr><td>Lambda</td><td><code>lambda x: x * 2</code></td><td>Function</td></tr>
+    <tr><td>Map</td><td><code>map(func, iter)</code></td><td>Iterator (wrap with <code>list()</code>)</td></tr>
+    <tr><td>Filter</td><td><code>filter(func, iter)</code></td><td>Iterator</td></tr>
+    <tr><td>Filter falsy</td><td><code>filter(None, iter)</code></td><td>Iterator without 0/""/None/[]/{}</td></tr>
+    <tr><td>Sort new list</td><td><code>sorted(iter, key=…, reverse=…)</code></td><td>New list</td></tr>
+    <tr><td>Sort in place</td><td><code>list.sort(key=…, reverse=…)</code></td><td><code>None</code> (mutates list)</td></tr>
+    <tr><td>Sort by tuple key</td><td><code>sorted(x, key=itemgetter(1))</code></td><td>New list</td></tr>
+    <tr><td>Sort by attribute</td><td><code>sorted(x, key=attrgetter("price"))</code></td><td>New list</td></tr>
+    <tr><td>Multi-key sort</td><td><code>sorted(x, key=lambda x: (x.a, x.b))</code></td><td>New list</td></tr>
+    <tr><td>Reduce</td><td><code>reduce(func, iter, initial)</code></td><td>Single value</td></tr>
+    <tr><td>Zip strict</td><td><code>zip(a, b, strict=True)</code> (3.10+)</td><td>Iterator; raises if lengths differ</td></tr>
+    <tr><td>Zip pad</td><td><code>itertools.zip_longest(a, b, fillvalue=…)</code></td><td>Iterator with padding</td></tr>
+  </tbody>
+</table>
+
+<h2 id="cheat-dunders">Dunder Methods Cheatsheet</h2>
+
+<h3>Built-in → Dunder mapping</h3>
+<table>
+  <thead><tr><th>Built-in</th><th>Dunder called</th></tr></thead>
+  <tbody>
+    <tr><td><code>str(x)</code> / <code>print(x)</code> / <code>f"{x}"</code></td><td><code>__str__</code></td></tr>
+    <tr><td><code>repr(x)</code> / debugger / <code>!r</code></td><td><code>__repr__</code></td></tr>
+    <tr><td><code>len(x)</code></td><td><code>__len__</code></td></tr>
+    <tr><td><code>iter(x)</code> / <code>for v in x</code></td><td><code>__iter__</code></td></tr>
+    <tr><td><code>next(it)</code></td><td><code>__next__</code></td></tr>
+    <tr><td><code>hash(x)</code></td><td><code>__hash__</code></td></tr>
+    <tr><td><code>x == y</code></td><td><code>__eq__</code></td></tr>
+    <tr><td><code>x &lt; y</code></td><td><code>__lt__</code></td></tr>
+    <tr><td><code>x + y</code></td><td><code>__add__</code></td></tr>
+    <tr><td><code>x | y</code></td><td><code>__or__</code></td></tr>
+    <tr><td><code>x[k]</code></td><td><code>__getitem__</code></td></tr>
+    <tr><td><code>k in x</code></td><td><code>__contains__</code></td></tr>
+    <tr><td><code>obj(...)</code></td><td><code>__call__</code></td></tr>
+    <tr><td><code>with x as y:</code></td><td><code>__enter__</code> / <code>__exit__</code></td></tr>
+    <tr><td><code>async with x as y:</code></td><td><code>__aenter__</code> / <code>__aexit__</code></td></tr>
+  </tbody>
+</table>
+
+<h3>Module-level (auto-set by interpreter)</h3>
+<table>
+  <thead><tr><th>Attribute</th><th>Value</th><th>Common use</th></tr></thead>
+  <tbody>
+    <tr><td><code>__name__</code></td><td><code>"__main__"</code> if script, else module name</td><td><code>if __name__ == "__main__":</code> idiom</td></tr>
+    <tr><td><code>__file__</code></td><td>Absolute path to .py</td><td><code>Path(__file__).parent</code> for data file paths</td></tr>
+    <tr><td><code>__doc__</code></td><td>Module docstring</td><td>Auto-populated from first string literal</td></tr>
+  </tbody>
+</table>
+
+<footer>
+  Python Fundamentals · Section 2 of #69 · Generated 2026-04-29 · Companion runnable scripts: <code>p0_fundamentals/01_lists_and_dicts.py</code>, <code>p0_fundamentals/02_lambdas_map_filter_sorted.py</code>
+</footer>
+
+</body>
+</html>

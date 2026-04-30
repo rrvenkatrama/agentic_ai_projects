@@ -720,6 +720,29 @@ result = app.<span class="fn">invoke</span>(<span class="keyword">None</span>, c
 
   <div class="warn"><strong>Reusing thread_id</strong> on a second run means LangGraph finds a completed checkpoint and may skip Phase 1. Delete the DB or change thread_id between test runs.</div>
 
+  <h3>MemorySaver vs SqliteSaver — which to use and where it's defined</h3>
+  <pre><code><span class="comment"># MemorySaver — in-RAM only, defined inside build_graph()</span>
+<span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> MemorySaver
+
+<span class="keyword">def</span> <span class="fn">build_graph</span>():
+    memory = <span class="fn">MemorySaver</span>()          <span class="comment"># created fresh every run</span>
+    ...
+    <span class="keyword">return</span> graph.<span class="fn">compile</span>(checkpointer=memory, interrupt_before=[<span class="str">"summarise"</span>])
+
+<span class="comment"># SqliteSaver — persists to disk across restarts</span>
+<span class="keyword">from</span> langgraph.checkpoint.sqlite <span class="keyword">import</span> SqliteSaver
+memory = SqliteSaver.<span class="fn">from_conn_string</span>(<span class="str">"checkpoints.db"</span>)  <span class="comment"># creates .db file</span></code></pre>
+
+  <table>
+    <tr><th></th><th>MemorySaver</th><th>SqliteSaver / PostgresSaver</th></tr>
+    <tr><td>Storage</td><td>Python dict in RAM</td><td>File on disk / database</td></tr>
+    <tr><td>Survives process restart</td><td>No — gone when script exits</td><td>Yes — persists</td></tr>
+    <tr><td>thread_id reuse risk</td><td>None — always starts fresh</td><td>Real — finds old checkpoint, skips nodes</td></tr>
+    <tr><td>Use for</td><td>Dev, testing, HITL demos</td><td>Production, web apps, long-running agents</td></tr>
+  </table>
+
+  <div class="note"><strong>research_bot_hitl.py uses MemorySaver</strong> — defined on line 55 inside <code>build_graph()</code>. Every time the script runs, a new empty <code>MemorySaver()</code> is created. The thread_id reuse warning only applies when using SqliteSaver/PostgresSaver where checkpoints survive between runs.</div>
+
   <h3>Time travel — replay from any snapshot</h3>
   <pre><code>history = list(app.<span class="fn">get_state_history</span>(config))
 <span class="keyword">for</span> snapshot <span class="keyword">in</span> history:
@@ -730,8 +753,57 @@ result = app.<span class="fn">invoke</span>(<span class="keyword">None</span>, c
 earlier = history[-2]
 app.<span class="fn">invoke</span>(<span class="keyword">None</span>, earlier.config)   <span class="comment"># re-runs from that point</span></code></pre>
 
+  <h2>HITL Deep Dive — update_state, resume, and Annotated reducers</h2>
+
+  <h3>The full HITL sequence</h3>
+  <pre><code><span class="comment"># 1. Compile with checkpointer + interrupt point</span>
+checkpointer = <span class="fn">MemorySaver</span>()
+app = graph.<span class="fn">compile</span>(checkpointer=checkpointer, interrupt_before=[<span class="str">"human_review"</span>])
+config = {<span class="str">"configurable"</span>: {<span class="str">"thread_id"</span>: <span class="str">"1"</span>}}
+
+<span class="comment"># 2. First invoke — runs until interrupt, saves checkpoint</span>
+app.<span class="fn">invoke</span>({<span class="str">"topic"</span>: <span class="str">"quantum computing"</span>}, config)
+
+<span class="comment"># 3. Human inspects state, injects a new finding</span>
+app.<span class="fn">update_state</span>(config, {<span class="str">"findings"</span>: [extra]})
+
+<span class="comment"># 4. Resume — None = no new input, load from checkpoint</span>
+app.<span class="fn">invoke</span>(<span class="keyword">None</span>, config)</code></pre>
+
+  <h3>How update_state interacts with Annotated reducers</h3>
+  <pre><code><span class="keyword">class</span> <span class="fn">ResearchState</span>(TypedDict):
+    findings: Annotated[list[str], operator.add]   <span class="comment"># reducer = concatenation</span>
+    summary: str                                    <span class="comment"># no reducer = replace</span>
+
+<span class="comment"># Annotated field → APPENDS</span>
+app.<span class="fn">update_state</span>(config, {<span class="str">"findings"</span>: [<span class="str">"new finding"</span>]})
+<span class="comment"># findings = ["old A", "old B", "new finding"]
+
+# Plain field → REPLACES</span>
+app.<span class="fn">update_state</span>(config, {<span class="str">"summary"</span>: <span class="str">"new summary"</span>})
+<span class="comment"># summary = "new summary"  ← old value gone</span></code></pre>
+
+  <div class="note"><strong>Key insight:</strong> The <code>Annotated</code> reducer determines update_state behavior — not the value type. A plain <code>list</code> with no reducer is replaced; <code>Annotated[list, operator.add]</code> causes append.</div>
+
+  <h3>Why invoke(None, config) knows where to resume</h3>
+  <ul>
+    <li><code>thread_id</code> is the checkpoint key — same thread_id = same paused run</li>
+    <li>LangGraph saves position (which node stopped) + full state after every node</li>
+    <li><code>None</code> as input = "don't start fresh, load from checkpoint"</li>
+    <li>Different thread_id = no checkpoint found = starts fresh</li>
+  </ul>
+
+  <h3>Real-world HITL use cases</h3>
+  <table>
+    <tr><th>Agent action</th><th>Why pause for human</th></tr>
+    <tr><td>Send email to customer</td><td>Irreversible — verify content first</td></tr>
+    <tr><td>Execute a trade</td><td>High-stakes — human confirms signal</td></tr>
+    <tr><td>Deploy to production</td><td>Safety gate before irreversible infra change</td></tr>
+    <tr><td>Delete database records</td><td>Cannot be undone — require explicit approval</td></tr>
+  </table>
+
   <br><br>
-  <p style="color: #4a5080; font-size: 13px;">Last updated: 2026-04-17 — P3 ResearchBot complete (checkpointing, HITL, thread_id, P3 quiz 6.5/7)</p>
+  <p style="color: #4a5080; font-size: 13px;">Last updated: 2026-04-27 — Added HITL deep dive: update_state + Annotated reducer interaction, resume via thread_id</p>
 </main>
 
 </body>

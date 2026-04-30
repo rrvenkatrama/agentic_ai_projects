@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Python Fundamentals — Section 1: Lists and Dicts</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 30px 40px;
+    color: #222;
+    line-height: 1.55;
+    background: #fafbfc;
+  }
+  header {
+    border-bottom: 3px solid #1a4d8f;
+    padding-bottom: 12px;
+    margin-bottom: 24px;
+  }
+  h1 {
+    margin: 0;
+    color: #1a4d8f;
+    font-size: 24pt;
+  }
+  .subtitle { color: #666; font-size: 11pt; margin-top: 4px; }
+  h2 {
+    color: #1a4d8f;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 4px;
+    margin-top: 36px;
+    font-size: 17pt;
+  }
+  h3 { margin-top: 22px; font-size: 13pt; color: #333; }
+  h4 { font-size: 11pt; color: #555; margin-top: 14px; }
+  pre {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 12px 14px;
+    border-radius: 5px;
+    overflow-x: auto;
+    font-size: 10pt;
+    line-height: 1.4;
+  }
+  code {
+    background: #f1f3f5;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 90%;
+    color: #c7254e;
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    font-size: 10.5pt;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+  }
+  th { background: #f0f4fa; color: #1a4d8f; font-weight: 600; border-bottom: 2px solid #1a4d8f; }
+  tr:hover { background: #f9fbff; }
+  .gotcha {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 12px 16px;
+    margin: 14px 0;
+    border-radius: 4px;
+  }
+  .gotcha-title { font-weight: 600; color: #856404; margin-bottom: 6px; }
+  .tip {
+    background: #d4edda;
+    border-left: 4px solid #28a745;
+    padding: 12px 16px;
+    margin: 14px 0;
+    border-radius: 4px;
+  }
+  .tip-title { font-weight: 600; color: #155724; margin-bottom: 6px; }
+  .danger {
+    background: #f8d7da;
+    border-left: 4px solid #dc3545;
+    padding: 12px 16px;
+    margin: 14px 0;
+    border-radius: 4px;
+  }
+  .danger-title { font-weight: 600; color: #721c24; margin-bottom: 6px; }
+  .toc {
+    background: #f0f4fa;
+    border: 1px solid #d4e0f0;
+    padding: 12px 18px;
+    border-radius: 4px;
+    margin: 16px 0 30px 0;
+  }
+  .toc ul { margin: 4px 0 0 0; padding-left: 20px; }
+  .toc li { margin: 2px 0; }
+  .toc a { color: #1a4d8f; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid #ddd;
+    color: #888;
+    font-size: 9pt;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Python Fundamentals — Section 1</h1>
+  <div class="subtitle">Lists & Dicts · Reference Document · Part of #69 Python Fundamentals for AI Engineering</div>
+</header>
+
+<div class="toc">
+  <strong>Contents</strong>
+  <ul>
+    <li><a href="#lists-vs-dicts">Lists vs Dicts — When to Use Which</a></li>
+    <li><a href="#lists">Lists — Operations & Tricks</a></li>
+    <li><a href="#list-comp">List Comprehensions</a></li>
+    <li><a href="#nested-lists">Nested Lists (Lists of Lists)</a></li>
+    <li><a href="#dicts">Dicts — Operations & Tricks</a></li>
+    <li><a href="#dict-keys">Dict Keys — What's Allowed</a></li>
+    <li><a href="#dict-values">Dict Values — Anything Goes</a></li>
+    <li><a href="#dict-merge">Dict Merging with the | Operator</a></li>
+    <li><a href="#dict-comp">Dict Comprehensions</a></li>
+    <li><a href="#nested-dicts">Nested Dicts</a></li>
+    <li><a href="#multiple-values">Multiple Values per Key (defaultdict, Counter)</a></li>
+    <li><a href="#gotchas">Common Gotchas</a></li>
+    <li><a href="#cheat">One-Page Cheatsheet</a></li>
+  </ul>
+</div>
+
+<h2 id="lists-vs-dicts">Lists vs Dicts — When to Use Which</h2>
+
+<table>
+  <thead><tr><th>Aspect</th><th>List</th><th>Dict</th></tr></thead>
+  <tbody>
+    <tr><td>Indexed by</td><td>Integer position (<code>0, 1, 2…</code>)</td><td>Hashable key (<code>"AAPL"</code>, <code>150</code>, etc.)</td></tr>
+    <tr><td>Order</td><td>Yes — explicit positions</td><td>Yes (insertion order, Python 3.7+) — but you don't index by position</td></tr>
+    <tr><td>Duplicates</td><td>Allowed</td><td>Keys unique; assigning to existing key overwrites</td></tr>
+    <tr><td>Lookup speed</td><td>By index O(1); by value O(n)</td><td>By key O(1) (hash table)</td></tr>
+    <tr><td>Use when</td><td>Order matters, sequential processing</td><td>Lookup by name, key-value pairs</td></tr>
+  </tbody>
+</table>
+
+<h4>Real examples from our agentic AI code</h4>
+<pre><code># List in P1 ToolBot — message history (order matters)
+messages = [
+    {"role": "user", "content": "What's AAPL?"},
+    {"role": "assistant", "content": "..."},
+]
+
+# Dict in P6 MCP — tool name → schema (lookup by name)
+claude_tools = {
+    "get_stock_price": {"input_schema": ...},
+    "get_news_sentiment": {"input_schema": ...},
+}</code></pre>
+
+<h2 id="lists">Lists — Operations & Tricks</h2>
+
+<h3>Creating</h3>
+<pre><code>tickers = ["AAPL", "GOOGL", "MSFT"]
+empty = []
+from_range = list(range(5))     # [0, 1, 2, 3, 4]
+repeated = [0] * 3              # [0, 0, 0]</code></pre>
+
+<h3>Indexing & Slicing</h3>
+<pre><code>tickers[0]       # "AAPL"          first
+tickers[-1]      # "MSFT"          last (negative from end)
+tickers[0:2]     # ["AAPL", "GOOGL"]   stop is exclusive
+tickers[1:]      # ["GOOGL", "MSFT"]
+tickers[:2]      # ["AAPL", "GOOGL"]
+tickers[::-1]    # reversed
+tickers[::2]     # every other</code></pre>
+
+<h3>Adding</h3>
+<pre><code>tickers.append("AMD")              # one item at end
+tickers.insert(0, "TSLA")          # at index 0
+tickers.extend(["NVDA", "META"])   # multiple
+
+a + b                              # NEW list (doesn't mutate)</code></pre>
+
+<div class="gotcha">
+  <div class="gotcha-title">⚠️ append vs extend</div>
+  <pre><code>tickers.append(["X", "Y"])   # → [..., ["X", "Y"]]   nested!
+tickers.extend(["X", "Y"])   # → [..., "X", "Y"]    flat</code></pre>
+</div>
+
+<h3>Removing</h3>
+<pre><code>tickers.remove("AAPL")    # by VALUE (first occurrence)
+del tickers[0]            # by INDEX
+tickers.pop()             # remove + return last
+tickers.pop(0)            # remove + return at index
+tickers.clear()           # empties</code></pre>
+
+<h3>Searching</h3>
+<pre><code>"AAPL" in tickers         # True / False
+tickers.index("AAPL")     # int index, ValueError if missing
+tickers.count("AAPL")     # how many times</code></pre>
+
+<h3>Sorting</h3>
+<pre><code>tickers.sort()                       # in-place
+sorted(tickers)                      # NEW list
+sorted(tickers, reverse=True)
+sorted(tickers, key=len)             # by length
+sorted(tickers, key=lambda x: x[1])  # by 2nd char</code></pre>
+
+<h3>Combining / Splitting</h3>
+<pre><code>[1, 2] + [3, 4]            # [1, 2, 3, 4]
+[0] * 3                    # [0, 0, 0]
+",".join(tickers)          # "AAPL,GOOGL,MSFT"   list → string
+"AAPL,GOOGL".split(",")    # ["AAPL", "GOOGL"]   string → list</code></pre>
+
+<h3>Aggregation</h3>
+<pre><code>sum([1, 2, 3])      # 6
+min(tickers)        # alphabetical min
+max([1, 2, 3])      # 3
+any([0, 0, 1])      # True
+all([1, 1, 0])      # False</code></pre>
+
+<h2 id="list-comp">List Comprehensions</h2>
+
+<p>Pattern: <code>[expression for item in iterable if condition]</code></p>
+
+<pre><code># Filter
+a_only = [t for t in tickers if t.startswith("A")]
+
+# Transform
+lower = [t.lower() for t in tickers]
+
+# Both
+short_lower = [t.lower() for t in tickers if len(t) <= 4]
+
+# Equivalent loop
+result = []
+for t in tickers:
+    if t.startswith("A"):
+        result.append(t)</code></pre>
+
+<div class="tip">
+  <div class="tip-title">Why use comprehensions</div>
+  Faster than equivalent loop (less bytecode, no <code>.append</code> method lookup), and more readable for transform/filter operations. Idiomatic Python.
+</div>
+
+<h2 id="nested-lists">Nested Lists (Lists of Lists)</h2>
+
+<pre><code>matrix = [
+    ["AAPL", 150.0, "BUY"],
+    ["GOOGL", 2800.0, "HOLD"],
+]
+
+matrix[0]        # ["AAPL", 150.0, "BUY"]
+matrix[0][1]     # 150.0
+matrix[-1][-1]   # "HOLD"
+
+# Iterate with unpacking
+for ticker, price, signal in matrix:
+    print(f"{ticker}: ${price} → {signal}")</code></pre>
+
+<div class="danger">
+  <div class="danger-title">🚨 The classic [[0]*N]*M trap</div>
+  <pre><code>grid = [[0] * 3] * 3     # ❌ all 3 rows are the SAME inner list
+grid[0][0] = 9
+print(grid)
+# [[9, 0, 0], [9, 0, 0], [9, 0, 0]]   ← all rows mutated!</code></pre>
+  <strong>Fix — use a comprehension to create fresh inner lists:</strong>
+  <pre><code>grid = [[0] * 3 for _ in range(3)]   # ✅ correct
+grid[0][0] = 9
+# [[9, 0, 0], [0, 0, 0], [0, 0, 0]]</code></pre>
+</div>
+
+<h2 id="dicts">Dicts — Operations & Tricks</h2>
+
+<h3>Creating</h3>
+<pre><code>prices = {"AAPL": 150.0, "GOOGL": 2800.0}
+empty = {}
+from_pairs = dict([("AAPL", 150), ("GOOGL", 2800)])</code></pre>
+
+<h3>Lookup</h3>
+<pre><code>prices["AAPL"]                    # raises KeyError if missing
+prices.get("AAPL")                # returns None if missing
+prices.get("UNKNOWN", "N/A")      # default value if missing
+"AAPL" in prices                  # True / False</code></pre>
+
+<h3>Add / Update / Delete</h3>
+<pre><code>prices["MSFT"] = 300.0           # add
+prices["AAPL"] = 175.0           # update (same syntax)
+
+del prices["GOOGL"]              # delete by key
+prices.pop("MSFT", None)         # delete + return value (or None default)
+prices.clear()                   # empty</code></pre>
+
+<h3>Iterating</h3>
+<pre><code>for key in prices:                       # keys
+    ...
+for key in prices.keys():                # explicit keys
+    ...
+for value in prices.values():            # values
+    ...
+for key, value in prices.items():        # pairs
+    ...</code></pre>
+
+<h2 id="dict-keys">Dict Keys — What's Allowed</h2>
+
+<p>Keys must be <strong>hashable</strong> (immutable).</p>
+
+<table>
+  <thead><tr><th>Type</th><th>Hashable?</th><th>Can be a key?</th></tr></thead>
+  <tbody>
+    <tr><td><code>int</code>, <code>float</code></td><td>✅</td><td>✅ <code>{150: "AAPL"}</code></td></tr>
+    <tr><td><code>str</code></td><td>✅</td><td>✅ <code>{"AAPL": 150}</code></td></tr>
+    <tr><td><code>tuple</code> (of hashables)</td><td>✅</td><td>✅ <code>{("AAPL", "Q1"): 150}</code></td></tr>
+    <tr><td><code>bool</code>, <code>None</code></td><td>✅</td><td>✅</td></tr>
+    <tr><td><code>list</code></td><td>❌</td><td>❌ TypeError</td></tr>
+    <tr><td><code>dict</code></td><td>❌</td><td>❌ TypeError</td></tr>
+    <tr><td><code>set</code></td><td>❌</td><td>❌ (use <code>frozenset</code>)</td></tr>
+  </tbody>
+</table>
+
+<div class="gotcha">
+  <div class="gotcha-title">⚠️ 1, 1.0, and True share a slot</div>
+  <pre><code>weird = {1: "int", 1.0: "float", True: "bool"}
+print(weird)
+# {1: 'bool'}    — only one entry!</code></pre>
+  Why? <code>1 == 1.0 == True</code> AND they hash to the same value. Don't mix numeric types as keys.
+</div>
+
+<h3>Tuple keys for compound lookups</h3>
+<pre><code>revenue = {
+    ("AAPL", "Q1"): 124_000_000_000,
+    ("AAPL", "Q2"): 96_000_000_000,
+    ("MSFT", "Q1"): 65_000_000_000,
+}
+revenue[("AAPL", "Q1")]   # 124000000000</code></pre>
+
+<h2 id="dict-values">Dict Values — Anything Goes</h2>
+
+<p>Values are <strong>unconstrained</strong>. Different types within the same dict are fine if they represent structured data.</p>
+
+<pre><code># Mixed value types — totally legal
+chaos = {
+    "ticker": "AAPL",                       # string
+    "price": 150.0,                         # float
+    "history": [148, 149, 150],             # list
+    "metadata": {"sector": "tech"},         # nested dict
+    "callback": lambda x: x * 2,            # function
+    "buyer": None,                          # None
+}</code></pre>
+
+<div class="tip">
+  <div class="tip-title">When mixed values are appropriate</div>
+  <ul>
+    <li>The dict represents one structured record (like JSON, MCP tool input)</li>
+    <li>Keys have fixed meanings — not interchangeable</li>
+  </ul>
+  <strong>When NOT to mix:</strong> If you're using the dict as a lookup table (homogeneous keys → values), mixed types make consumers type-check everything. Switch to Pydantic / dataclass.
+</div>
+
+<h2 id="dict-merge">Dict Merging with the <code>|</code> Operator</h2>
+
+<p>Python 3.9+ — merge dicts with <code>|</code>. Right side wins on key collision.</p>
+
+<pre><code>defaults = {"period": "3mo", "lang": "en"}
+overrides = {"period": "1y"}
+
+merged = defaults | overrides
+# {'period': '1y', 'lang': 'en'}    — overrides won
+
+# In-place
+config = defaults.copy()
+config |= overrides
+
+# Pre-3.9 way (still works, more verbose)
+merged = {**defaults, **overrides}</code></pre>
+
+<h3>The full rule for <code>a | b</code></h3>
+<table>
+  <thead><tr><th>Key location</th><th>Result</th></tr></thead>
+  <tbody>
+    <tr><td>Only in <code>a</code></td><td>Kept from <code>a</code></td></tr>
+    <tr><td>Only in <code>b</code></td><td>Added from <code>b</code></td></tr>
+    <tr><td>In both</td><td>Value from <code>b</code> wins (right side)</td></tr>
+  </tbody>
+</table>
+
+<h3>The <code>|</code> operator is overloaded</h3>
+<table>
+  <thead><tr><th>Operand types</th><th>What <code>|</code> does</th></tr></thead>
+  <tbody>
+    <tr><td><code>bool, bool</code></td><td>Logical OR (but prefer <code>or</code> — it short-circuits)</td></tr>
+    <tr><td><code>int, int</code></td><td>Bitwise OR (<code>5 | 3</code> = 7)</td></tr>
+    <tr><td><code>set, set</code></td><td>Set union</td></tr>
+    <tr><td><code>dict, dict</code></td><td>Merge with right side winning</td></tr>
+    <tr><td>Custom class</td><td>Whatever <code>__or__</code> defines (e.g., LangGraph edges)</td></tr>
+  </tbody>
+</table>
+
+<h2 id="dict-comp">Dict Comprehensions</h2>
+
+<p>Pattern: <code>{key_expr: value_expr for k, v in dict.items() if cond}</code></p>
+
+<pre><code>prices = {"AAPL": 150, "GOOGL": 2800, "MSFT": 300, "AMD": 100}
+
+# Filter — keep only expensive
+expensive = {t: p for t, p in prices.items() if p > 200}
+# {'GOOGL': 2800, 'MSFT': 300}
+
+# Transform values
+in_thousands = {t: p / 1000 for t, p in prices.items()}
+
+# Build dict from a list
+tickers = ["AAPL", "GOOGL", "MSFT"]
+init_zero = {t: 0.0 for t in tickers}
+# {'AAPL': 0.0, 'GOOGL': 0.0, 'MSFT': 0.0}
+
+# Invert keys/values
+inverted = {v: k for k, v in prices.items()}</code></pre>
+
+<div class="tip">
+  <div class="tip-title">Critical: use <code>.items()</code> for unpacking</div>
+  <pre><code># Wrong — iterates KEYS only
+{t: ??? for t in prices if ???}
+
+# Right — iterates (key, value) pairs
+{t: p for t, p in prices.items() if p > 200}</code></pre>
+</div>
+
+<h2 id="nested-dicts">Nested Dicts</h2>
+
+<p>This is the idiomatic way to store multiple named attributes per key:</p>
+
+<pre><code>portfolio = {
+    "AAPL": {"price": 270.0, "pe": 34.3, "signal": "BUY"},
+    "GOOGL": {"price": 2800.0, "pe": 28.5, "signal": "HOLD"},
+}
+
+portfolio["AAPL"]["price"]                 # 270.0   direct
+portfolio.get("AMD", {}).get("signal")     # None    safe chain — no KeyError</code></pre>
+
+<h3>Three idiomatic ways to store multiple values per key</h3>
+<table>
+  <thead><tr><th>Use</th><th>When</th><th>Example</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Tuple value</td>
+      <td>Small, fixed, positional</td>
+      <td><code>{"AAPL": (150, 23)}</code></td>
+    </tr>
+    <tr>
+      <td>List value</td>
+      <td>Can grow / shrink</td>
+      <td><code>{"AAPL": [148, 149, 150]}</code></td>
+    </tr>
+    <tr>
+      <td>Nested dict value</td>
+      <td>Named fields, readability</td>
+      <td><code>{"AAPL": {"price": 150, "pe": 23}}</code></td>
+    </tr>
+    <tr>
+      <td>Pydantic model value</td>
+      <td>4+ fields with validation</td>
+      <td><code>{"AAPL": Stock(price=150, pe=23)}</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="multiple-values">Multiple Values per Key</h2>
+
+<p>Dict keys are unique — assigning to an existing key overwrites. To "store multiple per key," make the value a list.</p>
+
+<pre><code>from collections import defaultdict
+
+trades = defaultdict(list)        # auto-creates [] if key missing
+trades["AAPL"].append(150.0)
+trades["AAPL"].append(175.0)
+trades["MSFT"].append(300.0)
+# defaultdict(list, {'AAPL': [150.0, 175.0], 'MSFT': [300.0]})
+
+# Without defaultdict — verbose
+trades = {}
+if "AAPL" not in trades:
+    trades["AAPL"] = []
+trades["AAPL"].append(150.0)</code></pre>
+
+<h3>Counter for "how many of each"</h3>
+<pre><code>from collections import Counter
+
+trades_ticker = ["AAPL", "MSFT", "AAPL", "GOOGL", "AAPL"]
+counts = Counter(trades_ticker)
+# Counter({'AAPL': 3, 'MSFT': 1, 'GOOGL': 1})
+
+counts.most_common(2)            # [('AAPL', 3), ('MSFT', 1)]</code></pre>
+
+<h2 id="gotchas">Common Gotchas</h2>
+
+<div class="danger">
+  <div class="danger-title">🚨 1. Assignment is NOT a copy</div>
+  <pre><code>a = [1, 2, 3]
+b = a               # b and a point to the SAME list
+b.append(4)
+print(a)            # [1, 2, 3, 4]  — mutated through b</code></pre>
+  <strong>Fix:</strong> <code>b = a.copy()</code> · <code>b = a[:]</code> · <code>b = list(a)</code>. For nested: <code>copy.deepcopy(a)</code>.
+</div>
+
+<div class="danger">
+  <div class="danger-title">🚨 2. Modifying a dict during iteration</div>
+  <pre><code>for k in prices:
+    if prices[k] < 200:
+        del prices[k]      # RuntimeError: dictionary changed size during iteration</code></pre>
+  <strong>Fix:</strong> iterate over a copy: <code>for k in list(prices.keys()):</code>
+</div>
+
+<div class="danger">
+  <div class="danger-title">🚨 3. Nested list multiplication trap</div>
+  <pre><code>grid = [[0] * 3] * 3     # all rows share the SAME inner list
+grid[0][0] = 9
+# [[9, 0, 0], [9, 0, 0], [9, 0, 0]]</code></pre>
+  <strong>Fix:</strong> <code>[[0] * 3 for _ in range(3)]</code>
+</div>
+
+<div class="danger">
+  <div class="danger-title">🚨 4. Mutable default arguments</div>
+  <pre><code>def add_trade(ticker, history=[]):     # ❌ default created ONCE at function def
+    history.append(ticker)
+    return history
+
+add_trade("AAPL")     # ['AAPL']
+add_trade("MSFT")     # ['AAPL', 'MSFT']  — surprised?</code></pre>
+  <strong>Fix:</strong> use <code>None</code> sentinel:
+  <pre><code>def add_trade(ticker, history=None):
+    if history is None:
+        history = []
+    history.append(ticker)
+    return history</code></pre>
+</div>
+
+<div class="danger">
+  <div class="danger-title">🚨 5. Dict key collisions (numeric)</div>
+  <pre><code>{1: "a", 1.0: "b", True: "c"}    # → {1: 'c'}    only ONE entry</code></pre>
+  Don't mix numeric types as keys.
+</div>
+
+<div class="danger">
+  <div class="danger-title">🚨 6. <code>.append()</code> returns None</div>
+  <pre><code>tickers = ["AAPL"].append("MSFT")      # ❌ tickers is None!</code></pre>
+  <strong>Fix:</strong> mutate then read separately:
+  <pre><code>tickers = ["AAPL"]
+tickers.append("MSFT")
+# tickers is now ["AAPL", "MSFT"]</code></pre>
+  Same for <code>.sort()</code>, <code>.extend()</code>, <code>.clear()</code>, <code>.update()</code> — they mutate in-place and return None.
+</div>
+
+<h2 id="cheat">One-Page Cheatsheet</h2>
+
+<table>
+  <thead><tr><th>Need</th><th>List</th><th>Dict</th></tr></thead>
+  <tbody>
+    <tr><td>Create</td><td><code>[1, 2]</code></td><td><code>{"a": 1}</code></td></tr>
+    <tr><td>Read</td><td><code>x[0]</code></td><td><code>x["a"]</code> or <code>x.get("a", default)</code></td></tr>
+    <tr><td>Add</td><td><code>x.append(v)</code></td><td><code>x["k"] = v</code></td></tr>
+    <tr><td>Remove</td><td><code>x.remove(v)</code> · <code>del x[i]</code> · <code>x.pop()</code></td><td><code>del x["k"]</code> · <code>x.pop("k", None)</code></td></tr>
+    <tr><td>Membership</td><td><code>v in x</code> (O(n))</td><td><code>"k" in x</code> (O(1))</td></tr>
+    <tr><td>Length</td><td><code>len(x)</code></td><td><code>len(x)</code></td></tr>
+    <tr><td>Iterate</td><td><code>for v in x:</code></td><td><code>for k, v in x.items():</code></td></tr>
+    <tr><td>Comprehension</td><td><code>[expr for v in x if cond]</code></td><td><code>{k: v for k, v in x.items() if cond}</code></td></tr>
+    <tr><td>Merge</td><td><code>a + b</code></td><td><code>a | b</code> (3.9+)</td></tr>
+    <tr><td>Sort</td><td><code>sorted(x)</code> · <code>x.sort()</code></td><td><code>sorted(x.items(), key=lambda kv: kv[1])</code></td></tr>
+    <tr><td>Copy</td><td><code>x.copy()</code> · <code>x[:]</code> · <code>list(x)</code></td><td><code>x.copy()</code> · <code>dict(x)</code></td></tr>
+  </tbody>
+</table>
+
+<footer>
+  Section 1 of #69 Python Fundamentals · Generated 2026-04-29 · See <code>p0_fundamentals/01_lists_and_dicts.py</code> for runnable examples
+</footer>
+
+</body>
+</html>

@@ -304,10 +304,10 @@ seen = <span class="fn">set</span>()
   </ul>
   <pre><code><span class="comment"># Deploy</span>
 scp p3_researchbot/kafka/kafka.yaml rajramani@192.168.1.156:~/
-ssh rajramani@192.168.1.156 <span class="string">"echo yanni123 | sudo -S kubectl apply -f ~/kafka.yaml"</span>
+ssh rajramani@192.168.1.156 <span class="string">"echo &lt;sudo-pw&gt; | sudo -S kubectl apply -f ~/kafka.yaml"</span>
 
 <span class="comment"># Verify</span>
-ssh rajramani@192.168.1.156 <span class="string">"echo yanni123 | sudo -S kubectl get pods -n kafka"</span>
+ssh rajramani@192.168.1.156 <span class="string">"echo &lt;sudo-pw&gt; | sudo -S kubectl get pods -n kafka"</span>
 
 <span class="comment"># Test connectivity from Mac</span>
 python3 -c <span class="string">"from kafka import KafkaAdminClient; a = KafkaAdminClient(bootstrap_servers='192.168.1.156:30092'); print('Connected:', a.list_topics())"</span></code></pre>

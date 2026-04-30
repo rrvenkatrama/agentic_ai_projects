@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Python Dunder Methods Reference</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    max-width: 1000px; margin: 0 auto; padding: 30px 40px;
+    color: #222; line-height: 1.55; background: #fafbfc;
+  }
+  header { border-bottom: 3px solid #1a4d8f; padding-bottom: 12px; margin-bottom: 24px; }
+  h1 { margin: 0; color: #1a4d8f; font-size: 24pt; }
+  .subtitle { color: #666; font-size: 11pt; margin-top: 4px; }
+  h2 { color: #1a4d8f; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 36px; font-size: 17pt; }
+  h3 { margin-top: 22px; font-size: 13pt; color: #333; }
+  h4 { font-size: 11pt; color: #555; margin-top: 14px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 12px 14px; border-radius: 5px; overflow-x: auto; font-size: 10pt; line-height: 1.4; }
+  code { background: #f1f3f5; padding: 1px 5px; border-radius: 3px; font-size: 90%; color: #c7254e; }
+  pre code { background: none; padding: 0; color: inherit; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.06); font-size: 10.5pt; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #eee; vertical-align: top; }
+  th { background: #f0f4fa; color: #1a4d8f; font-weight: 600; border-bottom: 2px solid #1a4d8f; }
+  tr:hover { background: #f9fbff; }
+  .gotcha { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+  .gotcha-title { font-weight: 600; color: #856404; margin-bottom: 6px; }
+  .tip { background: #d4edda; border-left: 4px solid #28a745; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+  .tip-title { font-weight: 600; color: #155724; margin-bottom: 6px; }
+  .danger { background: #f8d7da; border-left: 4px solid #dc3545; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+  .danger-title { font-weight: 600; color: #721c24; margin-bottom: 6px; }
+  .info { background: #d1ecf1; border-left: 4px solid #17a2b8; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+  .info-title { font-weight: 600; color: #0c5460; margin-bottom: 6px; }
+  .toc { background: #f0f4fa; border: 1px solid #d4e0f0; padding: 12px 18px; border-radius: 4px; margin: 16px 0 30px 0; }
+  .toc ul { margin: 4px 0 0 0; padding-left: 20px; }
+  .toc li { margin: 2px 0; }
+  .toc a { color: #1a4d8f; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #ddd; color: #888; font-size: 9pt; text-align: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Python Dunder Methods — Complete Reference</h1>
+  <div class="subtitle">"Magic methods" — Python's data model · How built-ins, operators, and statements hook into your objects</div>
+</header>
+
+<div class="toc">
+  <strong>Contents</strong>
+  <ul>
+    <li><a href="#what">What dunders are</a></li>
+    <li><a href="#mapping">How built-ins map to dunders</a></li>
+    <li><a href="#lifecycle">1. Object lifecycle</a></li>
+    <li><a href="#repr">2. String representation (__str__, __repr__, __format__)</a></li>
+    <li><a href="#iter">3. Iteration (__iter__, __next__)</a></li>
+    <li><a href="#container">4. Container behavior (__len__, __getitem__, __contains__)</a></li>
+    <li><a href="#compare">5. Comparison (__eq__, __lt__, __hash__)</a></li>
+    <li><a href="#operators">6. Operator overloading</a></li>
+    <li><a href="#context">7. Context managers (__enter__, __exit__)</a></li>
+    <li><a href="#async">8. Async dunders</a></li>
+    <li><a href="#callable">9. Callable (__call__)</a></li>
+    <li><a href="#attrs">10. Attribute access</a></li>
+    <li><a href="#introspection">11. Class introspection</a></li>
+    <li><a href="#module">12. Module-level dunders (__name__, __file__, __doc__)</a></li>
+    <li><a href="#main">The if __name__ == "__main__" idiom</a></li>
+    <li><a href="#overloading">Why Python doesn't support method overloading</a></li>
+    <li><a href="#agentic">Most-used dunders in agentic AI code</a></li>
+    <li><a href="#cheat">One-page cheatsheet</a></li>
+  </ul>
+</div>
+
+<h2 id="what">What Dunders Are</h2>
+
+<p><strong>Dunder</strong> = "double underscore." Methods like <code>__init__</code>, <code>__str__</code>, <code>__iter__</code> are <strong>not called by you directly</strong>. They are called <strong>automatically by Python</strong> when you use built-in syntax like <code>str(x)</code>, <code>len(x)</code>, <code>x + y</code>, <code>for x in y</code>.</p>
+
+<p>Dunders are how Python's <strong>data model</strong> works — they let your custom classes participate in built-in syntax just like lists, dicts, and ints do.</p>
+
+<h2 id="mapping">How Built-ins Map to Dunders</h2>
+
+<p>Built-in functions and operators are <strong>syntactic sugar</strong> — they look up the corresponding dunder on the object and call it.</p>
+
+<table>
+  <thead><tr><th>Built-in syntax</th><th>What Python calls under the hood</th></tr></thead>
+  <tbody>
+    <tr><td><code>str(x)</code></td><td><code>type(x).__str__(x)</code></td></tr>
+    <tr><td><code>repr(x)</code></td><td><code>type(x).__repr__(x)</code></td></tr>
+    <tr><td><code>len(x)</code></td><td><code>type(x).__len__(x)</code></td></tr>
+    <tr><td><code>iter(x)</code></td><td><code>type(x).__iter__(x)</code></td></tr>
+    <tr><td><code>next(it)</code></td><td><code>type(it).__next__(it)</code></td></tr>
+    <tr><td><code>hash(x)</code></td><td><code>type(x).__hash__(x)</code></td></tr>
+    <tr><td><code>bool(x)</code></td><td><code>type(x).__bool__(x)</code> (or <code>__len__</code> if no <code>__bool__</code>)</td></tr>
+    <tr><td><code>x + y</code></td><td><code>type(x).__add__(x, y)</code></td></tr>
+    <tr><td><code>x[k]</code></td><td><code>type(x).__getitem__(x, k)</code></td></tr>
+    <tr><td><code>k in x</code></td><td><code>type(x).__contains__(x, k)</code></td></tr>
+    <tr><td><code>obj(args)</code></td><td><code>type(obj).__call__(obj, args)</code></td></tr>
+    <tr><td><code>with x as y:</code></td><td><code>x.__enter__()</code> ... <code>x.__exit__()</code></td></tr>
+    <tr><td><code>for v in x:</code></td><td><code>x.__iter__()</code> then repeated <code>__next__()</code></td></tr>
+    <tr><td><code>obj.attr</code></td><td><code>type(obj).__getattribute__(obj, "attr")</code></td></tr>
+    <tr><td><code>print(x)</code> / <code>f"{x}"</code></td><td><code>__str__</code> (falls back to <code>__repr__</code>)</td></tr>
+  </tbody>
+</table>
+
+<div class="info">
+  <div class="info-title">Why this indirection exists — Polymorphism</div>
+  <p>This design lets <code>str(x)</code>, <code>len(x)</code>, <code>for x in y</code> work on <strong>any object</strong>. The interpreter doesn't care what type <code>x</code> is — it just asks <code>x</code> how to do the operation. You don't write <code>if isinstance(x, int): ... elif isinstance(x, list): ...</code>. Python dispatches automatically.</p>
+</div>
+
+<div class="gotcha">
+  <div class="gotcha-title">⚠️ Dunders must be on the CLASS, not the instance</div>
+  <pre><code>class Stock:
+    def __str__(self): return "stock"
+
+s = Stock()
+s.__str__ = lambda: "different"   # ❌ adding to instance — IGNORED
+print(str(s))   # 'stock'  — uses the class method, not instance</code></pre>
+  Python's dispatcher looks at <code>type(s).__str__</code>, not <code>s.__str__</code>. Adding dunders to instances doesn't work.
+</div>
+
+<h2 id="lifecycle">1. Object Lifecycle</h2>
+
+<table>
+  <thead><tr><th>Method</th><th>When called</th><th>Example</th></tr></thead>
+  <tbody>
+    <tr><td><code>__init__(self, ...)</code></td><td>Object is created</td><td><code>obj = MyClass(x, y)</code></td></tr>
+    <tr><td><code>__new__(cls, ...)</code></td><td>Before <code>__init__</code> — actually allocates the object (rarely overridden)</td><td>Singleton patterns</td></tr>
+    <tr><td><code>__del__(self)</code></td><td>Object garbage collected (no guaranteed timing)</td><td>Cleanup (don't rely on it)</td></tr>
+  </tbody>
+</table>
+
+<pre><code>class Stock:
+    def __init__(self, ticker, price):
+        self.ticker = ticker
+        self.price = price</code></pre>
+
+<h2 id="repr">2. String Representation</h2>
+
+<table>
+  <thead><tr><th>Method</th><th>When called</th><th>What it should return</th></tr></thead>
+  <tbody>
+    <tr><td><code>__repr__(self)</code></td><td><code>repr(x)</code>, debugger, list/dict display, <code>!r</code> in f-string</td><td>Unambiguous, ideally code that recreates the object</td></tr>
+    <tr><td><code>__str__(self)</code></td><td><code>str(x)</code>, <code>print(x)</code>, <code>f"{x}"</code></td><td>Human-friendly text</td></tr>
+    <tr><td><code>__format__(self, spec)</code></td><td><code>f"{x:spec}"</code>, <code>format(x, spec)</code></td><td>Custom formatting</td></tr>
+  </tbody>
+</table>
+
+<pre><code>class Stock:
+    def __repr__(self):
+        return f"Stock({self.ticker!r}, {self.price})"   # Stock('AAPL', 150)
+    def __str__(self):
+        return f"{self.ticker}: ${self.price}"           # AAPL: $150
+
+s = Stock("AAPL", 150)
+print(s)         # 'AAPL: $150'      ← uses __str__
+str(s)           # 'AAPL: $150'
+repr(s)          # "Stock('AAPL', 150)"
+[s]              # [Stock('AAPL', 150)]   ← lists show __repr__
+f"{s!r}"         # "Stock('AAPL', 150)"   ← !r forces __repr__</code></pre>
+
+<div class="tip">
+  <div class="tip-title">__str__ vs __repr__ rule</div>
+  If <code>__str__</code> isn't defined, Python falls back to <code>__repr__</code>. So if you only define one, define <code>__repr__</code> — it covers both cases.
+</div>
+
+<h2 id="iter">3. Iteration</h2>
+
+<table>
+  <thead><tr><th>Method</th><th>When called</th><th>Returns</th></tr></thead>
+  <tbody>
+    <tr><td><code>__iter__(self)</code></td><td><code>iter(x)</code>, <code>for x in obj</code></td><td>An iterator</td></tr>
+    <tr><td><code>__next__(self)</code></td><td><code>next(it)</code></td><td>Next value, or raises <code>StopIteration</code></td></tr>
+  </tbody>
+</table>
+
+<pre><code>class CountDown:
+    def __init__(self, n): self.n = n
+    def __iter__(self): return self
+    def __next__(self):
+        if self.n &lt;= 0: raise StopIteration
+        self.n -= 1
+        return self.n + 1
+
+for x in CountDown(3): print(x)   # 3 2 1</code></pre>
+
+<div class="info">
+  <div class="info-title">A for loop is just iter() + next() + StopIteration</div>
+  <pre><code># This loop:
+for x in [1, 2, 3]:
+    print(x)
+
+# Is equivalent to:
+it = iter([1, 2, 3])
+while True:
+    try:
+        x = next(it)
+        print(x)
+    except StopIteration:
+        break</code></pre>
+</div>
+
+<h2 id="container">4. Container Behavior</h2>
+
+<table>
+  <thead><tr><th>Method</th><th>When called</th></tr></thead>
+  <tbody>
+    <tr><td><code>__len__(self)</code></td><td><code>len(x)</code></td></tr>
+    <tr><td><code>__getitem__(self, key)</code></td><td><code>x[key]</code></td></tr>
+    <tr><td><code>__setitem__(self, key, value)</code></td><td><code>x[key] = value</code></td></tr>
+    <tr><td><code>__delitem__(self, key)</code></td><td><code>del x[key]</code></td></tr>
+    <tr><td><code>__contains__(self, item)</code></td><td><code>item in x</code></td></tr>
+  </tbody>
+</table>
+
+<pre><code>class Portfolio:
+    def __init__(self): self.holdings = {}
+    def __len__(self): return len(self.holdings)
+    def __getitem__(self, ticker): return self.holdings[ticker]
+    def __setitem__(self, ticker, qty): self.holdings[ticker] = qty
+    def __contains__(self, ticker): return ticker in self.holdings
+
+p = Portfolio()
+p["AAPL"] = 100         # __setitem__
+print(len(p))           # __len__ → 1
+print("AAPL" in p)      # __contains__ → True
+print(p["AAPL"])        # __getitem__ → 100</code></pre>
+
+<h2 id="compare">5. Comparison and Hashing</h2>
+
+<table>
+  <thead><tr><th>Method</th><th>Operator</th></tr></thead>
+  <tbody>
+    <tr><td><code>__eq__(self, other)</code></td><td><code>==</code></td></tr>
+    <tr><td><code>__ne__(self, other)</code></td><td><code>!=</code></td></tr>
+    <tr><td><code>__lt__(self, other)</code></td><td><code>&lt;</code></td></tr>
+    <tr><td><code>__le__(self, other)</code></td><td><code>&lt;=</code></td></tr>
+    <tr><td><code>__gt__(self, other)</code></td><td><code>&gt;</code></td></tr>
+    <tr><td><code>__ge__(self, other)</code></td><td><code>&gt;=</code></td></tr>
+    <tr><td><code>__hash__(self)</code></td><td><code>hash(x)</code> — required to use as dict key / set member</td></tr>
+  </tbody>
+</table>
+
+<div class="danger">
+  <div class="danger-title">🚨 Define __hash__ when you define __eq__</div>
+  If you define <code>__eq__</code>, Python automatically sets <code>__hash__ = None</code>, making the object unhashable. If you want it to remain usable as a dict key, define both — and make sure equal objects have equal hashes.
+</div>
+
+<h2 id="operators">6. Operator Overloading</h2>
+
+<table>
+  <thead><tr><th>Method</th><th>Operator</th></tr></thead>
+  <tbody>
+    <tr><td><code>__add__</code></td><td><code>x + y</code></td></tr>
+    <tr><td><code>__sub__</code></td><td><code>x - y</code></td></tr>
+    <tr><td><code>__mul__</code></td><td><code>x * y</code></td></tr>
+    <tr><td><code>__truediv__</code></td><td><code>x / y</code></td></tr>
+    <tr><td><code>__floordiv__</code></td><td><code>x // y</code></td></tr>
+    <tr><td><code>__mod__</code></td><td><code>x % y</code></td></tr>
+    <tr><td><code>__pow__</code></td><td><code>x ** y</code></td></tr>
+    <tr><td><code>__or__</code></td><td><code>x | y</code> (dict merge, set union, LangGraph edges)</td></tr>
+    <tr><td><code>__and__</code></td><td><code>x & y</code></td></tr>
+    <tr><td><code>__neg__</code></td><td><code>-x</code></td></tr>
+  </tbody>
+</table>
+
+<div class="info">
+  <div class="info-title">| operator is overloaded across many types</div>
+  <ul>
+    <li><code>bool | bool</code> → logical OR</li>
+    <li><code>int | int</code> → bitwise OR</li>
+    <li><code>set | set</code> → set union</li>
+    <li><code>dict | dict</code> → dict merge (right side wins)</li>
+    <li>Custom class → whatever <code>__or__</code> defines (LangGraph uses this for graph edges)</li>
+  </ul>
+</div>
+
+<h2 id="context">7. Context Managers (the with statement)</h2>
+
+<table>
+  <thead><tr><th>Method</th><th>When called</th></tr></thead>
+  <tbody>
+    <tr><td><code>__enter__(self)</code></td><td><code>with obj as x:</code> — entering the block. Return value bound to <code>x</code>.</td></tr>
+    <tr><td><code>__exit__(self, exc_type, exc_val, tb)</code></td><td>Leaving the block — runs even if exception raised</td></tr>
+  </tbody>
+</table>
+
+<pre><code>class FileLogger:
+    def __enter__(self):
+        self.f = open("log.txt", "a")
+        return self.f
+    def __exit__(self, exc_type, exc_val, tb):
+        self.f.close()
+
+with FileLogger() as f:
+    f.write("hello")
+# f auto-closed even if write() raised</code></pre>
+
+<h2 id="async">8. Async Equivalents</h2>
+
+<p>Same shapes as the sync versions but for <code>async/await</code> code.</p>
+
+<table>
+  <thead><tr><th>Method</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>__aiter__(self)</code></td><td><code>async for x in obj</code></td></tr>
+    <tr><td><code>__anext__(self)</code></td><td>Async version of <code>__next__</code></td></tr>
+    <tr><td><code>__aenter__(self)</code></td><td><code>async with obj as x:</code></td></tr>
+    <tr><td><code>__aexit__(self, ...)</code></td><td>Async exit</td></tr>
+    <tr><td><code>__await__(self)</code></td><td><code>await obj</code></td></tr>
+  </tbody>
+</table>
+
+<p>Used heavily in our P6 MCP code:</p>
+<pre><code>async with streamablehttp_client(SERVER_URL) as (read, write, _):    # __aenter__
+    async with ClientSession(read, write) as session:                  # __aenter__
+        await session.initialize()                                     # __await__</code></pre>
+
+<h2 id="callable">9. Callable</h2>
+
+<pre><code>class Multiplier:
+    def __init__(self, factor): self.factor = factor
+    def __call__(self, x): return x * self.factor
+
+triple = Multiplier(3)
+triple(10)      # 30 — instance is callable like a function</code></pre>
+
+<p>CrewAI's <code>BaseTool._run()</code>, agent wrappers, retry decorators all use this pattern.</p>
+
+<h2 id="attrs">10. Attribute Access</h2>
+
+<table>
+  <thead><tr><th>Method</th><th>When called</th></tr></thead>
+  <tbody>
+    <tr><td><code>__getattr__(self, name)</code></td><td>When attribute is <strong>not found</strong> the normal way</td></tr>
+    <tr><td><code>__setattr__(self, name, value)</code></td><td>Every attribute assignment</td></tr>
+    <tr><td><code>__getattribute__(self, name)</code></td><td>Every attribute access (rare to override — affects everything)</td></tr>
+    <tr><td><code>__delattr__(self, name)</code></td><td><code>del obj.name</code></td></tr>
+  </tbody>
+</table>
+
+<p>Pydantic uses <code>__setattr__</code> to validate every assignment to model fields.</p>
+
+<h2 id="introspection">11. Class Introspection (built-in attributes, not methods)</h2>
+
+<table>
+  <thead><tr><th>Attribute</th><th>What it gives</th></tr></thead>
+  <tbody>
+    <tr><td><code>obj.__class__</code></td><td>The class of an instance</td></tr>
+    <tr><td><code>obj.__dict__</code></td><td>All instance attributes as a dict</td></tr>
+    <tr><td><code>cls.__name__</code></td><td>The class name (string)</td></tr>
+    <tr><td><code>cls.__bases__</code></td><td>Tuple of parent classes</td></tr>
+    <tr><td><code>cls.__mro__</code></td><td>Method resolution order (for inheritance)</td></tr>
+    <tr><td><code>func.__name__</code></td><td>Function name</td></tr>
+    <tr><td><code>func.__doc__</code></td><td>Docstring</td></tr>
+    <tr><td><code>func.__annotations__</code></td><td>Type hints as dict</td></tr>
+  </tbody>
+</table>
+
+<pre><code>class Stock: pass
+s = Stock()
+s.ticker = "AAPL"
+
+s.__class__              # &lt;class '__main__.Stock'&gt;
+s.__class__.__name__     # 'Stock'
+s.__dict__               # {'ticker': 'AAPL'}</code></pre>
+
+<h2 id="module">12. Module-Level Dunders</h2>
+
+<p>These are <strong>variables</strong>, not methods. Set automatically by the Python interpreter when a module is loaded.</p>
+
+<table>
+  <thead><tr><th>Attribute</th><th>Set when</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td><code>__name__</code></td><td>Module loaded</td><td><code>"__main__"</code> if script, otherwise module's filename</td></tr>
+    <tr><td><code>__file__</code></td><td>Module loaded</td><td>Absolute path to the .py file</td></tr>
+    <tr><td><code>__doc__</code></td><td>Module loaded</td><td>First string literal in the file (or <code>None</code>)</td></tr>
+    <tr><td><code>__package__</code></td><td>Module loaded</td><td>Containing package name (or <code>""</code>)</td></tr>
+    <tr><td><code>__builtins__</code></td><td>Module loaded</td><td>Reference to builtins module</td></tr>
+  </tbody>
+</table>
+
+<div class="info">
+  <div class="info-title">Module dunders vs class dunders — key difference</div>
+  <table>
+    <thead><tr><th></th><th>Module dunders</th><th>Class dunders</th></tr></thead>
+    <tbody>
+      <tr><td>What</td><td>Variables on the module</td><td>Methods on the class</td></tr>
+      <tr><td>Set by</td><td>Python interpreter at load time</td><td>You define them</td></tr>
+      <tr><td>Called</td><td>You read them as variables: <code>__name__</code></td><td>Triggered by syntax: <code>print(x)</code> calls <code>__str__</code></td></tr>
+      <tr><td>Has parens</td><td>❌ No — they're attributes</td><td>✅ Yes — methods</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 id="main">The if __name__ == "__main__" Idiom</h2>
+
+<p><code>__name__</code> is <code>"__main__"</code> ONLY when you launch that file directly. When the file is imported by another file, <code>__name__</code> becomes the module's name (filename without .py).</p>
+
+<h3>Demo</h3>
+<pre><code># tools.py
+print(f"tools.py loaded — __name__ is: {__name__}")
+
+def get_price(ticker):
+    return 150.0
+
+if __name__ == "__main__":
+    print("Running tools.py as a script — running tests")
+    print(get_price("AAPL"))</code></pre>
+
+<pre><code># client.py
+from tools import get_price
+print(f"client.py — __name__ is: {__name__}")
+print(get_price("AAPL"))</code></pre>
+
+<p><strong>Run tools.py directly:</strong></p>
+<pre><code>$ python tools.py
+tools.py loaded — __name__ is: __main__
+Running tools.py as a script — running tests
+150.0</code></pre>
+
+<p><strong>Run client.py (which imports tools.py):</strong></p>
+<pre><code>$ python client.py
+tools.py loaded — __name__ is: tools          ← imported, NOT __main__
+client.py — __name__ is: __main__              ← the launched file IS __main__
+150.0</code></pre>
+
+<table>
+  <thead><tr><th>Scenario</th><th>File launched</th><th><code>__name__</code> in launched file</th><th><code>__name__</code> in imported files</th></tr></thead>
+  <tbody>
+    <tr><td><code>python tools.py</code></td><td>tools.py</td><td><code>"__main__"</code></td><td>(none)</td></tr>
+    <tr><td><code>python client.py</code></td><td>client.py</td><td><code>"__main__"</code></td><td>tools.py: <code>"tools"</code></td></tr>
+    <tr><td><code>python server.py</code></td><td>server.py</td><td><code>"__main__"</code></td><td>tools.py: <code>"tools"</code></td></tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <div class="tip-title">Why this idiom matters</div>
+  The pattern lets a file be <strong>two things at once</strong>:
+  <ul>
+    <li>A <strong>library</strong> when imported (only definitions loaded)</li>
+    <li>A <strong>script</strong> when run directly (also runs the test/demo block)</li>
+  </ul>
+  Without it, every import would also run the test code at the bottom.
+</div>
+
+<h3>Real example — p6_mcp/server.py</h3>
+<pre><code>mcp = FastMCP("StockSage Analysis Server", host="0.0.0.0", port=8002)
+
+@mcp.tool()
+def stock_price_data(ticker, period="3mo"):
+    return str(get_price_data(ticker, period))
+
+if __name__ == "__main__":
+    mcp.run(transport="streamable-http")</code></pre>
+
+<ul>
+  <li>When you run <code>python server.py</code> → <code>__name__ == "__main__"</code> → server starts</li>
+  <li>If something imported <code>server.py</code> → <code>__name__ == "server"</code> → server does NOT start. The importer just gets the <code>mcp</code> object and tool definitions.</li>
+</ul>
+
+<h2 id="overloading">Why Python Doesn't Support Method Overloading</h2>
+
+<p>You <strong>cannot</strong> define the same method twice with different signatures — the second definition overwrites the first.</p>
+
+<pre><code>class Stock:
+    def __init__(self, ticker: str):
+        ...
+    def __init__(self, ticker: str, price: float):    # OVERWRITES the first
+        ...
+
+# Only the second __init__ exists
+s = Stock("AAPL")          # ❌ TypeError: missing 'price'
+s = Stock("AAPL", 150.0)   # ✅ works</code></pre>
+
+<p><strong>Why:</strong> Python is dynamically typed — no compile-time type info to dispatch on. Every name in a class is a regular dict entry; defining the same name twice just overwrites.</p>
+
+<h3>The 4 Pythonic alternatives</h3>
+
+<h4>1. Default arguments (most common)</h4>
+<pre><code>class Stock:
+    def __init__(self, ticker: str, price: float = 0.0, signal: str = "HOLD"):
+        ...
+
+Stock("AAPL")
+Stock("AAPL", 150.0)
+Stock("AAPL", signal="BUY")</code></pre>
+
+<h4>2. Alternative constructors via @classmethod (most Pythonic)</h4>
+<pre><code>class Stock:
+    def __init__(self, ticker, price):
+        self.ticker, self.price = ticker, price
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(ticker=data["ticker"], price=data["price"])
+
+    @classmethod
+    def from_string(cls, s):
+        ticker, price = s.split(":")
+        return cls(ticker, float(price))
+
+Stock("AAPL", 150)
+Stock.from_dict({"ticker": "AAPL", "price": 150})
+Stock.from_string("AAPL:150")</code></pre>
+
+<p>You see this pattern everywhere: <code>dict.fromkeys</code>, <code>datetime.fromisoformat</code>, <code>Path.cwd</code>, Pydantic's <code>Model.model_validate</code>.</p>
+
+<h4>3. Type checking inside one method (used sparingly)</h4>
+<pre><code>def __init__(self, value):
+    if isinstance(value, str): ...
+    elif isinstance(value, dict): ...
+    elif isinstance(value, tuple): ...</code></pre>
+
+<h4>4. functools.singledispatchmethod (true type-based dispatch)</h4>
+<pre><code>from functools import singledispatchmethod
+
+class Stock:
+    @singledispatchmethod
+    def update(self, value): raise NotImplementedError
+
+    @update.register
+    def _(self, value: str): self.ticker = value
+    @update.register
+    def _(self, value: float): self.price = value</code></pre>
+
+<div class="info">
+  <div class="info-title">typing.overload — for type checkers only, not runtime</div>
+  <pre><code>from typing import overload
+
+class Stock:
+    @overload
+    def __init__(self, ticker: str) -> None: ...
+    @overload
+    def __init__(self, ticker: str, price: float) -> None: ...
+
+    def __init__(self, ticker, price=0.0):    # actual implementation
+        ...</code></pre>
+  These <code>@overload</code> decorations are only documentation for type checkers (mypy, pyright). At runtime, only the last <code>__init__</code> exists. Useful for libraries with complex signatures.
+</div>
+
+<h2 id="agentic">Most-Used Dunders in Agentic AI Code</h2>
+
+<table>
+  <thead><tr><th>Dunder</th><th>Why critical for agent work</th></tr></thead>
+  <tbody>
+    <tr><td><code>__init__</code></td><td>Every class needs it</td></tr>
+    <tr><td><code>__repr__</code></td><td>Debug agent objects, log tool calls</td></tr>
+    <tr><td><code>__call__</code></td><td>Tool wrappers, callable agents (CrewAI, LangChain)</td></tr>
+    <tr><td><code>__enter__</code> / <code>__exit__</code></td><td><code>with</code> for files, sessions</td></tr>
+    <tr><td><code>__aenter__</code> / <code>__aexit__</code></td><td><code>async with</code> for MCP, HTTP clients</td></tr>
+    <tr><td><code>__iter__</code> / <code>__next__</code></td><td>Custom streaming responses, agent state machines</td></tr>
+    <tr><td><code>__getitem__</code> / <code>__setitem__</code></td><td>State containers (LangGraph state, dict-like agents)</td></tr>
+    <tr><td><code>__eq__</code> / <code>__hash__</code></td><td>Dedup messages, tool calls, search results</td></tr>
+    <tr><td><code>__add__</code> / <code>__or__</code></td><td>Reducer patterns (LangGraph's <code>Annotated[list, operator.add]</code>)</td></tr>
+    <tr><td><code>__name__</code></td><td>The <code>if __name__ == "__main__":</code> idiom in every script</td></tr>
+    <tr><td><code>__file__</code></td><td>Locating data files relative to code (e.g., Chroma path)</td></tr>
+  </tbody>
+</table>
+
+<h2 id="cheat">One-Page Cheatsheet</h2>
+
+<table>
+  <thead><tr><th>Built-in</th><th>Dunder called</th><th>Common use</th></tr></thead>
+  <tbody>
+    <tr><td><code>str(x)</code> / <code>print(x)</code> / <code>f"{x}"</code></td><td><code>__str__</code></td><td>Human-friendly text</td></tr>
+    <tr><td><code>repr(x)</code> / debugger / <code>!r</code></td><td><code>__repr__</code></td><td>Debug-friendly text</td></tr>
+    <tr><td><code>len(x)</code></td><td><code>__len__</code></td><td>Container size</td></tr>
+    <tr><td><code>iter(x)</code> / <code>for v in x</code></td><td><code>__iter__</code></td><td>Make iterable</td></tr>
+    <tr><td><code>next(it)</code></td><td><code>__next__</code></td><td>Iterator advance</td></tr>
+    <tr><td><code>hash(x)</code></td><td><code>__hash__</code></td><td>Dict key / set member</td></tr>
+    <tr><td><code>x == y</code></td><td><code>__eq__</code></td><td>Equality</td></tr>
+    <tr><td><code>x < y</code></td><td><code>__lt__</code></td><td>Sort key</td></tr>
+    <tr><td><code>x + y</code></td><td><code>__add__</code></td><td>Concat / sum</td></tr>
+    <tr><td><code>x | y</code></td><td><code>__or__</code></td><td>Dict merge / set union</td></tr>
+    <tr><td><code>x[k]</code></td><td><code>__getitem__</code></td><td>Index / lookup</td></tr>
+    <tr><td><code>k in x</code></td><td><code>__contains__</code></td><td>Membership</td></tr>
+    <tr><td><code>obj(...)</code></td><td><code>__call__</code></td><td>Make instance callable</td></tr>
+    <tr><td><code>with x as y:</code></td><td><code>__enter__</code> / <code>__exit__</code></td><td>Resource management</td></tr>
+    <tr><td><code>async with x as y:</code></td><td><code>__aenter__</code> / <code>__aexit__</code></td><td>Async resource</td></tr>
+    <tr><td><code>obj.attr</code></td><td><code>__getattribute__</code></td><td>Attribute access</td></tr>
+  </tbody>
+</table>
+
+<h3>Module-level (auto-set by interpreter)</h3>
+<table>
+  <thead><tr><th>Attribute</th><th>Value</th><th>Common use</th></tr></thead>
+  <tbody>
+    <tr><td><code>__name__</code></td><td><code>"__main__"</code> if script, else module name</td><td><code>if __name__ == "__main__":</code> idiom</td></tr>
+    <tr><td><code>__file__</code></td><td>Absolute path to .py</td><td><code>Path(__file__).parent</code> for data file paths</td></tr>
+    <tr><td><code>__doc__</code></td><td>Module docstring</td><td>Auto-populated from first string literal</td></tr>
+  </tbody>
+</table>
+
+<footer>
+  Dunder Methods Reference · Generated 2026-04-29 · Part of #69 Python Fundamentals · See <code>p0_fundamentals/01_lists_and_dicts.html</code> and <code>p0_fundamentals/02_lambdas_map_filter_sorted.html</code> for related topics
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CrewAI P5 — Code Walkthrough & Execution Sequence</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.7; }
+    .sidebar { position: fixed; top: 0; left: 0; width: 260px; height: 100vh; background: #1a1d2e; padding: 24px 16px; overflow-y: auto; border-right: 1px solid #2d3148; }
+    .sidebar h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #7c83a8; margin-bottom: 16px; }
+    .sidebar a { display: block; padding: 6px 10px; color: #a0aec0; text-decoration: none; font-size: 13.5px; border-radius: 6px; margin-bottom: 2px; }
+    .sidebar a:hover { background: #2d3148; color: #e2e8f0; }
+    .sidebar .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #4a5080; margin: 16px 0 6px 10px; }
+    main { margin-left: 260px; padding: 48px 56px; max-width: 900px; }
+    h1 { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .subtitle { color: #7c83a8; font-size: 14px; margin-bottom: 48px; }
+    h2 { font-size: 20px; font-weight: 600; color: #fff; margin: 48px 0 16px; padding-top: 48px; border-top: 1px solid #2d3148; }
+    h2:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+    h3 { font-size: 15px; font-weight: 600; color: #a0aec0; margin: 24px 0 10px; }
+    p { color: #cbd5e0; margin-bottom: 14px; font-size: 15px; }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; background: #1e2130; color: #7dd3fc; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    pre { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 20px; margin: 16px 0; overflow-x: auto; }
+    pre code { background: none; padding: 0; color: #e2e8f0; font-size: 13.5px; line-height: 1.6; }
+    .keyword { color: #c084fc; }
+    .string { color: #86efac; }
+    .comment { color: #4a5080; font-style: italic; }
+    .fn { color: #60a5fa; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+    th { background: #1e2130; color: #a0aec0; text-align: left; padding: 10px 14px; border-bottom: 1px solid #2d3148; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    td { padding: 10px 14px; border-bottom: 1px solid #1e2130; color: #cbd5e0; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #1a1d2e; }
+    .note { background: #1e2130; border-left: 3px solid #7dd3fc; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; color: #a0aec0; }
+    .note strong { color: #7dd3fc; }
+    .warn { background: #1e2130; border-left: 3px solid #f59e0b; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; color: #a0aec0; }
+    .warn strong { color: #f59e0b; }
+    .flow { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 24px; margin: 16px 0; font-family: "JetBrains Mono", monospace; font-size: 13px; line-height: 2.2; }
+    .flow .node { color: #86efac; font-weight: 600; }
+    .flow .arrow { color: #4a5080; }
+    .flow .state { color: #7dd3fc; }
+    .flow .label { color: #a0aec0; font-size: 12px; }
+    .step { background: #1a1d2e; border: 1px solid #2d3148; border-radius: 8px; padding: 20px 24px; margin: 20px 0; }
+    .step-num { display: inline-block; background: #3b82f6; color: #fff; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 4px; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h2>P5 Code Walkthrough</h2>
+  <a href="#mental-model">Agent = System Prompt, Task = User Prompt</a>
+  <a href="#import-chain">Import Chain — What Runs at Startup</a>
+  <a href="#import-objects">Importing Objects (not just functions)</a>
+  <div class="section-label">Execution Sequence</div>
+  <a href="#step0">Step 0 — Module Import</a>
+  <a href="#step1">Step 1 — run_review() called</a>
+  <a href="#step2">Step 2 — Crew assembled</a>
+  <a href="#step3">Step 3 — kickoff() + template substitution</a>
+  <a href="#step4">Step 4 — fetch_task (CodeFetcher)</a>
+  <a href="#step5">Step 5 — review_task (CodeReviewer)</a>
+  <a href="#step6">Step 6 — summary_task (TechWriter)</a>
+  <a href="#step7">Step 7 — result returned</a>
+  <div class="section-label">Summary</div>
+  <a href="#callstack">Full Call Stack</a>
+  <a href="#counts">LLM + HTTP call counts</a>
+</div>
+
+<main>
+  <h1>CrewAI P5 — Code Walkthrough</h1>
+  <p class="subtitle">Complete execution sequence for crew.py / agents.py / tools.py &nbsp;·&nbsp; 2026-04-26</p>
+
+  <!-- MENTAL MODEL -->
+  <h2 id="mental-model">Agent = System Prompt, Task = User Prompt</h2>
+  <p>The clearest mental model for CrewAI: an Agent is what you'd put in a system prompt, a Task is what you'd put in the user message.</p>
+
+  <table>
+    <tr><th>Raw LLM call</th><th>CrewAI equivalent</th></tr>
+    <tr><td>system prompt</td><td><code>Agent</code> — role + goal + backstory</td></tr>
+    <tr><td>user message</td><td><code>Task</code> — description + expected_output</td></tr>
+    <tr><td>tool definitions</td><td><code>Agent.tools=[]</code></td></tr>
+    <tr><td>tool result appended to messages</td><td><code>Task.context=[prior_task]</code></td></tr>
+    <tr><td>LLM response</td><td>Task output — stored, passed to next task</td></tr>
+  </table>
+
+  <p>If you were doing this manually without CrewAI, one agent + task would look like:</p>
+
+  <pre><code>client.messages.create(
+    model=<span class="string">"claude-opus-4-7"</span>,
+    system=<span class="string">"You are a Senior Code Reviewer. Goal: find bugs..."</span>,  <span class="comment"># ← Agent</span>
+    messages=[{
+        <span class="string">"role"</span>: <span class="string">"user"</span>,
+        <span class="string">"content"</span>: <span class="string">"Review this PR diff: [diff text here]"</span>           <span class="comment"># ← Task</span>
+    }]
+)</code></pre>
+
+  <p>CrewAI automates this pattern — builds the system prompt from the Agent, the user message from the Task description, injects prior task outputs via <code>context=</code>, and handles the tool call loop.</p>
+
+  <!-- IMPORT CHAIN -->
+  <h2 id="import-chain">Import Chain — What Runs at Startup</h2>
+  <p>Before <code>run_review()</code> is ever called, three files execute in sequence:</p>
+
+  <div class="flow">
+    <span class="node">python crew.py</span><br>
+    <span class="arrow">│</span><br>
+    <span class="arrow">▼  line 4: from agents import code_fetcher, ...</span><br>
+    <span class="node">agents.py runs top to bottom</span><br>
+    <span class="label">&nbsp;&nbsp;&nbsp;line 3: from tools import fetch_pr_details</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▼</span><br>
+    <span class="node">&nbsp;&nbsp;&nbsp;tools.py runs top to bottom</span><br>
+    <span class="label">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ @tool decorator runs → fetch_pr_details becomes Tool object</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▼  back in agents.py</span><br>
+    <span class="label">&nbsp;&nbsp;&nbsp;→ Agent(...) called 3 times → code_fetcher, code_reviewer, tech_writer created</span><br>
+    <span class="arrow">▼  back in crew.py</span><br>
+    <span class="node">Task(...) called 3 times</span><br>
+    <span class="label">&nbsp;&nbsp;&nbsp;→ fetch_task, review_task, summary_task created</span><br>
+    <span class="label">&nbsp;&nbsp;&nbsp;→ {pr_url} placeholder NOT yet filled — just stored as template</span><br>
+    <span class="arrow">▼</span><br>
+    <span class="state">All objects ready in memory. Zero LLM calls so far.</span>
+  </div>
+
+  <!-- IMPORT OBJECTS -->
+  <h2 id="import-objects">Importing Objects — Not Just Functions</h2>
+  <p><code>import</code> works for anything Python can assign to a variable — not just functions.</p>
+
+  <pre><code><span class="keyword">from</span> agents <span class="keyword">import</span> code_fetcher    <span class="comment"># an Agent object</span>
+<span class="keyword">from</span> tools <span class="keyword">import</span> fetch_pr_details  <span class="comment"># a Tool object</span>
+<span class="keyword">from</span> math <span class="keyword">import</span> pi                 <span class="comment"># a float (3.14159...)</span>
+<span class="keyword">from</span> config <span class="keyword">import</span> MAX_RETRIES     <span class="comment"># an integer</span></code></pre>
+
+  <div class="note"><strong>Module caching:</strong> Python runs agents.py exactly once, then caches it in <code>sys.modules</code>. If multiple files import from agents.py, the module runs only on the first import. All importers share the same three Agent objects.</div>
+
+  <!-- STEP 0 -->
+  <h2 id="step0">Step 0 — Module Import (before run_review is called)</h2>
+  <div class="step">
+    <span class="step-num">STARTUP</span>
+    <p>Everything above happens before <code>run_review()</code> is called. By the time execution reaches line 46, all agents, tasks, and tools are already constructed in memory.</p>
+    <pre><code><span class="comment"># crew.py line 42–46</span>
+<span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:
+    pr_url = sys.argv[1] <span class="keyword">if</span> len(sys.argv) > 1 <span class="keyword">else</span> <span class="string">"https://.../pull/1"</span>
+    print(run_review(pr_url))  <span class="comment"># ← execution starts here</span></code></pre>
+  </div>
+
+  <!-- STEP 1 -->
+  <h2 id="step1">Step 1 — run_review(pr_url) called</h2>
+  <div class="step">
+    <span class="step-num">LINE 31</span>
+    <pre><code><span class="keyword">def</span> <span class="fn">run_review</span>(pr_url: str) -> str:
+    crew = Crew(...)
+    result = crew.kickoff(inputs={<span class="string">"pr_url"</span>: pr_url})
+    <span class="keyword">return</span> result.raw</code></pre>
+    <p>Function entry. <code>pr_url</code> is a local variable — safe in async/multi-user contexts.</p>
+  </div>
+
+  <!-- STEP 2 -->
+  <h2 id="step2">Step 2 — Crew assembled</h2>
+  <div class="step">
+    <span class="step-num">LINES 32–37</span>
+    <pre><code>crew = Crew(
+    agents=[code_fetcher, code_reviewer, tech_writer],  <span class="comment"># roster — no order here</span>
+    tasks=[fetch_task, review_task, summary_task],      <span class="comment"># order is HERE</span>
+    process=Process.sequential,                          <span class="comment"># one task at a time</span>
+    verbose=<span class="keyword">True</span>
+)</code></pre>
+    <p>The <code>agents=</code> list is just a declaration of who's on the team — order doesn't matter here. The <code>tasks=</code> list determines execution order. Still no LLM calls.</p>
+  </div>
+
+  <!-- STEP 3 -->
+  <h2 id="step3">Step 3 — kickoff() + template substitution</h2>
+  <div class="step">
+    <span class="step-num">LINE 38</span>
+    <pre><code>result = crew.kickoff(inputs={<span class="string">"pr_url"</span>: pr_url})</code></pre>
+    <p>Two things happen immediately:</p>
+    <p><strong>Template substitution:</strong> CrewAI scans all task descriptions for <code>{variable}</code> placeholders and fills them from <code>inputs=</code>:</p>
+    <pre><code><span class="comment"># Before kickoff:</span>
+<span class="string">"Fetch the full details for this GitHub PR: {pr_url}"</span>
+
+<span class="comment"># After substitution:</span>
+<span class="string">"Fetch the full details for this GitHub PR: https://.../pull/1"</span></code></pre>
+    <p><strong>Sequential execution begins</strong> — tasks run in the order of the <code>tasks=</code> list.</p>
+  </div>
+
+  <!-- STEP 4 -->
+  <h2 id="step4">Step 4 — fetch_task runs (CodeFetcher agent)</h2>
+  <div class="step">
+    <span class="step-num">TASK 1</span>
+    <p>CrewAI sends this to <code>anthropic/claude-opus-4-7</code>:</p>
+    <pre><code><span class="comment"># System (from Agent):</span>
+<span class="string">You are a PR Data Retrieval Specialist.
+Goal: Fetch the complete diff and metadata for a GitHub pull request.
+Backstory: You are an expert at retrieving data from GitHub...
+Tools available: fetch_pr_details — Fetches the title, description,
+  changed files and diff. Input: a full GitHub PR URL.</span>
+
+<span class="comment"># User (from Task description):</span>
+<span class="string">Fetch the full details and diff for this GitHub PR:
+https://github.com/rrvenkatrama/agentic_ai_projects/pull/1
+Expected output: The PR title, description, all changed files and diffs.</span></code></pre>
+
+    <p><strong>LLM responds (ReAct loop):</strong></p>
+    <pre><code>Thought: I need to fetch the PR details using the fetch_pr_details tool.
+Action: fetch_pr_details
+Action Input: {<span class="string">"pr_url"</span>: <span class="string">"https://.../pull/1"</span>}</code></pre>
+
+    <p><strong>CrewAI calls</strong> <code>fetch_pr_details.run(pr_url)</code> → tools.py executes:</p>
+    <pre><code>requests.get(<span class="string">"https://api.github.com/repos/.../pulls/1"</span>)        <span class="comment"># PR metadata</span>
+requests.get(<span class="string">"https://api.github.com/repos/.../pulls/1/files"</span>)   <span class="comment"># diff</span></code></pre>
+
+    <p>Result returned to LLM as <code>Observation</code>. LLM responds with <code>Final Answer</code>. fetch_task output stored by CrewAI.</p>
+  </div>
+
+  <!-- STEP 5 -->
+  <h2 id="step5">Step 5 — review_task runs (CodeReviewer agent)</h2>
+  <div class="step">
+    <span class="step-num">TASK 2</span>
+    <p><code>context=[fetch_task]</code> — CrewAI appends fetch_task's full output to the prompt:</p>
+    <pre><code><span class="comment"># System (from Agent):</span>
+<span class="string">You are a Senior Code Reviewer.
+Goal: Identify bugs, security issues, bad patterns...
+Tools: [none]</span>
+
+<span class="comment"># User (Task description + injected context):</span>
+<span class="string">Review the PR diff provided in context...
+Expected output: A markdown list of issues grouped by severity.
+
+Context from previous tasks:
+[FULL OUTPUT OF fetch_task — the entire PR diff text]</span></code></pre>
+
+    <p>No tools — single LLM call, no ReAct loop. Claude reads the diff and returns:</p>
+    <pre><code><span class="string">Final Answer:
+## HIGH Severity
+- Hardcoded password on line 5...
+- HTTP instead of HTTPS...
+## MEDIUM Severity
+...</span></code></pre>
+    <p>review_task output stored by CrewAI.</p>
+  </div>
+
+  <!-- STEP 6 -->
+  <h2 id="step6">Step 6 — summary_task runs (TechWriter agent)</h2>
+  <div class="step">
+    <span class="step-num">TASK 3</span>
+    <p><code>context=[review_task]</code> — CrewAI appends review_task's output:</p>
+    <pre><code><span class="comment"># System (from Agent):</span>
+<span class="string">You are a Technical Documentation Specialist.
+Goal: Write clear, structured PR review reports...
+Tools: [none]</span>
+
+<span class="comment"># User:</span>
+<span class="string">Write a complete PR review report. Structure: Summary, Issues, Recommendation.
+
+Context from previous tasks:
+[FULL OUTPUT OF review_task — the markdown issue list]</span></code></pre>
+
+    <p>Single LLM call. Produces the final formatted report with <code>## Recommendation: REQUEST CHANGES</code>.</p>
+  </div>
+
+  <!-- STEP 7 -->
+  <h2 id="step7">Step 7 — result returned</h2>
+  <div class="step">
+    <span class="step-num">LINE 39</span>
+    <pre><code><span class="keyword">return</span> result.raw   <span class="comment"># always the LAST task's output as a plain string</span></code></pre>
+    <p><code>result</code> is CrewAI's result object. <code>result.raw</code> is the final task's output as a plain string. <code>result.pydantic</code> would give a structured object if <code>output_pydantic=</code> was set on the last task.</p>
+  </div>
+
+  <!-- CALL STACK -->
+  <h2 id="callstack">Full Call Stack</h2>
+  <div class="flow">
+    <span class="fn">run_review(pr_url)</span><br>
+    <span class="arrow">└── Crew.kickoff(inputs={"pr_url": ...})</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── _run_sequential_process()</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── Task 1: fetch_task</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── code_fetcher.execute_task()</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── LLM call → tool call detected</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── fetch_pr_details.run(pr_url)</span><br>
+    <span class="state">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── requests.get(/pulls/1)</span><br>
+    <span class="state">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── requests.get(/pulls/1/files)</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── LLM: Final Answer → fetch_task.output stored</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── Task 2: review_task</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── code_reviewer.execute_task()</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── LLM call (fetch_task.output in context)</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── LLM: Final Answer → review_task.output stored</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── Task 3: summary_task</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── tech_writer.execute_task()</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── LLM call (review_task.output in context)</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── LLM: Final Answer → result.raw</span>
+  </div>
+
+  <!-- COUNTS -->
+  <h2 id="counts">LLM + HTTP Call Counts</h2>
+  <table>
+    <tr><th>Type</th><th>Count</th><th>Where</th></tr>
+    <tr><td>LLM calls</td><td>3</td><td>One per task — fetch_task, review_task, summary_task</td></tr>
+    <tr><td>GitHub API calls</td><td>2</td><td>Inside fetch_pr_details.run() — /pulls/1 and /pulls/1/files</td></tr>
+    <tr><td>Tool calls</td><td>1</td><td>fetch_pr_details — only code_fetcher has tools</td></tr>
+    <tr><td>ReAct loops</td><td>1</td><td>Only fetch_task — needs a tool call. review and summary are single-pass.</td></tr>
+  </table>
+
+  <p style="margin-top: 48px; color: #4a5080; font-size: 13px; border-top: 1px solid #2d3148; padding-top: 16px;">
+    Last updated: 2026-04-26 — P5 ReviewCrew crew.py walkthrough
+  </p>
+</main>
+</body>
+</html>

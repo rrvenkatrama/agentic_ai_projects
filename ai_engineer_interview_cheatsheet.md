@@ -844,6 +844,45 @@ print(app.get_graph().draw_mermaid())  # paste output into mermaid.live
 `Runnable` is a LangChain/LangGraph concept — any object with `.invoke()`. `graph.compile()` returns a Runnable. In plain Python the equivalent is any callable (object with `__call__`). LangGraph standardises on `.invoke()` as the interface.
 
 ---
+
+### HITL — Checkpointing, update_state, and resume
+
+**How it works:**
+```python
+# 1. Compile with checkpointer and interrupt point
+checkpointer = MemorySaver()
+app = graph.compile(checkpointer=checkpointer, interrupt_before=["human_review"])
+config = {"configurable": {"thread_id": "1"}}
+
+# 2. First invoke — runs until interrupt, saves checkpoint
+app.invoke({"topic": "quantum computing"}, config)
+
+# 3. Inject human input into the paused state
+app.update_state(config, {"findings": [extra]})
+
+# 4. Resume — picks up the updated checkpoint
+app.invoke(None, config)
+```
+
+**Key mechanics:**
+- `thread_id` is the checkpoint key — same thread_id = same conversation/run
+- `interrupt_before=["node_name"]` — graph pauses BEFORE that node executes
+- `app.update_state(config, {...})` — writes directly into the checkpoint; next resume sees updated state
+- `app.invoke(None, config)` — `None` means "no new input, resume from checkpoint"
+- `MemorySaver` stores checkpoints in memory; use `SqliteSaver` / `PostgresSaver` for persistence
+
+**Annotated reducers + update_state:**
+```python
+findings: Annotated[list[str], operator.add]  # reducer = list concatenation
+```
+- `update_state(config, {"findings": [extra]})` → **appends** to existing list (reducer runs)
+- Plain field with no reducer → **replaces** the value entirely
+- The reducer determines whether update_state adds or overwrites
+
+**Why this matters in interviews:**
+HITL is how you build agents that pause for human approval before taking irreversible actions (sending emails, executing trades, deploying code). The checkpoint is the mechanism — not a callback, not a flag, but actual state persistence that survives process restarts.
+
+---
 ---
 
 ## LangGraph — State Immutability Deep Dive
@@ -1290,4 +1329,300 @@ fetch_pr_details(pr_url)        # TypeError — Tool object is not callable dire
 
 ---
 
-*Last updated: 2026-04-25 — P5 ReviewCrew added: CrewAI agents/tasks/crew, process modes, @tool decorator internals, vs LangGraph*
+---
+
+## CrewAI Agent Internals — What an Agent Really Is
+
+An Agent is a **configuration object that builds a system prompt** — not autonomous code. The LLM provides the intelligence; the agent configuration shapes how it responds.
+
+```python
+# What you write:
+code_reviewer = Agent(
+    role="Senior Code Reviewer",
+    goal="Find bugs and bad patterns",
+    backstory="15 years experience reviewing production code...",
+    tools=[],
+    llm="claude-opus-4-6"
+)
+
+# What CrewAI sends to the LLM:
+"""
+You are a Senior Code Reviewer.
+Your goal is: Find bugs and bad patterns.
+Background: 15 years experience...
+Tools available: [none]
+Task: [task description]
+"""
+```
+
+### ReAct Loop — same as P1, just automated
+
+```
+Task assigned
+    ↓
+LLM: Thought → Action (tool call) → Observation (result) → repeat
+    ↓ (until "Final Answer")
+Task output returned to Crew
+```
+
+- Agent WITH tools: loops through Thought/Action/Observation
+- Agent WITHOUT tools: single pass, Final Answer directly
+- P1 difference: you wrote the loop manually; CrewAI handles it automatically
+
+---
+
+## Framework Comparison — CrewAI vs MCP vs LangChain vs LangGraph
+
+| Problem | Framework | Used in |
+|---------|-----------|---------|
+| Coordinate multiple agents as a team | CrewAI | P5 ReviewCrew |
+| Stateful graph workflows, HITL | LangGraph | P3, P4 |
+| Chain LLM calls + RAG pipelines | LangChain (LCEL) | P2 DocTalk |
+| Standardize tool exposure to LLMs | MCP | P6 (upcoming) |
+| Direct LLM ↔ tool calls, no framework | Raw tool_use | P1 ToolBot |
+
+### CrewAI vs MCP — completely different problems
+
+| | CrewAI | MCP |
+|--|--------|-----|
+| What it is | Multi-agent orchestration | Protocol/standard for tool exposure |
+| Solves | "Which agent does which task" | "How tools advertise to any LLM" |
+| Analogy | Project manager organizing a team | USB standard — any plug, any port |
+| Work together? | Yes — CrewAI agent can use MCP-exposed tool | |
+
+**Mental model:** MCP = the plug standard. CrewAI = the team using the plugs.
+
+### CrewAI vs LangChain
+
+- **LangChain** — chains LLM calls + retrievals into pipelines (LCEL: `prompt | llm | parser`)
+- **CrewAI** — coordinates multiple agents collaborating on a goal
+- They're complementary — CrewAI can use LangChain retrievers internally
+
+---
+
+---
+
+## CrewAI "Branching" — How It Really Works
+
+**There is no real branching in CrewAI sequential mode. Every task always runs.**
+
+### description vs role/goal/backstory
+
+| | What it shapes | When used |
+|--|----------------|-----------|
+| `role` / `goal` / `backstory` | WHO the agent is — system prompt persona | Once, permanent |
+| `description` | WHAT to do right now — task instruction | Per task, changes each task |
+
+Full prompt = Agent identity (system) + Task description (user message) + context from prior tasks.
+
+### The "conditional task" trick
+
+```python
+review_task = Task(
+    description="""Review the diff.
+    If HIGH severity issues found, say 'NEEDS_SECURITY_REVIEW'.
+    Otherwise say 'READY_TO_MERGE'.""",
+    agent=reviewer
+)
+security_task = Task(
+    description="Only act if previous review said 'NEEDS_SECURITY_REVIEW'.",
+    agent=security_specialist,
+    context=[review_task]   # LLM reads review output and self-directs
+)
+```
+
+**What actually happens:** `security_task` ALWAYS runs. The LLM reads the context and decides whether to act. You pay for the LLM call either way. This is not deterministic — it depends on the LLM following the instruction.
+
+### Real branching — use LangGraph
+
+```python
+def route_after_review(state):
+    if "NEEDS_SECURITY_REVIEW" in state["review_output"]:
+        return "security_node"   # runs
+    return "summary_node"        # security_node truly skipped — zero cost
+
+graph.add_conditional_edges("review_node", route_after_review)
+```
+
+| | CrewAI "branching" | LangGraph conditional edges |
+|--|-------------------|----------------------------|
+| Skipped task truly skipped? | No — always runs | Yes — never executes |
+| Routing done by | LLM following instructions | Your Python code |
+| Cost | Pay for every task | Pay only for nodes that run |
+| Reliability | Non-deterministic | Deterministic |
+
+**Production pattern:** LangGraph for outer workflow routing → CrewAI crew as one node inside.
+
+---
+
+---
+
+## CrewAI BaseTool vs @tool — Multi-Argument Tools
+
+### The problem with @tool for multiple arguments
+
+`@tool` auto-generates schema from docstring — gives LLM one text blob, no per-field descriptions. LLM may ignore arguments. Use `BaseTool` when you have 2+ arguments and need reliability.
+
+### BaseTool pattern
+
+```python
+from crewai.tools import BaseTool      # CrewAI
+from pydantic import BaseModel, Field  # Pydantic
+
+class PostCommentInput(BaseModel):
+    pr_url: str = Field(description="The full GitHub PR URL")
+    comment: str = Field(description="The full markdown text to post as a comment")
+
+class PostPRCommentTool(BaseTool):
+    name: str = "post_pr_comment"
+    description: str = "Posts a comment on a GitHub PR. Requires pr_url and comment."
+    args_schema: type[BaseModel] = PostCommentInput   # explicit schema
+
+    def _run(self, pr_url: str, comment: str) -> str:
+        # actual implementation
+        ...
+
+post_pr_comment = PostPRCommentTool()   # instantiate — used as tools=[post_pr_comment]
+```
+
+### What the LLM sees — @tool vs BaseTool
+
+```
+@tool (blob):          {"name": "...", "description": "Input: pr_url, comment..."}
+
+BaseTool (per-field):  {"name": "...", "description": "...",
+                        "parameters": {
+                          "pr_url":  {"type": "string", "description": "The full GitHub PR URL"},
+                          "comment": {"type": "string", "description": "The full markdown text..."}
+                        },
+                        "required": ["pr_url", "comment"]}
+```
+
+### Where each comes from
+
+| | Package | What it provides |
+|--|---------|-----------------|
+| `BaseTool` | `crewai.tools` | Base class — tool interface CrewAI expects |
+| `BaseModel` | `pydantic` | Data model — validation + schema generation |
+| `Field` | `pydantic` | Per-field metadata — description, constraints |
+
+CrewAI depends on Pydantic internally — all Agent, Task, Crew objects are Pydantic models. Mixing them is intentional.
+
+### When to use each
+
+| Situation | Use |
+|-----------|-----|
+| Single argument tool | `@tool` decorator — simpler |
+| Multiple arguments, LLM must pass all | `BaseTool` — explicit per-field schema |
+| Need validation constraints (min, max, regex) | `BaseTool` with `Field(...)` |
+
+---
+
+*Last updated: 2026-04-26 — P5 ReviewCrew: BaseTool vs @tool, Pydantic Field schema, multi-argument tool reliability*
+
+---
+
+## MCP (Model Context Protocol) — P6
+
+### The 3 primitives
+| Primitive | Server defines | Client calls | Purpose |
+|---|---|---|---|
+| **Tools** | `@mcp.tool()` | `session.call_tool(name, input)` | LLM-driven actions |
+| **Resources** | `@mcp.resource("uri")` or `@mcp.resource("uri/{param}")` | `session.list_resources()` (static) or `list_resource_templates()` (dynamic) | Browsable context for generic clients (Claude Desktop) |
+| **Prompts** | `@mcp.prompt()` returns `str` | `session.get_prompt(name, args)` | Reusable system/user prompts served by MCP |
+
+### FastMCP gotchas
+- `host`/`port` go on `FastMCP("name", host=..., port=...)` constructor, NOT `.run()`
+- Transport: `mcp.run(transport="streamable-http")` — endpoint is `/mcp`, NOT `/sse`
+- Dynamic resources with `{param}` in URI → use `list_resource_templates()`, NOT `list_resources()`
+- Prompt template MUST return plain `str` — returning explicit `list[PromptMessage]` causes double-wrapping
+
+### MCP role spec
+- Roles in messages are fixed by spec: `"user"` or `"assistant"` only
+- No `"system"` role exists in MCP — system prompt lives at the LLM API call level (client controls it)
+
+### Generic agentic loop pattern (works for ANY MCP server)
+```python
+async with streamablehttp_client(url) as (r, w, _):
+    async with ClientSession(r, w) as session:
+        await session.initialize()
+
+        # Discover schemas — no hardcoding
+        tools = await session.list_tools()
+        claude_tools = [{"name": t.name, "description": t.description,
+                         "input_schema": t.inputSchema} for t in tools.tools]
+
+        messages = [{"role": "user", "content": prompt}]
+        while True:
+            r = client.messages.create(model=..., tools=claude_tools, messages=messages)
+            if r.stop_reason == "end_turn": break
+            messages.append({"role": "assistant", "content": r.content})
+            tool_results = []
+            for block in r.content:
+                if block.type == "tool_use":
+                    result = await session.call_tool(block.name, block.input)  # generic dispatch
+                    tool_results.append({"type": "tool_result",
+                                         "tool_use_id": block.id,
+                                         "content": result.content[0].text})
+            messages.append({"role": "user", "content": tool_results})
+```
+
+### Why Resources exist when Tools could do the same job
+Functionally identical. The distinction is **UI semantics in generic clients**:
+- Claude Desktop renders Resources as browsable/attachable items (paperclip icon)
+- Tools are invisible to the user — only LLM sees them
+- Choose Resource for "data the user might browse/attach", Tool for "action the LLM should take"
+
+### MCP architecture (5-phase tool call lifecycle)
+1. Client calls `list_tools()` → gets schemas from server
+2. Client passes schemas to LLM as `tools=[...]`
+3. LLM responds with `stop_reason="tool_use"` and tool_use blocks
+4. Client dispatches each block via `session.call_tool(name, input)`
+5. Tool result appended as `"user"` role; loop continues until `stop_reason="end_turn"`
+
+### Chroma persistence pattern
+```python
+from pathlib import Path
+import chromadb
+
+# Bad: relative path, depends on CWD
+_chroma_client = chromadb.Client()  # ephemeral — lost on restart
+
+# Good: absolute, co-located with code
+_chroma_client = chromadb.PersistentClient(
+    path=str(Path(__file__).parent / "data" / "chroma_db")
+)
+```
+Files only created when a collection is actually written, not when client is constructed.
+
+---
+
+## Curriculum v6 — Eval, Production & Framework Comparison (added 2026-04-29)
+
+### Eval frameworks (P7 expanded)
+| Tool | What it tests | Example metric |
+|---|---|---|
+| **Ragas** | RAG-specific quality | Context precision, faithfulness, answer relevancy |
+| **DeepEval** | LLM unit tests | `assert_relevancy(output, query, threshold=0.8)` |
+| **Promptfoo** | A/B prompt testing | Run same input through 5 prompt variants, score each |
+| **LangSmith** | Tracing + dataset evals | Span hierarchy, evaluator functions |
+| **LangFuse** | Open-source observability | Self-hosted dashboards, cost tracking |
+
+### Production reliability patterns (P10 expanded)
+- **Retry**: `tenacity` — exponential backoff with jitter, retry on 429/5xx only
+- **Circuit breaker**: `pybreaker` — open after N failures, recover after timeout
+- **Provider fallback**: Claude → GPT-4o on rate limit / outage (unified abstraction)
+- **Cost tracking**: log input + output tokens per request, calculate USD by provider
+- **Multi-cloud LLM routing**: AWS Bedrock (Claude) + Azure OpenAI (GPT-4o) + GCP Vertex (Gemini)
+
+### Framework decision matrix (P12 NEW)
+| Need | Best framework |
+|---|---|
+| Stateful workflow with branches/loops | **LangGraph** |
+| Role-based multi-agent collaboration | **CrewAI** |
+| Conversational multi-agent debate | **AutoGen** |
+| Single LLM with tools (no orchestration) | Raw Anthropic SDK |
+
+---
+
+*Last updated: 2026-04-29 — P6 MCP complete; v6 curriculum (P7+P10 expanded, NEW P12); eval frameworks; reliability patterns; framework comparison*

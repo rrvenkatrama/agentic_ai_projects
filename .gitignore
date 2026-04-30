@@ -11,3 +11,9 @@ dist/
 build/
 .chroma/
 *.db
+
+# Sensitive — never commit
+.claude/
+RESUME_RAJESH_RAMANI.*
+**/data/chroma_db/
+chroma_data/

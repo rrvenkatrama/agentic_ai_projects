@@ -54,6 +54,11 @@
   <a href="#llm-prompt">How LLM Sees the Tool</a>
   <a href="#p1-comparison">vs P1 tool_use</a>
   <a href="#keeping-both">Keeping Both References</a>
+  <div class="section-label">BaseTool Class</div>
+  <a href="#basetool-vs-tool">BaseTool vs @tool</a>
+  <a href="#basetool-anatomy">BaseTool Anatomy</a>
+  <a href="#field-descriptions">Field Descriptions</a>
+  <a href="#pydantic-crewai">Pydantic vs CrewAI</a>
 </div>
 
 <main>
@@ -207,8 +212,101 @@ fetch_pr_details = tool(<span class="string">"fetch_pr_details"</span>)(_fetch_p
 _fetch_pr_details(pr_url)        <span class="comment"># original function — direct call, no CrewAI needed</span>
 fetch_pr_details.run(pr_url)     <span class="comment"># Tool object — used by agents</span></code></pre>
 
+  <!-- BASETOOL VS TOOL -->
+  <h2 id="basetool-vs-tool">BaseTool vs @tool — When to Use Which</h2>
+  <p><code>@tool</code> is a shortcut — it auto-generates the schema from docstring and type hints. For single-argument tools it works fine. For multi-argument tools it generates a weak schema the LLM may not follow reliably. <code>BaseTool</code> gives full explicit control.</p>
+
+  <table>
+    <tr><th></th><th>@tool decorator</th><th>BaseTool class</th></tr>
+    <tr><td>How defined</td><td>Decorated function</td><td>Subclass with explicit fields</td></tr>
+    <tr><td>Schema generation</td><td>Auto — from docstring + type hints</td><td>Manual — from <code>args_schema</code> Pydantic model</td></tr>
+    <tr><td>Per-field descriptions</td><td>No — LLM reads the docstring as one blob</td><td>Yes — via <code>Field(description=...)</code></td></tr>
+    <tr><td>LLM reliability</td><td>Good for 1 argument, unreliable for 2+</td><td>Reliable — explicit JSON schema per field</td></tr>
+    <tr><td>Use when</td><td>Single argument, simple tools</td><td>Multi-argument tools, precise schema needed</td></tr>
+    <tr><td>Result object</td><td>Tool object — call via <code>.run()</code></td><td>BaseTool instance — same interface</td></tr>
+  </table>
+
+  <!-- BASETOOL ANATOMY -->
+  <h2 id="basetool-anatomy">BaseTool Anatomy — Every Part Explained</h2>
+
+  <pre><code><span class="keyword">from</span> crewai.tools <span class="keyword">import</span> BaseTool      <span class="comment"># CrewAI's base class</span>
+<span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field    <span class="comment"># Pydantic for schema</span>
+
+<span class="comment"># Step 1 — define the input schema</span>
+<span class="keyword">class</span> <span class="fn">PostCommentInput</span>(BaseModel):
+    pr_url: str = Field(description=<span class="string">"The full GitHub PR URL e.g. https://github.com/owner/repo/pull/1"</span>)
+    comment: str = Field(description=<span class="string">"The full markdown review report text to post as a comment"</span>)
+
+<span class="comment"># Step 2 — define the tool as a class</span>
+<span class="keyword">class</span> <span class="fn">PostPRCommentTool</span>(BaseTool):
+    name: str = <span class="string">"post_pr_comment"</span>          <span class="comment"># tool name the LLM uses to call it</span>
+    description: str = <span class="string">"Posts a comment on a GitHub PR. Requires pr_url and comment."</span>
+    args_schema: type[BaseModel] = PostCommentInput   <span class="comment"># points to schema above</span>
+
+    <span class="keyword">def</span> <span class="fn">_run</span>(self, pr_url: str, comment: str) -> str:
+        <span class="comment"># actual implementation — same logic as @tool version</span>
+        owner, repo, number = parse_pr_url(pr_url)
+        response = requests.post(...)
+        <span class="keyword">return</span> <span class="string">"Comment posted successfully: ..."</span>
+
+<span class="comment"># Step 3 — instantiate</span>
+post_pr_comment = PostPRCommentTool()   <span class="comment"># used in agents.py: tools=[post_pr_comment]</span></code></pre>
+
+  <table>
+    <tr><th>Part</th><th>What it does</th></tr>
+    <tr><td><code>name</code></td><td>The tool name the LLM outputs when it wants to call this tool</td></tr>
+    <tr><td><code>description</code></td><td>What the tool does — shown to LLM in the tools list</td></tr>
+    <tr><td><code>args_schema</code></td><td>Points to the Pydantic model — CrewAI generates JSON schema from it for the LLM</td></tr>
+    <tr><td><code>_run()</code></td><td>The actual implementation — called when the LLM triggers the tool</td></tr>
+    <tr><td><code>PostPRCommentTool()</code></td><td>Instantiates the class — the result is used exactly like a @tool object</td></tr>
+  </table>
+
+  <!-- FIELD DESCRIPTIONS -->
+  <h2 id="field-descriptions">Field Descriptions — What the LLM Actually Sees</h2>
+  <p>With <code>@tool</code>, the LLM gets one blob of text (the docstring). With <code>BaseTool + Field</code>, each argument gets its own description in a proper JSON schema:</p>
+
+  <pre><code><span class="comment"># What CrewAI sends to the LLM with @tool (one blob):</span>
+<span class="string">{
+  "name": "post_pr_comment",
+  "description": "Posts a comment... Input: pr_url, comment..."
+}</span>
+
+<span class="comment"># What CrewAI sends with BaseTool + Field (per-field descriptions):</span>
+<span class="string">{
+  "name": "post_pr_comment",
+  "description": "Posts a comment on a GitHub PR...",
+  "parameters": {
+    "pr_url":  {"type": "string", "description": "The full GitHub PR URL..."},
+    "comment": {"type": "string", "description": "The full markdown review report text..."}
+  },
+  "required": ["pr_url", "comment"]
+}</span></code></pre>
+
+  <div class="note"><strong>Why this matters:</strong> The LLM uses the JSON schema to construct its tool call arguments. With per-field descriptions and an explicit <code>required</code> list, it has no excuse to omit <code>comment</code>.</div>
+
+  <!-- PYDANTIC CREWAI -->
+  <h2 id="pydantic-crewai">Pydantic vs CrewAI — Where Each Comes From</h2>
+
+  <pre><code><span class="keyword">from</span> crewai.tools <span class="keyword">import</span> BaseTool      <span class="comment"># CrewAI — base class for tools</span>
+<span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field    <span class="comment"># Pydantic — schema + validation</span></code></pre>
+
+  <table>
+    <tr><th></th><th>Package</th><th>What it provides</th></tr>
+    <tr><td><code>BaseTool</code></td><td>CrewAI (<code>crewai.tools</code>)</td><td>Base class — gives your class the tool interface CrewAI expects</td></tr>
+    <tr><td><code>BaseModel</code></td><td>Pydantic</td><td>Base class for data models — validation, serialization, schema generation</td></tr>
+    <tr><td><code>Field</code></td><td>Pydantic</td><td>Adds metadata to model fields — description, default, constraints</td></tr>
+  </table>
+
+  <div class="flow">
+    <span class="node">CrewAI's BaseTool</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;└── uses Pydantic's BaseModel for args_schema</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── uses Pydantic's Field for per-argument descriptions</span>
+  </div>
+
+  <div class="note"><strong>Why they work together:</strong> CrewAI depends on Pydantic internally — all CrewAI models (Agent, Task, Crew) are Pydantic BaseModels. So mixing them is natural and intentional.</div>
+
   <p style="margin-top: 48px; color: #4a5080; font-size: 13px; border-top: 1px solid #2d3148; padding-top: 16px;">
-    Last updated: 2026-04-25 — P5 ReviewCrew: @tool decorator internals
+    Last updated: 2026-04-26 — P5 ReviewCrew: @tool decorator internals, BaseTool class, Pydantic Field schemas
   </p>
 </main>
 </body>

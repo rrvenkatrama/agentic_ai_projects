@@ -1,7 +1,8 @@
 
 import os
 import requests
-from crewai.tools import tool
+from crewai.tools import tool, BaseTool
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -17,6 +18,30 @@ def parse_pr_url(pr_url: str) -> tuple[str, str, int]:
     repo = parts[-3]
     number = int(parts[-1])
     return owner, repo, number
+
+class PostCommentInput(BaseModel):
+    pr_url: str = Field(description="The full GitHub PR URL e.g. https://github.com/owner/repo/pull/1")
+    comment: str = Field(description="The full markdown review report text to post as a comment")
+
+class PostPRCommentTool(BaseTool):
+    name: str = "post_pr_comment"
+    description: str = (
+        "Posts a comment on a GitHub pull request. "
+        "Requires pr_url (the full GitHub PR URL) and comment (the full markdown text to post)."
+    )
+    args_schema: type[BaseModel] = PostCommentInput
+
+    def _run(self, pr_url: str, comment: str) -> str:
+        owner, repo, number = parse_pr_url(pr_url)
+        base = f"https://api.github.com/repos/{owner}/{repo}/issues/{number}/comments"
+        response = requests.post(base, headers=HEADERS, json={"body": comment})
+        data = response.json()
+        if response.status_code == 201:
+            return f"Comment posted successfully: {data.get('html_url')}"
+        return f"Failed to post comment: {data.get('message')}"
+
+post_pr_comment = PostPRCommentTool()
+
 
 @tool("fetch_pr_details")
 def fetch_pr_details(pr_url: str) -> str:

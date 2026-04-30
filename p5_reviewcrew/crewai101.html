@@ -67,6 +67,20 @@
   <a href="#output-passing">Output Passing</a>
   <a href="#context">context= in Tasks</a>
   <a href="#pydantic-output">Pydantic Output</a>
+  <div class="section-label">Agent Deep Dive</div>
+  <a href="#agent-internals">Agent — What It Really Is</a>
+  <a href="#react-loop">ReAct Loop Inside an Agent</a>
+  <div class="section-label">Framework Comparisons</div>
+  <a href="#vs-mcp">CrewAI vs MCP</a>
+  <a href="#vs-langchain">CrewAI vs LangChain</a>
+  <a href="#framework-map">Full Framework Map</a>
+  <div class="section-label">Branching & Control Flow</div>
+  <a href="#branching">How "Branching" Works</a>
+  <a href="#real-branching">Real Branching — LangGraph</a>
+  <div class="section-label">True Agentic Orchestration</div>
+  <a href="#true-agentic">Hierarchical = True Non-Linear Orchestration</a>
+  <a href="#autonomy-spectrum">Autonomy Spectrum</a>
+  <a href="#repeated-agents">Same Agent Called Multiple Times</a>
   <div class="section-label">P5 Project</div>
   <a href="#reviewcrew">ReviewCrew Design</a>
   <a href="#flow-diagram">Full Flow Diagram</a>
@@ -306,6 +320,257 @@ review_task = Task(
 result = crew.kickoff(inputs={<span class="string">"pr_url"</span>: url})
 review = result.pydantic                 <span class="comment"># ReviewResult instance</span>
 print(review.recommendation)            <span class="comment"># "REQUEST_CHANGES"</span></code></pre>
+
+  <!-- AGENT INTERNALS -->
+  <h2 id="agent-internals">Agent — What It Really Is</h2>
+  <p>An Agent in CrewAI is <strong>not code that does things autonomously</strong>. It is a configuration object that shapes how an LLM responds for a specific role. The intelligence comes from the LLM — the agent configuration just builds the system prompt.</p>
+
+  <pre><code>code_reviewer = Agent(
+    role=<span class="string">"Senior Code Reviewer"</span>,        <span class="comment"># ← persona</span>
+    goal=<span class="string">"Find bugs and bad patterns"</span>,   <span class="comment"># ← objective</span>
+    backstory=<span class="string">"15 years experience..."</span>,    <span class="comment"># ← context that shapes behavior</span>
+    tools=[],                            <span class="comment"># ← capabilities (none = pure LLM)</span>
+    llm=<span class="string">"claude-opus-4-6"</span>              <span class="comment"># ← which LLM brain to use</span>
+)</code></pre>
+
+  <p>When a task is assigned, CrewAI assembles this into a system prompt behind the scenes:</p>
+
+  <pre><code><span class="comment"># What CrewAI actually sends to the LLM:</span>
+<span class="string">"""
+You are a Senior Code Reviewer.
+Your goal is: Find bugs and bad patterns.
+Background: 15 years experience reviewing production code...
+You have access to these tools: [none]
+
+Complete the following task:
+[task description here]
+"""</span></code></pre>
+
+  <div class="note"><strong>Key insight:</strong> The agent is a prompt wrapper. Changing <code>role</code>, <code>goal</code>, and <code>backstory</code> changes how the LLM responds — same LLM, different behavior.</div>
+
+  <!-- REACT LOOP -->
+  <h2 id="react-loop">ReAct Loop Inside an Agent</h2>
+  <p>Every CrewAI agent runs the same <strong>ReAct loop</strong> (Reasoning + Acting) that you built manually in P1. CrewAI handles it automatically.</p>
+
+  <div class="flow">
+    <span class="state">Task assigned to agent</span><br>
+    <span class="arrow">│</span><br>
+    <span class="arrow">▼</span><br>
+    <span class="node">LLM receives: role + goal + backstory + task + available tools</span><br>
+    <span class="arrow">│</span><br>
+    <span class="arrow">▼</span><br>
+    <span class="node">Thought:</span> <span class="label">"I need to fetch the PR diff first"</span><br>
+    <span class="node">Action:</span>  <span class="label">fetch_pr_details("https://github.com/...")</span><br>
+    <span class="node">Observation:</span> <span class="label">[tool result — the diff text]</span><br>
+    <span class="arrow">│  (repeats until LLM says "Final Answer")</span><br>
+    <span class="arrow">▼</span><br>
+    <span class="node">Final Answer:</span> <span class="label">task output returned to Crew</span>
+  </div>
+
+  <table>
+    <tr><th>Agent type</th><th>Loop behavior</th><th>Example</th></tr>
+    <tr><td>Agent with tools</td><td>Loops: Thought → tool call → Observation → repeat</td><td>CodeFetcher calls GitHub API</td></tr>
+    <tr><td>Agent without tools</td><td>Single pass: Thought → Final Answer directly</td><td>CodeReviewer just analyzes the text</td></tr>
+  </table>
+
+  <div class="note"><strong>vs P1:</strong> In P1 you wrote the ReAct loop manually with a <code>while True</code> and appended tool results to the messages list. CrewAI does all of that automatically — same mechanics, abstracted away.</div>
+
+  <!-- VS MCP -->
+  <h2 id="vs-mcp">CrewAI vs MCP</h2>
+  <p>These solve <strong>completely different problems</strong> — they are not competing frameworks.</p>
+
+  <table>
+    <tr><th></th><th>CrewAI</th><th>MCP (Model Context Protocol)</th></tr>
+    <tr><td>What it is</td><td>Multi-agent orchestration framework</td><td>A protocol — a standard for exposing tools to LLMs</td></tr>
+    <tr><td>What it solves</td><td>"Which agent does which task and in what order"</td><td>"How does a tool advertise itself so any LLM can call it"</td></tr>
+    <tr><td>Analogy</td><td>A project manager organizing a team</td><td>USB standard — any device plugs into any computer</td></tr>
+    <tr><td>Output</td><td>Task results, review reports, structured data</td><td>Tool schemas, tool call responses</td></tr>
+    <tr><td>You use it when</td><td>Coordinating multiple specialized agents</td><td>Exposing your own tools/data to any LLM client</td></tr>
+    <tr><td>Work together?</td><td colspan="2">Yes — a CrewAI agent can use an MCP-exposed tool</td></tr>
+  </table>
+
+  <div class="note"><strong>Simple rule:</strong> MCP is about the <em>plug standard</em>. CrewAI is the <em>team that uses the plugs</em>. You study MCP in P6.</div>
+
+  <!-- VS LANGCHAIN -->
+  <h2 id="vs-langchain">CrewAI vs LangChain</h2>
+  <p>LangChain is about <strong>chaining LLM calls and retrievals</strong> into pipelines. CrewAI is about <strong>multiple agents collaborating</strong> on a goal. They operate at different levels and are often used together.</p>
+
+  <table>
+    <tr><th></th><th>LangChain</th><th>CrewAI</th></tr>
+    <tr><td>Core idea</td><td>Chain LLM calls, retrievers, parsers into pipelines</td><td>Coordinate multiple LLM agents as a team</td></tr>
+    <tr><td>You define</td><td>LCEL chains: prompt | llm | parser</td><td>Agents, tasks, crew process</td></tr>
+    <tr><td>Agent concept</td><td>Optional — an agent is one node in a chain</td><td>Central — agents are the building blocks</td></tr>
+    <tr><td>Where you used it</td><td>P2 DocTalk — RAG pipeline with LCEL</td><td>P5 ReviewCrew — multi-agent PR reviewer</td></tr>
+    <tr><td>Relationship</td><td colspan="2">CrewAI can use LangChain components internally (retrievers, parsers)</td></tr>
+  </table>
+
+  <!-- FRAMEWORK MAP -->
+  <h2 id="framework-map">Full Framework Map</h2>
+  <p>All the frameworks you've encountered, placed by what problem they solve:</p>
+
+  <div class="flow">
+    <span class="node">What problem</span>                      <span class="node">Framework</span>           <span class="node">Where you used it</span><br>
+    <span class="arrow">─────────────────────────────────────────────────────────────────</span><br>
+    <span class="label">Coordinate multiple agents as a team  </span><span class="state">CrewAI          </span><span class="label">P5 ReviewCrew</span><br>
+    <span class="label">Stateful graph workflows, HITL        </span><span class="state">LangGraph       </span><span class="label">P3 ResearchBot, P4 StockSage</span><br>
+    <span class="label">Chain LLM calls + RAG pipelines       </span><span class="state">LangChain (LCEL)</span><span class="label">P2 DocTalk</span><br>
+    <span class="label">Standardize tool exposure to LLMs     </span><span class="state">MCP             </span><span class="label">P6 (upcoming)</span><br>
+    <span class="label">Direct LLM ↔ tool calls, no framework </span><span class="state">Raw tool_use    </span><span class="label">P1 ToolBot</span>
+  </div>
+
+  <div class="note"><strong>Mental model:</strong> MCP standardizes the plug → LangChain chains the calls → LangGraph makes chains into flexible graphs → CrewAI puts multiple agents on the graph as a team.</div>
+
+  <!-- BRANCHING -->
+  <h2 id="branching">How "Branching" Works in CrewAI</h2>
+  <p>CrewAI sequential mode has <strong>no real branching</strong>. Every task always runs. What looks like branching is the LLM self-directing based on instructions in the task description.</p>
+
+  <h3>How description vs role/goal/backstory differ</h3>
+  <table>
+    <tr><th></th><th>What it shapes</th><th>When used</th></tr>
+    <tr><td><code>role</code> / <code>goal</code> / <code>backstory</code></td><td>WHO the agent is — its system prompt persona</td><td>Set once when Agent is created — permanent identity</td></tr>
+    <tr><td><code>description</code></td><td>WHAT to do right now — the task instruction</td><td>Per task — changes with every task assigned</td></tr>
+  </table>
+
+  <p>The full prompt sent to the LLM combines both:</p>
+
+  <pre><code><span class="comment"># System prompt (from Agent):</span>
+<span class="string">You are a Senior Code Reviewer.
+Your goal is: Find bugs and bad patterns.
+Background: 15 years experience...</span>
+
+<span class="comment"># User message (from Task):</span>
+<span class="string">Your task: Review the diff.
+If you find HIGH severity issues, say 'NEEDS_SECURITY_REVIEW'.
+Otherwise say 'READY_TO_MERGE'.
+
+[context from previous tasks injected here]</span></code></pre>
+
+  <h3>The "conditional task" pattern — what actually happens</h3>
+
+  <pre><code>review_task = Task(
+    description=<span class="string">"""Review the diff.
+    If you find HIGH severity issues, say 'NEEDS_SECURITY_REVIEW'.
+    Otherwise say 'READY_TO_MERGE'."""</span>,
+    agent=reviewer
+)
+
+security_task = Task(
+    description=<span class="string">"""Only act if previous review said 'NEEDS_SECURITY_REVIEW'.
+    Do a deep security audit."""</span>,
+    agent=security_specialist,
+    context=[review_task]
+)</code></pre>
+
+  <div class="flow">
+    <span class="label">What it FEELS like:</span><br>
+    <span class="node">review_task</span> <span class="arrow">──→ NEEDS_SECURITY_REVIEW? ──→</span> <span class="node">security_task</span><br>
+    <span class="arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓ no</span><br>
+    <span class="node">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;summary_task</span><br>
+    <br>
+    <span class="label">What ACTUALLY happens:</span><br>
+    <span class="node">review_task</span> <span class="arrow">──→</span> <span class="node">security_task</span> <span class="arrow">──→</span> <span class="node">summary_task</span><br>
+    <span class="label">&nbsp;&nbsp;(always)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(always)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(always)</span><br>
+    <br>
+    <span class="label">security_task LLM reads context + description:</span><br>
+    <span class="state">&nbsp;&nbsp;→ sees "NEEDS_SECURITY_REVIEW" → does the audit</span><br>
+    <span class="state">&nbsp;&nbsp;→ sees "READY_TO_MERGE" → responds "no action needed"</span>
+  </div>
+
+  <div class="warn"><strong>Key insight:</strong> security_task always runs and costs an LLM call — even when the review passed. You are relying on the LLM to follow the conditional instruction correctly. This is not deterministic.</div>
+
+  <!-- REAL BRANCHING -->
+  <h2 id="real-branching">Real Branching — Use LangGraph</h2>
+  <p>If you want a task to truly be <strong>skipped</strong> (zero LLM calls, zero cost, deterministic), you need LangGraph's conditional edges — routing done by your Python code, not the LLM.</p>
+
+  <pre><code><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, END
+
+<span class="keyword">def</span> <span class="fn">route_after_review</span>(state):
+    <span class="keyword">if</span> <span class="string">"NEEDS_SECURITY_REVIEW"</span> <span class="keyword">in</span> state[<span class="string">"review_output"</span>]:
+        <span class="keyword">return</span> <span class="string">"security_node"</span>
+    <span class="keyword">return</span> <span class="string">"summary_node"</span>    <span class="comment"># security_node truly never runs</span>
+
+graph.add_conditional_edges(<span class="string">"review_node"</span>, route_after_review)</code></pre>
+
+  <table>
+    <tr><th></th><th>CrewAI "branching"</th><th>LangGraph conditional edges</th></tr>
+    <tr><td>How routing works</td><td>LLM reads instruction, self-directs</td><td>Python function checks state, routes</td></tr>
+    <tr><td>Skipped task truly skipped?</td><td>No — always runs, LLM says "nothing to do"</td><td>Yes — node never executes</td></tr>
+    <tr><td>Cost</td><td>Pay for every task's LLM call</td><td>Pay only for nodes that run</td></tr>
+    <tr><td>Reliability</td><td>Depends on LLM following instructions</td><td>Deterministic — your code decides</td></tr>
+    <tr><td>Use when</td><td>Simple conditional behavior is enough</td><td>Real skip logic, cost control, guaranteed routing</td></tr>
+  </table>
+
+  <div class="note"><strong>Production pattern:</strong> Use CrewAI for team coordination inside a node, and LangGraph for the outer workflow that decides which CrewAI crew to run and when.</div>
+
+  <!-- TRUE AGENTIC -->
+  <h2 id="true-agentic">Hierarchical = True Non-Linear Orchestration</h2>
+  <p>LangGraph and sequential CrewAI are both <strong>hardcoded workflows</strong> — you define the structure, the LLM executes within it. CrewAI hierarchical is different: the manager LLM defines the workflow at runtime.</p>
+
+  <table>
+    <tr><th></th><th>LangGraph / LangChain</th><th>CrewAI Hierarchical</th></tr>
+    <tr><td>Who defines the graph</td><td>You — nodes, edges, conditions hardcoded</td><td>Manager LLM — at runtime, based on the goal</td></tr>
+    <tr><td>LLM role</td><td>Executes within your structure</td><td>Executes AND orchestrates</td></tr>
+    <tr><td>Workflow known upfront</td><td>Yes</td><td>No — emerges from the goal</td></tr>
+    <tr><td>"Agentic" level</td><td>Structured automation</td><td>True self-direction</td></tr>
+  </table>
+
+  <pre><code><span class="comment"># LangGraph — YOU draw the graph:</span>
+graph.add_edge(<span class="string">"fetch"</span>, <span class="string">"review"</span>)
+graph.add_conditional_edges(<span class="string">"review"</span>, route_fn)   <span class="comment"># your Python code routes</span>
+
+<span class="comment"># CrewAI Hierarchical — Manager LLM draws the graph at runtime:</span>
+crew = Crew(
+    agents=[fetcher, reviewer, writer],
+    tasks=[main_task],                              <span class="comment"># just the goal</span>
+    process=Process.hierarchical,
+    manager_llm=<span class="string">"anthropic/claude-opus-4-7"</span>          <span class="comment"># LLM decides the rest</span>
+)</code></pre>
+
+  <!-- REPEATED AGENTS -->
+  <h2 id="repeated-agents">Same Agent Called Multiple Times</h2>
+  <p>In hierarchical mode, the manager can call the same agent multiple times if completing the goal requires it — looping back, getting more context, re-analyzing with new information.</p>
+
+  <div class="flow">
+    <span class="node">Manager:</span> <span class="label">"SecurityReviewer, check this diff"</span><br>
+    <span class="node">SecurityReviewer:</span> <span class="label">"Found SQL injection risk on line 42"</span><br>
+    <br>
+    <span class="node">Manager:</span> <span class="label">"CodeFetcher, get full context around line 42"</span><br>
+    <span class="node">CodeFetcher:</span> <span class="label">returns lines 35-55</span><br>
+    <br>
+    <span class="node">Manager:</span> <span class="label">"SecurityReviewer, re-analyze with this additional context"</span><br>
+    <span class="node">SecurityReviewer:</span> <span class="label">"Confirmed SQL injection — here's the full analysis"</span><br>
+    <br>
+    <span class="node">Manager:</span> <span class="label">"TechWriter, write the final report"</span><br>
+    <span class="node">TechWriter:</span> <span class="label">returns final report</span>
+  </div>
+
+  <p>SecurityReviewer was called <strong>twice</strong>, CodeFetcher was called mid-review. You never hardcoded that — the manager decided it was necessary. In sequential mode this is impossible without rewriting the graph.</p>
+
+  <div class="warn"><strong>Cost implication:</strong> Each manager decision is an LLM call on top of the agent's call. If the manager loops, you pay for each decision round. Hierarchical cost = N agent calls + M manager calls, where M can exceed N.</div>
+
+  <!-- AUTONOMY SPECTRUM -->
+  <h2 id="autonomy-spectrum">The Autonomy Spectrum</h2>
+  <p>All the frameworks you've used sit on a spectrum from fully controlled to fully autonomous:</p>
+
+  <div class="flow">
+    <span class="label">Most controlled &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Most autonomous</span><br>
+    <span class="arrow">│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│</span><br>
+    <span class="node">Raw tool_use</span> <span class="arrow">→</span> <span class="node">LangGraph</span> <span class="arrow">→</span> <span class="node">CrewAI Sequential</span> <span class="arrow">→</span> <span class="node">CrewAI Hierarchical</span><br>
+    <span class="label">you write &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; you draw &nbsp;&nbsp;&nbsp;&nbsp; you define &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; you define goal,</span><br>
+    <span class="label">the loop &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; the graph &nbsp;&nbsp;&nbsp; task order &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LLM does the rest</span>
+  </div>
+
+  <table>
+    <tr><th></th><th>Hardcoded Workflow</th><th>Hierarchical</th></tr>
+    <tr><td>Predictable</td><td>Yes</td><td>No</td></tr>
+    <tr><td>Debuggable</td><td>Easy</td><td>Hard</td></tr>
+    <tr><td>Cost</td><td>Fixed per run</td><td>Variable — depends on manager decisions</td></tr>
+    <tr><td>Flexible</td><td>No — changing flow means rewriting graph</td><td>Yes — goal change is enough</td></tr>
+    <tr><td>Production-ready</td><td>Yes</td><td>Needs guardrails and cost limits</td></tr>
+    <tr><td>Best for</td><td>Known processes: PR review, data pipelines</td><td>Open-ended: investigate, diagnose, research</td></tr>
+  </table>
+
+  <div class="note"><strong>The holy grail:</strong> Getting the autonomy of hierarchical with the reliability of LangGraph. This is an active research problem in agentic AI — 2026 and beyond. Current production systems use LangGraph for known workflows and reserve hierarchical for genuinely open-ended tasks where the flow cannot be predicted upfront.</div>
 
   <!-- REVIEWCREW -->
   <h2 id="reviewcrew">P5 ReviewCrew — Design</h2>

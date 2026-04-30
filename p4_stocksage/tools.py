@@ -197,7 +197,8 @@ def get_fundamentals(ticker: str) -> dict:
 
 # Initialize embedding model once
 _embed_model = SentenceTransformer("all-MiniLM-L6-v2")
-_chroma_client = chromadb.Client()
+_chroma_client = chromadb.PersistentClient(path=str(Path(__file__).parent / "data" / "chroma_db"))
+
 
 def _load_earnings_to_chroma(ticker: str) -> chromadb.Collection:
     """Load earnings transcript for ticker into Chroma collection."""
@@ -221,6 +222,7 @@ def _load_earnings_to_chroma(ticker: str) -> chromadb.Collection:
     chunks = [chunk.strip() for chunk in text.split("\n\n") if chunk.strip()]
     
     # Embed and store in Chroma
+    
     collection = _chroma_client.create_collection(collection_name)
     embeddings = _embed_model.encode(chunks).tolist()
     

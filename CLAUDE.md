@@ -16,8 +16,8 @@ No passive video courses — learning by doing, with deeplearning.ai shorts on-d
 ## Kanban Tracking
 - Tool: MyKanban at http://192.168.1.156:3002
 - Project: "AI Engineering Readiness" (Project ID: 3)
-- Login: rajramani@msn.com / yanni123
-- All 31 tickets created (IDs #17–#47)
+- Login: see local credentials (not committed)
+- Tickets: #17–#73 (growing)
 - Move tickets: Backlog → Todo → In Progress → Done as work progresses
 
 ## Python Environment
@@ -26,36 +26,54 @@ No passive video courses — learning by doing, with deeplearning.ai shorts on-d
 - Activate: source .venv/bin/activate
 - Keys: copy .env.example to .env, add ANTHROPIC_API_KEY etc.
 
-## The 11-Project Curriculum (v4 — approved 2026-04-01)
+## The 14-Project Curriculum (v6 — updated 2026-04-29)
+
+### v6 Changes (driven by real Oracle/Salesforce/Adobe/Airwallex job postings)
+- **P7 expanded**: + Ragas, DeepEval, Promptfoo eval frameworks (#79)
+- **P10 expanded**: + FastAPI wrapper, Pinecone, multi-cloud LLM routing, reliability patterns, cost tracking (#74-#78)
+- **P12 NEW**: Multi-agent framework showdown — AutoGen vs LangGraph vs CrewAI (#80)
+
+### Business Domain Theme: Enterprise Customer Operations
+P7–P11 follow a coherent real-world domain: a suite of agents for customer operations.
+Uses Faker for synthetic customer data. Connects naturally to Onemyle's real work.
 
 | # | Folder | Project | Key Tech | Kanban Tickets | Month |
 |---|--------|---------|----------|----------------|-------|
 | P1 | p1_toolbot | ToolBot — CLI agent, 3 LLMs | async, Pydantic v2, tool_use, streaming | #17–20 | 1 |
 | P2 | p2_doctalk | DocTalk — PDF Q&A + citations | Embeddings, Chroma→Qdrant, RAG, LangChain | #21–24 | 1 |
 | P3 | p3_researchbot | ResearchBot — multi-step web research | LangGraph, checkpointing, human-in-loop, A2A intro | #25–28 | 2 |
+| P3-Adv | p3_adv_langgraph | Advanced LangGraph — Send API, Orchestrator-Worker | Send API, Flow Engineering, Temporal+LangGraph | #72 | after P6 |
 | P4 | p4_stocksage | StockSage — stock analysis agent | Multi-agent, Mem0 memory, reasoning model selection | #29–33 | 2 |
-| P5 | p5_reviewcrew | ReviewCrew — GitHub PR reviewer | CrewAI, OpenAI Agents SDK, parallel execution | #34–36 | 3 |
-| P6 | p6_mcp | MCP++ + A2A — Onemyle MCP server | MCP spec, SSE, A2A protocol | #37–39 | 3 |
-| P7 | p7_observable | ObservableAgent — observability + evals | LangSmith, Langfuse, Arize Phoenix, security evals | #40–42 | 3 |
-| P8 | p8_security | SecurityGuard — agent security | OWASP LLM Top 10, prompt injection, NeMo Guardrails | #48 | 3 |
-| P9 | p9_memory | MemoryAgent — long-term memory | Mem0, Zep, episodic/semantic memory, knowledge graphs | #49 | 3–4 |
-| P10 | p10_platform | AgentPlatform — production deploy | Docker, k3s (local), AWS Bedrock, Terraform, GitHub Actions | #43–45 | 4 |
-| P11 | p11_multimodal | MultiModalBot — vision + audio | GPT-4o vision, Gemini Live, multi-modal RAG | #50 | 4 |
+| P5 | p5_reviewcrew | ReviewCrew — GitHub PR reviewer | CrewAI, parallel execution, hierarchical agents | #34–36 | 3 |
+| P6 | p6_mcp | MCP++ + A2A — Onemyle MCP server | MCP spec, streamable-http, OAuth 2.1, A2A protocol | #37–39, #73 | 3 |
+| P7 | p7_observable | Customer Health Monitor — observability + evals | LangSmith, LangFuse, Faker, churn detection, **Ragas, DeepEval, Promptfoo** | #40–42, **#79** | 3 |
+| P8 | p8_security | PII Compliance Agent — agent security | OWASP LLM Top 10, PII detection, NeMo Guardrails | #48 | 3 |
+| P9 | p9_memory | Account Memory Agent — long-term memory | Zep (Graphiti), Mem0, temporal knowledge graphs | #49 | 3–4 |
+| P10 | p10_platform | AgentPlatform — production deploy | Docker, k3s, GitHub Actions, AWS Bedrock, Terraform, **FastAPI, Pinecone, multi-cloud routing, reliability patterns, cost tracking** | #43–45, **#74–78** | 4 |
+| P11 | p11_multimodal | Contract & Invoice Analyzer — vision | Claude vision, PyMuPDF, multi-modal RAG, GPT-4o | #50 | 4 |
+| **P12 NEW** | p12_framework_showdown | Multi-agent framework comparison | **AutoGen vs LangGraph vs CrewAI**, comparison blog | **#80** | 4 |
 
-## Sprint Tickets
-- Weeks 1–2: #46, #47 (updated)
-- Weeks 3–16: #51–#64
-- Full plan: see claude_agentic_engineer_plan_v4.md
+## Supplementary Tickets (non-blocking)
+- #67 — Raw ReAct Loop (react_agent.py)
+- #68 — Reflection / Self-Critique Pattern
+- #69 — Python Fundamentals for AI Engineering
+- #70 — Python Refresher (lambdas, decorators, async, *, **, context managers, ABC)
+- #71 — P5 ReviewCrew: Hierarchical process (manager agent)
 
 ## Concepts Covered (by project)
 - P1: async/await, Pydantic v2, tool_use loop, streaming, system prompts, context management
 - P2: embeddings, cosine similarity, chunking strategies, RAG pipeline, LangChain abstractions
 - P3: LangGraph StateGraph, typed state, nodes/edges, checkpointing, human-in-the-loop
+- P3-Adv: Send API, orchestrator-worker, flow engineering, Temporal+LangGraph, state management failures
 - P4: multi-tool orchestration, structured output, domain RAG, agent synthesis, financial APIs
 - P5: CrewAI agents/tasks/crew, agent specialization, parallel execution, hierarchical agents
-- P6: MCP spec, SSE transport, tool schemas, resource protocol, prompt templates
-- P7: LangSmith tracing, span hierarchy, eval datasets, evaluator functions, LangFuse dashboards
-- P8: Docker multi-stage builds, k8s manifests, secrets management, GitHub Actions
+- P6: MCP spec, streamable-http transport, tool schemas, resource protocol, OAuth 2.1, A2A protocol
+- P7: LangSmith tracing, span hierarchy, eval datasets, evaluator functions, LangFuse dashboards, Faker, **Ragas (context precision/faithfulness/answer relevancy), DeepEval (LLM unit tests), Promptfoo (A/B testing), regression suite**
+- P8: OWASP LLM Top 10, PII detection, prompt injection blocking, NeMo Guardrails, audit trails
+- P9: Zep temporal knowledge graphs, Mem0 semantic facts, LongMemEval benchmark comparison
+- P10: Docker multi-stage builds, k8s manifests, secrets management, GitHub Actions CI/CD, Bedrock, **FastAPI + SSE streaming, Pinecone migration from Chroma, multi-cloud LLM routing (Bedrock + Azure OpenAI + GCP Vertex), reliability patterns (tenacity exponential backoff, pybreaker circuit breaker, automatic provider fallback), per-request token + USD cost tracking with budget alerts**
+- P11: PyMuPDF page rendering, Claude vision API, base64 image content blocks, multi-modal RAG
+- **P12: AutoGen conversational multi-agent pattern, framework comparison methodology (LoC, latency, cost, debuggability), technical writing for LinkedIn**
 
 ## Training Resources (on-demand, not upfront)
 | Course | Platform | When to use |
@@ -68,8 +86,8 @@ No passive video courses — learning by doing, with deeplearning.ai shorts on-d
 
 ## LLM Coverage
 All three major LLMs are used across the curriculum — not Claude-only:
-- **Anthropic Claude** (claude-opus-4-6) — primary, tool_use, MCP
-- **OpenAI** (gpt-4o) — function calling, comparison patterns
+- **Anthropic Claude** (claude-sonnet-4-6 / claude-opus-4-7) — primary, tool_use, MCP, vision
+- **OpenAI** (gpt-4o) — function calling, multi-modal comparison
 - **Google Gemini** — function calling, multi-modal
 All three API keys are in .env: ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY
 
@@ -81,7 +99,6 @@ All three API keys are in .env: ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KE
 - Point to deeplearning.ai shorts only when concept needs lecture reinforcement
 - Move Kanban tickets as milestones are hit
 - Run a 5–8 question quiz at end of EVERY project before moving to the next one
-- Weekly plan tickets: #46 (Week 1), #47 (Week 2) — add more each week
 
 ## Training Style (Non-negotiable)
 1. **Interactive coding** — Give a goal + any needed context/signature. Rajesh writes it. Review after.
@@ -93,39 +110,17 @@ All three API keys are in .env: ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KE
 Each session: Claude gives the day's task, Rajesh codes it, concepts explained inline.
 Weekly plan tickets in Kanban track the week's goals.
 
-## Current Status (as of 2026-04-25)
-- [x] Repo created, venv set up, workspace file created
-- [x] Kanban project + 33 tickets created (IDs #17–#50, #65, #66)
-- [x] .env created with ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY
-- [x] Dependencies installed: anthropic, openai, google-generativeai, pydantic, python-dotenv, fastapi, uvicorn, langchain*, kafka-python
+## Current Status (as of 2026-04-26)
 - [x] P1 ToolBot — COMPLETE (Tickets #17-20, quiz 7/7)
-  - [x] Phase A (Claude): agent.py with tool loop — DONE (2026-03-30)
-  - [x] Phase A+: Add streaming to agent.py — DONE (2026-03-30)
-  - [x] Phase B: OpenAI function calling version — DONE (2026-03-31)
-  - [x] Phase C: Gemini function calling version — DONE (2026-03-31)
 - [x] P2 DocTalk — COMPLETE (Tickets #21-24, quiz 6.5/8)
-  - [x] embed_intro.py — embeddings + cosine similarity from scratch
-  - [x] rag_simple.py — chunking + retrieval, no LangChain
-  - [x] rag_langchain.py — LangChain + Qdrant retrieval pipeline
-  - [x] doctalk.py — full RAG with Claude + citations
-  - [x] doctalk_langchain.py — LCEL chain version
-  - [x] app.py — FastAPI web app with upload + chat UI
-  - [x] langchain101.html — LangChain components + LCEL reference
-- [x] P3 ResearchBot — COMPLETE (Tickets #25-27, #65, #66, #28 closed, quiz 6.5/7)
-  - [x] graph_intro.py — LangGraph StateGraph basics
-  - [x] graph_intro_annotate.py — Annotated state + fan-out demo
-  - [x] langgraph101.html — full LangGraph reference
-  - [x] research_bot.py — DuckDuckGo search + conditional routing
-  - [x] hub_spoke.py — hub-and-spoke PoC invoke+stream
-  - [x] kafka_agents.py — agent-as-consumer on k3s Kafka
-  - [x] research_bot_hitl.py — checkpointing + HITL
-  - [x] hub_spoke_kafka_agents.html — Kafka reference doc
+- [x] P3 ResearchBot — COMPLETE (Tickets #25-27, #65, #66, quiz 6.5/7)
 - [x] P4 StockSage — COMPLETE (Tickets #29-33, quiz 6.5/8)
-  - [x] tools.py — yfinance, pandas-ta, distilbert sentiment, Chroma RAG
-  - [x] agent.py — LangGraph StateGraph, Claude synthesis, Pydantic output
-  - [x] app.py — FastAPI UI on port 8001
-  - [x] data/AAPL_earnings_Q1_2025.txt — sample earnings transcript
-- [ ] P5 ReviewCrew — NEXT (Tickets #34-36)
+- [x] P5 ReviewCrew — COMPLETE (Tickets #34-36, quiz 6/6)
+- [ ] P6 MCP++ — IN PROGRESS (Ticket #37 in progress)
+  - [x] server_intro.py — FastMCP server, streamable-http, get_stock_price tool
+  - [x] client_intro.py — async client, asyncio.gather for concurrent calls
+  - [ ] Resources + prompt templates (#38)
+  - [ ] StockSage tools as MCP server + OAuth 2.1 (#39, #73)
 
 ## Related Projects
 - Onemyle / reel-analysis-lib: ~/ai/Onemyle/reel-analysis-lib (real-world agent deployment)

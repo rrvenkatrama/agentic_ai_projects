@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Python Fundamentals — Section 2: Lambdas, map, filter, sorted</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    max-width: 1000px; margin: 0 auto; padding: 30px 40px;
+    color: #222; line-height: 1.55; background: #fafbfc;
+  }
+  header { border-bottom: 3px solid #1a4d8f; padding-bottom: 12px; margin-bottom: 24px; }
+  h1 { margin: 0; color: #1a4d8f; font-size: 24pt; }
+  .subtitle { color: #666; font-size: 11pt; margin-top: 4px; }
+  h2 { color: #1a4d8f; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 36px; font-size: 17pt; }
+  h3 { margin-top: 22px; font-size: 13pt; color: #333; }
+  h4 { font-size: 11pt; color: #555; margin-top: 14px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 12px 14px; border-radius: 5px; overflow-x: auto; font-size: 10pt; line-height: 1.4; }
+  code { background: #f1f3f5; padding: 1px 5px; border-radius: 3px; font-size: 90%; color: #c7254e; }
+  pre code { background: none; padding: 0; color: inherit; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.06); font-size: 10.5pt; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #eee; vertical-align: top; }
+  th { background: #f0f4fa; color: #1a4d8f; font-weight: 600; border-bottom: 2px solid #1a4d8f; }
+  tr:hover { background: #f9fbff; }
+  .gotcha { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+  .gotcha-title { font-weight: 600; color: #856404; margin-bottom: 6px; }
+  .tip { background: #d4edda; border-left: 4px solid #28a745; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+  .tip-title { font-weight: 600; color: #155724; margin-bottom: 6px; }
+  .danger { background: #f8d7da; border-left: 4px solid #dc3545; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+  .danger-title { font-weight: 600; color: #721c24; margin-bottom: 6px; }
+  .toc { background: #f0f4fa; border: 1px solid #d4e0f0; padding: 12px 18px; border-radius: 4px; margin: 16px 0 30px 0; }
+  .toc ul { margin: 4px 0 0 0; padding-left: 20px; }
+  .toc li { margin: 2px 0; }
+  .toc a { color: #1a4d8f; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #ddd; color: #888; font-size: 9pt; text-align: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Python Fundamentals — Section 2</h1>
+  <div class="subtitle">Lambdas, map, filter, sorted with key · Reference Document · Part of #69 Python Fundamentals</div>
+</header>
+
+<div class="toc">
+  <strong>Contents</strong>
+  <ul>
+    <li><a href="#lambda">Lambdas — what they are, syntax, when to use</a></li>
+    <li><a href="#lambda-limits">Lambda limitations</a></li>
+    <li><a href="#map">map()</a></li>
+    <li><a href="#filter">filter()</a></li>
+    <li><a href="#sorted">sorted() with key</a></li>
+    <li><a href="#sort-objects">Sorting dicts and objects (itemgetter, attrgetter)</a></li>
+    <li><a href="#multi-key">Multi-key sorting</a></li>
+    <li><a href="#reduce">reduce() (less common)</a></li>
+    <li><a href="#decision">When to use what — decision matrix</a></li>
+    <li><a href="#patterns">Common agentic code patterns</a></li>
+    <li><a href="#cheat">One-page cheatsheet</a></li>
+  </ul>
+</div>
+
+<h2 id="lambda">Lambdas — Anonymous Functions</h2>
+
+<p>A <strong>lambda</strong> is a tiny one-line function with no name. Two forms produce the exact same function:</p>
+
+<pre><code>def square(x):
+    return x * x
+
+square_lambda = lambda x: x * x
+
+square(5)         # 25
+square_lambda(5)  # 25</code></pre>
+
+<h3>Syntax</h3>
+<pre><code>lambda &lt;args&gt;: &lt;single expression&gt;
+
+# Examples
+lambda x: x * 2
+lambda a, b: a + b
+lambda name, prefix="Hello": f"{prefix}, {name}"
+lambda x: x if x >= 0 else -x      # ternary OK</code></pre>
+
+<div class="tip">
+  <div class="tip-title">When to use lambda vs def</div>
+  <ul>
+    <li><strong>Use lambda</strong> when passing a tiny one-shot function as an argument: <code>sorted(x, key=lambda t: t.price)</code></li>
+    <li><strong>Use def</strong> when the function has a name worth referring to, has multiple lines, or is used in more than one place</li>
+  </ul>
+</div>
+
+<h2 id="lambda-limits">Lambda Limitations</h2>
+
+<table>
+  <thead><tr><th>Allowed</th><th>Not allowed</th></tr></thead>
+  <tbody>
+    <tr><td>One expression</td><td>Statements (assign, loop, print, return)</td></tr>
+    <tr><td>Conditional expression (<code>x if cond else y</code>)</td><td>Multi-line bodies</td></tr>
+    <tr><td>Default arguments</td><td>Annotations easily</td></tr>
+  </tbody>
+</table>
+
+<pre><code># ❌ SyntaxError — has multiple statements
+bad = lambda x: print(x); return x
+
+# ❌ SyntaxError — assignment is a statement
+bad = lambda x: y = x * 2
+
+# ✅ Conditional expression is fine
+classify = lambda price: "expensive" if price > 200 else "cheap"</code></pre>
+
+<h2 id="map">map(func, iterable)</h2>
+
+<p>Apply a function to every item in an iterable. Returns an <strong>iterator</strong> (lazy), not a list.</p>
+
+<pre><code>prices = [100, 200, 300]
+
+doubled_iter = map(lambda x: x * 2, prices)
+print(doubled_iter)         # &lt;map object at 0x...&gt;   ← iterator, not list
+print(list(doubled_iter))   # [200, 400, 600]         ← consume to see</code></pre>
+
+<h3>Map over multiple iterables</h3>
+<pre><code>a = [1, 2, 3]
+b = [10, 20, 30]
+list(map(lambda x, y: x + y, a, b))   # [11, 22, 33]</code></pre>
+
+<div class="gotcha">
+  <div class="gotcha-title">⚠️ map iterators are exhausted after one pass</div>
+  <pre><code>m = map(lambda x: x * 2, [1, 2, 3])
+list(m)        # [2, 4, 6]
+list(m)        # []  ← already consumed</code></pre>
+</div>
+
+<h2 id="filter">filter(func, iterable)</h2>
+
+<p>Keep only items where <code>func(item)</code> returns truthy. Returns an <strong>iterator</strong>.</p>
+
+<pre><code>prices = [100, 250, 175, 300, 50]
+expensive = list(filter(lambda x: x > 200, prices))
+print(expensive)   # [250, 300]</code></pre>
+
+<h3>filter(None, iterable) — drop falsy values</h3>
+<pre><code>mixed = [1, 0, "hello", "", None, [1], []]
+list(filter(None, mixed))   # [1, 'hello', [1]]</code></pre>
+
+<p>Removes anything Python considers falsy: <code>0</code>, <code>""</code>, <code>None</code>, <code>[]</code>, <code>{}</code>, <code>False</code>.</p>
+
+<h2 id="sorted">sorted(iterable, key=…, reverse=…)</h2>
+
+<p>Returns a NEW sorted list. Doesn't mutate the input.</p>
+
+<pre><code>nums = [3, 1, 4, 1, 5, 9, 2, 6]
+sorted(nums)                  # [1, 1, 2, 3, 4, 5, 6, 9]
+sorted(nums, reverse=True)    # [9, 6, 5, 4, 3, 2, 1, 1]
+
+# Strings — alphabetical by default
+sorted(["MSFT", "AAPL", "GOOGL"])    # ['AAPL', 'GOOGL', 'MSFT']
+
+# Sort by length using key
+sorted(["MSFT", "AAPL", "GOOGL"], key=len)    # ['MSFT', 'AAPL', 'GOOGL'] (4,4,5)</code></pre>
+
+<h3>list.sort() vs sorted()</h3>
+<table>
+  <thead><tr><th>Function</th><th>Mutates?</th><th>Returns?</th></tr></thead>
+  <tbody>
+    <tr><td><code>x.sort()</code></td><td>Yes — modifies x</td><td><code>None</code></td></tr>
+    <tr><td><code>sorted(x)</code></td><td>No — leaves x alone</td><td>New sorted list</td></tr>
+  </tbody>
+</table>
+
+<div class="danger">
+  <div class="danger-title">🚨 list.sort() returns None</div>
+  <pre><code>tickers = ["MSFT", "AAPL"].sort()    # ❌ tickers is None!
+
+# ✅ Either:
+sorted_tickers = sorted(["MSFT", "AAPL"])
+# Or:
+tickers = ["MSFT", "AAPL"]
+tickers.sort()     # mutate, then use tickers</code></pre>
+</div>
+
+<h2 id="sort-objects">Sorting Dicts and Objects</h2>
+
+<h3>Sort list of tuples by element index</h3>
+<pre><code>prices = [("AAPL", 150), ("GOOGL", 2800), ("MSFT", 300)]
+sorted(prices, key=lambda x: x[1])
+# [('AAPL', 150), ('MSFT', 300), ('GOOGL', 2800)]
+
+# Same with operator.itemgetter (slightly faster, more idiomatic)
+from operator import itemgetter
+sorted(prices, key=itemgetter(1))</code></pre>
+
+<h3>Sort list of dicts by key</h3>
+<pre><code>portfolio = [
+    {"ticker": "AAPL", "price": 150, "pe": 34},
+    {"ticker": "GOOGL", "price": 2800, "pe": 28},
+    {"ticker": "MSFT", "price": 300, "pe": 35},
+]
+
+sorted(portfolio, key=lambda x: x["pe"])
+# Sorted by PE ascending</code></pre>
+
+<h3>Sort list of objects by attribute</h3>
+<pre><code>from operator import attrgetter
+
+class Stock:
+    def __init__(self, ticker, price): ...
+
+stocks = [Stock("AAPL", 150), Stock("GOOGL", 2800)]
+
+sorted(stocks, key=lambda s: s.price)        # via lambda
+sorted(stocks, key=attrgetter("price"))      # via attrgetter (cleaner)</code></pre>
+
+<h2 id="multi-key">Multi-Key Sorting</h2>
+
+<p>Return a <strong>tuple</strong> from the key function. Python compares tuples lexicographically — first element, then second, etc.</p>
+
+<pre><code># Sort by PE ascending, then by price ascending (within same PE)
+sorted(portfolio, key=lambda x: (x["pe"], x["price"]))</code></pre>
+
+<h3>Mixed asc/desc — negate numeric fields</h3>
+<pre><code># Sort by PE ascending, then price DESCENDING
+sorted(portfolio, key=lambda x: (x["pe"], -x["price"]))
+
+# For non-numeric descending, sort twice (Python sort is stable):
+result = sorted(portfolio, key=lambda x: x["price"], reverse=True)
+result = sorted(result, key=lambda x: x["pe"])
+# Final: PE asc, with price desc within each PE</code></pre>
+
+<div class="tip">
+  <div class="tip-title">Stable sort matters</div>
+  Python's <code>sorted</code> is <strong>stable</strong> — items with equal keys keep their original order. That's why sorting twice (last-key-first) gives correct multi-key results when negation isn't possible.
+</div>
+
+<h2 id="reduce">reduce() — less common</h2>
+
+<pre><code>from functools import reduce
+
+nums = [1, 2, 3, 4, 5]
+
+reduce(lambda acc, x: acc + x, nums)         # 15  (sum)
+reduce(lambda acc, x: acc * x, nums)         # 120 (product)
+reduce(lambda acc, x: acc + x, nums, 100)    # 115 (with initial value)</code></pre>
+
+<div class="tip">
+  <div class="tip-title">Use builtins instead when possible</div>
+  <code>sum(nums)</code>, <code>max(nums)</code>, <code>min(nums)</code>, <code>any(nums)</code>, <code>all(nums)</code> are clearer than <code>reduce</code> for those operations.
+</div>
+
+<h2 id="decision">When to Use What — Decision Matrix</h2>
+
+<table>
+  <thead><tr><th>Need</th><th>Use</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Transform every item</td><td><code>[expr for x in items]</code></td><td>Comprehension is more readable than <code>map</code></td></tr>
+    <tr><td>Filter items</td><td><code>[x for x in items if cond]</code></td><td>Comprehension is clearer than <code>filter</code></td></tr>
+    <tr><td>Transform + filter</td><td><code>[expr for x in items if cond]</code></td><td>One pass, idiomatic</td></tr>
+    <tr><td>Sort by computed key</td><td><code>sorted(items, key=lambda)</code></td><td>This is the canonical use of lambda</td></tr>
+    <tr><td>Sort by attribute/index</td><td><code>itemgetter</code> / <code>attrgetter</code></td><td>Faster than lambda, more readable</td></tr>
+    <tr><td>One-shot anonymous func</td><td>lambda</td><td>Saves a line vs <code>def</code></td></tr>
+    <tr><td>Sum / max / min / any / all</td><td>Builtin</td><td>Clearer than reduce</td></tr>
+    <tr><td>Pass function as callback</td><td>lambda or named function</td><td>Both fine; named is clearer for complex logic</td></tr>
+  </tbody>
+</table>
+
+<h2 id="patterns">Common Agentic Code Patterns</h2>
+
+<h3>Filter LLM response for tool_use blocks</h3>
+<pre><code>tool_calls = [b for b in response.content if b.type == "tool_use"]</code></pre>
+
+<h3>Sort search results by relevance</h3>
+<pre><code>top = sorted(search_results, key=lambda x: x["score"], reverse=True)[:5]</code></pre>
+
+<h3>Sort tools by name for consistent display</h3>
+<pre><code>from operator import attrgetter
+sorted_tools = sorted(mcp_tools, key=attrgetter("name"))</code></pre>
+
+<h3>Convert MCP tool list to Claude format</h3>
+<pre><code>claude_tools = [
+    {"name": t.name, "description": t.description, "input_schema": t.inputSchema}
+    for t in tools_result.tools
+]</code></pre>
+
+<h3>Sort messages by timestamp, prioritizing system messages</h3>
+<pre><code># role priority: system=0, user=1, assistant=2 (system first within same time)
+priority = {"system": 0, "user": 1, "assistant": 2}
+sorted_messages = sorted(messages, key=lambda m: (m["timestamp"], priority[m["role"]]))</code></pre>
+
+<h2 id="cheat">One-Page Cheatsheet</h2>
+
+<table>
+  <thead><tr><th>Operation</th><th>Syntax</th><th>Returns</th></tr></thead>
+  <tbody>
+    <tr><td>Lambda</td><td><code>lambda x: x * 2</code></td><td>Function</td></tr>
+    <tr><td>Map</td><td><code>map(func, iter)</code></td><td>Iterator (wrap with <code>list()</code>)</td></tr>
+    <tr><td>Filter</td><td><code>filter(func, iter)</code></td><td>Iterator</td></tr>
+    <tr><td>Filter falsy</td><td><code>filter(None, iter)</code></td><td>Iterator without 0/""/None/[]/{}</td></tr>
+    <tr><td>Sort new list</td><td><code>sorted(iter, key=…, reverse=…)</code></td><td>New list (input unchanged)</td></tr>
+    <tr><td>Sort in place</td><td><code>list.sort(key=…, reverse=…)</code></td><td><code>None</code> (mutates list)</td></tr>
+    <tr><td>Sort by tuple key</td><td><code>sorted(x, key=itemgetter(1))</code></td><td>New list</td></tr>
+    <tr><td>Sort by attribute</td><td><code>sorted(x, key=attrgetter("price"))</code></td><td>New list</td></tr>
+    <tr><td>Multi-key sort</td><td><code>sorted(x, key=lambda x: (x.a, x.b))</code></td><td>New list</td></tr>
+    <tr><td>Reduce</td><td><code>reduce(func, iter, initial)</code></td><td>Single value</td></tr>
+  </tbody>
+</table>
+
+<footer>
+  Section 2 of #69 Python Fundamentals · Generated 2026-04-29 · See <code>p0_fundamentals/02_lambdas_map_filter_sorted.py</code> for runnable examples
+</footer>
+
+</body>
+</html>
