@@ -103,7 +103,35 @@
     <li><a href="#generators">Generators — yield</a></li>
     <li><a href="#print-iterator">Why print(list) Shows Contents but print(map) Doesn't</a></li>
   </ul>
-  <strong>PART 5 — Classes & Objects</strong>
+  <strong>PART 5 — Variable Arguments, Tuples & Closures</strong>
+  <ul>
+    <li><a href="#tuples">Tuples — The Immutable Sequence</a></li>
+    <li><a href="#args-summary">*args and **kwargs — 30-Second Summary</a></li>
+    <li><a href="#args-pack">*args (pack positional args into a tuple)</a></li>
+    <li><a href="#args-unpack">*list at the call site (unpack into args)</a></li>
+    <li><a href="#kwargs-pack">**kwargs (pack keyword args into a dict)</a></li>
+    <li><a href="#kwargs-unpack">**dict at the call site (unpack into kwargs)</a></li>
+    <li><a href="#args-combining">Combining everything + ordering rules</a></li>
+    <li><a href="#args-gotchas">Common gotchas</a></li>
+    <li><a href="#names-vs-objects">Names vs Objects — The Mental Model That Unlocks Everything</a></li>
+    <li><a href="#closures">Closures — Functions That Remember</a></li>
+    <li><a href="#decorator-preview">Decorator Preview (built on closures)</a></li>
+  </ul>
+  <strong>PART 6 — Decorators</strong>
+  <ul>
+    <li><a href="#decorator-what">What a Decorator Is (and the @ Sugar)</a></li>
+    <li><a href="#decorator-basic">Basic Wrapper Pattern</a></li>
+    <li><a href="#decorator-wraps">Always Use @functools.wraps</a></li>
+    <li><a href="#decorator-args">Parameterized Decorators (3-Layer Pattern)</a></li>
+    <li><a href="#decorator-builtins">Common Built-in Decorators</a></li>
+    <li><a href="#decorator-property">@property Deep Dive</a></li>
+    <li><a href="#decorator-cache">@cache for Memoization</a></li>
+    <li><a href="#decorator-dataclass">@dataclass — Boilerplate Killer</a></li>
+    <li><a href="#decorator-stacking">Stacking Decorators — Order Matters</a></li>
+    <li><a href="#decorator-registry">Registry Pattern (How MCP/CrewAI Work)</a></li>
+    <li><a href="#decorator-gotchas">Common Gotchas</a></li>
+  </ul>
+  <strong>PART 7 — Classes & Objects</strong>
   <ul>
     <li><a href="#three-method-types">The 3 Method Types — Instance, Class, Static</a></li>
     <li><a href="#staticmethod">@staticmethod</a></li>
@@ -114,7 +142,7 @@
     <li><a href="#no-overloading">Why Python Doesn't Support Method Overloading</a></li>
     <li><a href="#cpp-comparison">Quick C++ Comparison Table</a></li>
   </ul>
-  <strong>PART 6 — Dunder Methods (Python's Data Model)</strong>
+  <strong>PART 8 — Dunder Methods (Python's Data Model)</strong>
   <ul>
     <li><a href="#what-dunders">What Dunders Are</a></li>
     <li><a href="#builtin-mapping">How Built-ins Map to Dunders</a></li>
@@ -569,21 +597,57 @@ nums.append(7)          # mutated — same list as above, now contains [4, 5, 6,
 
 <h3>Why this matters — function argument behavior</h3>
 
-<pre><code>def modify(items):
-    items.append(99)        # mutates the caller's list
+<p>The whole point of distinguishing rebinding from mutating becomes obvious when you call functions:</p>
 
-nums = [1, 2, 3]
-modify(nums)
-print(nums)                  # [1, 2, 3, 99]  ← caller's list mutated!
+<pre><code>def rebind(a):
+    a = 3                # REBIND local `a` — caller is unaffected
 
-def modify_str(s):
-    s += "!"                 # rebinds local variable — caller's s unchanged
+b = 4
+rebind(b)
+print(b)                  # 4    — unchanged
 
-text = "hello"
-modify_str(text)
-print(text)                  # 'hello'  — unchanged</code></pre>
 
-<p>Mutable arguments can be modified by the function and the caller sees the change. Immutable arguments can't be — modifications inside the function only affect the local binding.</p>
+def mutate(a):
+    a[2] = 4             # MUTATE the list — same object, caller sees it
+
+b = [1, 2, 3]
+mutate(b)
+print(b)                  # [1, 2, 4]   — changed</code></pre>
+
+<table>
+  <thead><tr><th>Operation</th><th>What it does</th><th>Affects caller?</th></tr></thead>
+  <tbody>
+    <tr><td><code>a = ...</code> (rebind name)</td><td>Local name now points to new object</td><td>❌ No</td></tr>
+    <tr><td><code>a[i] = ...</code> (mutate via index)</td><td>Modifies the shared object</td><td>✅ Yes</td></tr>
+    <tr><td><code>a.append(...)</code> (mutate via method)</td><td>Modifies the shared object</td><td>✅ Yes</td></tr>
+    <tr><td><code>a.attr = ...</code> (mutate attribute)</td><td>Modifies the shared object</td><td>✅ Yes</td></tr>
+  </tbody>
+</table>
+
+<div class="info">
+  <div class="info-title">The universal rule (memorize this)</div>
+  <p><strong>Rebinding (`x = ...`) is local. Mutating (`x[i] = ...`, `x.append()`, `x.attr = ...`) is shared.</strong></p>
+  <p>This rule applies to ALL types — mutable or immutable. The reason immutable types "feel safe" is just that mutation isn't possible on them — you can't accidentally do it. Rebinding is always local.</p>
+</div>
+
+<h3>The killer test — rebind vs mutate on a mutable type</h3>
+<pre><code>def fake_mutate(a):
+    a = [99, 99, 99]    # REBIND local a to a new list — NOT mutating original
+
+b = [1, 2, 3]
+fake_mutate(b)
+print(b)                  # [1, 2, 3]   — caller's b unchanged
+
+# vs
+
+def real_mutate(a):
+    a.append(99)         # MUTATE the original list
+
+b = [1, 2, 3]
+real_mutate(b)
+print(b)                  # [1, 2, 3, 99]   — caller sees the change</code></pre>
+
+<p>Same type (list — mutable). Different operation. Different result for the caller.</p>
 
 <h2 id="mutability-gotchas">Mutability Gotchas</h2>
 
@@ -1005,7 +1069,749 @@ print((x for x in [1, 2, 3]))                # &lt;generator object at 0x...&gt;
 <p>To see contents — wrap with <code>list(...)</code> to materialize (this exhausts the iterator).</p>
 
 <!-- ====================================================================== -->
-<div class="part">PART 5 — Classes & Objects</div>
+<!-- ====================================================================== -->
+<div class="part">PART 5 — Variable Arguments, Tuples & Closures</div>
+
+<h2 id="tuples">Tuples — The Immutable Sequence</h2>
+
+<p>A tuple is like a list but <strong>frozen</strong> — you can read items but not add, remove, or change them.</p>
+
+<pre><code>t = (1, 2, 3)
+print(t[0])                 # 1     — index access works
+print(len(t))               # 3
+print(t[1:])                # (2, 3) — slicing works
+
+t[0] = 99                   # ❌ TypeError — tuples are immutable
+t.append(4)                 # ❌ AttributeError — no such method</code></pre>
+
+<h3>Tuple vs List</h3>
+<table>
+  <thead><tr><th></th><th>List</th><th>Tuple</th></tr></thead>
+  <tbody>
+    <tr><td>Syntax</td><td><code>[1, 2, 3]</code></td><td><code>(1, 2, 3)</code></td></tr>
+    <tr><td>Mutable</td><td>✅ Yes</td><td>❌ No</td></tr>
+    <tr><td>Methods</td><td><code>append</code>, <code>pop</code>, <code>sort</code>, etc.</td><td>Just <code>count()</code> and <code>index()</code></td></tr>
+    <tr><td>Hashable (dict key?)</td><td>❌ No</td><td>✅ Yes (if items hashable)</td></tr>
+    <tr><td>Use for</td><td>Things that change</td><td>Fixed records, multiple return values</td></tr>
+  </tbody>
+</table>
+
+<h3>The comma — not parens — is what makes a tuple</h3>
+<pre><code>not_a_tuple = (1)         # this is just the int 1 in parens
+real_tuple = (1,)          # ← the comma makes it a tuple
+real_tuple_too = 1,        # also a tuple — comma is what matters
+
+print(type(not_a_tuple))   # <class 'int'>
+print(type(real_tuple))    # <class 'tuple'></code></pre>
+
+<h3>Where tuples appear in agentic code</h3>
+<pre><code># Multiple return values
+def split_ticker(s):
+    ticker, price = s.split(":")
+    return ticker, float(price)        # comma = tuple
+
+ticker, price = split_ticker("AAPL:150")  # unpack directly
+
+# Dict items are tuples
+for pair in prices.items():
+    print(pair)             # ('AAPL', 150)  ← each is a tuple
+
+for k, v in prices.items(): # unpack the tuple in the loop
+    print(k, v)
+
+# Compound dict keys
+revenue = {("AAPL", "Q1"): 124_000_000_000, ("AAPL", "Q2"): 96_000_000_000}
+
+# Multi-key sort
+sorted(stocks, key=lambda x: (x.pe, x.price))    # tuple compared lexicographically
+
+# P6 MCP unpacking
+async with streamablehttp_client(SERVER_URL) as (read, write, _):
+    #                                            ↑ tuple unpacked into 3 vars</code></pre>
+
+<h2 id="args-summary">*args and **kwargs — 30-Second Summary</h2>
+
+<table>
+  <thead><tr><th>Syntax</th><th>Where</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>*args</code></td><td>Function <strong>def</strong></td><td>Pack extra positional args into a tuple</td></tr>
+    <tr><td><code>**kwargs</code></td><td>Function <strong>def</strong></td><td>Pack extra keyword args into a dict</td></tr>
+    <tr><td><code>*list</code></td><td>Function <strong>call</strong></td><td>Unpack a list/tuple into positional args</td></tr>
+    <tr><td><code>**dict</code></td><td>Function <strong>call</strong></td><td>Unpack a dict into keyword args</td></tr>
+  </tbody>
+</table>
+
+<p>Same <code>*</code> / <code>**</code> symbols, <strong>opposite directions</strong>:</p>
+<ul>
+  <li>In a <code>def</code> → packing things up</li>
+  <li>In a call → unpacking things out</li>
+</ul>
+
+<p>The names <code>args</code> and <code>kwargs</code> are <strong>convention only</strong> — you can call them anything. The <code>*</code> and <code>**</code> are what matter.</p>
+
+<h2 id="args-pack">*args (pack positional args into a tuple)</h2>
+
+<pre><code>def add_all(*nums):           # `nums` is a tuple of all extras
+    return sum(nums)
+
+add_all(1, 2, 3)              # 6   — nums = (1, 2, 3)
+add_all(1, 2, 3, 4, 5)        # 15  — nums = (1, 2, 3, 4, 5)
+add_all()                      # 0   — nums = ()</code></pre>
+
+<h3>Mix with regular params</h3>
+<pre><code>def greet(prefix, *names):
+    for name in names:
+        print(f"{prefix}, {name}")
+
+greet("Hello", "Rajesh", "Anna", "Carlos")
+# prefix = "Hello"
+# names = ("Rajesh", "Anna", "Carlos")</code></pre>
+
+<div class="info">
+  <div class="info-title">Why a tuple (and not a list)?</div>
+  <p>Function arguments are conceptually a <strong>frozen snapshot</strong> of what the caller passed. Tuples enforce that — you can't accidentally mutate <code>args</code>. Also: tuples are slightly faster, lighter, and hashable (enables memoization). If you need a mutable working copy, convert: <code>nums = list(nums)</code>.</p>
+</div>
+
+<h2 id="args-unpack">*list at the call site (unpack into args)</h2>
+
+<p>Same <code>*</code> symbol — opposite job. Spread a list into individual arguments:</p>
+
+<pre><code>def divide(a, b):
+    return a / b
+
+values = [10, 2]
+
+divide(values)        # ❌ TypeError — passes ONE list as `a`, no `b`
+divide(*values)       # ✅ 5.0 — unpacked into divide(10, 2)</code></pre>
+
+<h3>Real example from P6</h3>
+<pre><code>prices = await asyncio.gather(*[get_price(session, t) for t in tickers])
+#                              ↑ unpack list of coroutines into individual args</code></pre>
+
+<h2 id="kwargs-pack">**kwargs (pack keyword args into a dict)</h2>
+
+<pre><code>def make_config(**opts):              # `opts` is a dict
+    return opts
+
+make_config(model="opus", temperature=0.7)
+# {'model': 'opus', 'temperature': 0.7}</code></pre>
+
+<h3>Mix with regular params</h3>
+<pre><code>def call_llm(prompt, **opts):
+    print(f"Prompt: {prompt}")
+    print(f"Options: {opts}")
+
+call_llm("Hello", model="claude-opus-4-7", temperature=0.7)
+# Prompt: Hello
+# Options: {'model': 'claude-opus-4-7', 'temperature': 0.7}</code></pre>
+
+<h2 id="kwargs-unpack">**dict at the call site (unpack into kwargs)</h2>
+
+<pre><code>config = {"model": "claude-opus-4-7", "temperature": 0.7, "max_tokens": 1000}
+
+call_llm("Hello", **config)
+# Same as: call_llm("Hello", model="claude-opus-4-7", temperature=0.7, max_tokens=1000)</code></pre>
+
+<p>This is <strong>the</strong> way you forward dynamically-built configs in agent code.</p>
+
+<h2 id="args-combining">Combining everything + ordering rules</h2>
+
+<pre><code>def super_func(a, b, *args, c, d=10, **kwargs):
+    print(f"a={a}, b={b}, args={args}, c={c}, d={d}, kwargs={kwargs}")
+
+super_func(1, 2, 3, 4, 5, c="REQUIRED", d=99, extra="x")
+# a=1, b=2, args=(3, 4, 5), c='REQUIRED', d=99, kwargs={'extra': 'x'}</code></pre>
+
+<h3>In the function definition, parameters MUST appear in this order:</h3>
+<ol>
+  <li>Regular positional (<code>a</code>, <code>b</code>)</li>
+  <li><code>*args</code></li>
+  <li>Keyword-only args (<code>c</code>, <code>d=10</code>) — anything after <code>*args</code> is keyword-only</li>
+  <li><code>**kwargs</code></li>
+</ol>
+
+<h3>Bare <code>*</code> for keyword-only enforcement</h3>
+<pre><code>def call(prompt, *, model, temperature=0.7):     # `model` is now keyword-only
+    ...
+
+call("Hi", "opus")                # ❌ TypeError — can't pass positionally
+call("Hi", model="opus")          # ✅</code></pre>
+
+<p>The bare <code>*</code> says "stop accepting positional args here" — useful when you want to force callers to be explicit.</p>
+
+<h3>Keyword args at the call site can be in any order</h3>
+<pre><code>def f(a, b, *args, c, **kwargs): ...
+
+# All of these are equivalent — keywords matched by name:
+f(1, 2, 3, 4, c="X", x=99)
+f(1, 2, 3, 4, x=99, c="X")    # reordered — same result</code></pre>
+
+<p><strong>The only ordering rule at the call site:</strong> all positional args MUST come before any keyword args.</p>
+
+<h2 id="args-gotchas">Common gotchas</h2>
+
+<div class="gotcha">
+  <div class="gotcha-title">⚠️ *args only catches positional extras, NOT keyword extras</div>
+  <pre><code>def f(*args):
+    print(args)
+
+f(1, 2, 3)             # ✅ (1, 2, 3)
+f(a=1)                 # ❌ TypeError: f() got unexpected keyword 'a'</code></pre>
+  For keyword extras you need <code>**kwargs</code>. Use both to accept anything: <code>def f(*args, **kwargs)</code>.
+</div>
+
+<div class="gotcha">
+  <div class="gotcha-title">⚠️ Can't double-pass an arg</div>
+  <pre><code>def f(a, b): return a + b
+
+config = {"a": 1, "b": 2}
+f(a=10, **config)      # ❌ TypeError: got multiple values for 'a'</code></pre>
+</div>
+
+<h3>Decorator pattern (the canonical use of *args/**kwargs)</h3>
+<pre><code>def loud(func):
+    def wrapper(*args, **kwargs):              # accept ANY signature
+        print(f">>> Calling {func.__name__}")
+        result = func(*args, **kwargs)         # forward EXACTLY what we got
+        print(f"<<< Done")
+        return result
+    return wrapper
+
+@loud
+def add(x, y): return x + y
+
+@loud
+def greet(name, greeting="Hello"): return f"{greeting}, {name}"
+
+# Same `loud` decorator works for any function signature</code></pre>
+
+<h2 id="names-vs-objects">Names vs Objects — The Mental Model That Unlocks Everything</h2>
+
+<p>Python's variable behavior confuses everyone until they grasp this one thing:</p>
+
+<div class="info">
+  <div class="info-title">The core rule</div>
+  <p><strong>Names point to objects. Variables hold references to objects, not to other variables.</strong></p>
+</div>
+
+<h3>What rebinding actually does</h3>
+<pre><code>a = [1, 2, 3]              # name `a` ──→ list object [1, 2, 3]
+b = a                       # name `b` ──→ same list object
+a = [99]                    # name `a` ──→ NEW list object [99]
+                            # name `b` is UNAFFECTED — still points to original
+
+print(b)                    # [1, 2, 3]</code></pre>
+
+<p>Reassigning <code>a</code> just changed where the name <code>a</code> points. <code>b</code> never knew about <code>a</code> in the first place — they were independent references to the same object.</p>
+
+<h3>What this explains</h3>
+
+<table>
+  <thead><tr><th>Question</th><th>Answer (using the name-vs-object rule)</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Why doesn't <code>a = 3</code> in a function affect the caller's variable?</td>
+      <td>The function rebinds the LOCAL name <code>a</code>. The caller's name still points to the original object.</td>
+    </tr>
+    <tr>
+      <td>Why DOES <code>a[2] = 4</code> in a function affect the caller's list?</td>
+      <td>Because the function and caller both have names pointing to the SAME object. Mutating it via either name shows the change.</td>
+    </tr>
+    <tr>
+      <td>In <code>add = loud(add)</code>, why doesn't <code>func</code> inside <code>loud</code> "follow" <code>add</code>'s reassignment?</td>
+      <td><code>func</code> is bound to the function OBJECT that <code>add</code> was pointing to at call time. Later reassigning <code>add</code> only changes that name — doesn't touch <code>func</code>.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Visual model</h3>
+<pre><code>BEFORE add = loud(add):
+  add ──→ <function-A>     (def add(x,y): return x+y)
+
+DURING loud(add):
+  loud's `func` ──→ <function-A>   (parameter receives the OBJECT, not the name)
+  loud creates <function-B> (the wrapper)
+  loud returns <function-B>
+
+AFTER add = loud(add):
+  add ──→ <function-B>     (the wrapper)
+              │
+              └── closure: func ──→ <function-A>    (original — STILL ALIVE)</code></pre>
+
+<p>function-A is now <strong>nameless</strong> in the global scope — but kept alive because the wrapper's closure references it. This is the foundation for understanding closures.</p>
+
+<h2 id="closures">Closures — Functions That Remember</h2>
+
+<h3>The simple definition</h3>
+
+<p>A <strong>closure</strong> is a function that <strong>remembers values from the scope where it was created</strong> — even after that scope has finished executing.</p>
+
+<h3>The mystery</h3>
+
+<p>Normally, a function's local variables disappear when the function returns:</p>
+<pre><code>def outer():
+    message = "hello"
+    print(message)        # works — we're inside outer
+
+outer()
+print(message)            # ❌ NameError — message died when outer ended</code></pre>
+
+<p>That's normal. Functions clean up after themselves.</p>
+
+<h3>Now the surprise</h3>
+<pre><code>def outer():
+    message = "hello"
+
+    def inner():           # define a function that uses `message`
+        print(message)
+
+    return inner           # give the inner function back
+
+f = outer()                # outer is done — message SHOULD be dead
+f()                        # but inner still works! prints 'hello'</code></pre>
+
+<p><code>outer</code> returned. By the normal rule, <code>message</code> should be gone. But <code>f()</code> prints "hello" — meaning <code>message</code> is somehow STILL ALIVE.</p>
+
+<h3>The answer — Python noticed</h3>
+
+<p>When Python compiled <code>outer</code>, it saw:</p>
+<ul>
+  <li><code>inner</code> is defined inside <code>outer</code></li>
+  <li><code>inner</code> references <code>message</code> (which is <code>outer</code>'s local)</li>
+  <li><code>outer</code> returns <code>inner</code></li>
+</ul>
+
+<p>Python thought: "If I throw <code>message</code> away when <code>outer</code> ends, <code>inner</code> will be broken."</p>
+
+<p>So Python <strong>kept <code>message</code> alive</strong> by attaching it to <code>inner</code>. They get bundled together. That bundle (function + the variables it needs) is the <strong>closure</strong>.</p>
+
+<h3>Inspect the closure directly</h3>
+<pre><code>def outer():
+    message = "hello"
+    def inner():
+        print(message)
+    return inner
+
+f = outer()
+print(f.__closure__)                    # (<cell at 0x...: str object at 0x...>,)
+print(f.__closure__[0].cell_contents)   # 'hello'   ← message captured here!
+f()                                      # 'hello'</code></pre>
+
+<p>You can literally see <code>'hello'</code> packaged inside <code>f</code>. That's where <code>message</code> went — it didn't die, it got attached to <code>inner</code>.</p>
+
+<h3>WITH and WITHOUT — see the difference</h3>
+<pre><code># Case 1 — inner uses message → closure formed → message kept alive
+def outer1():
+    message = "hello"
+    def inner():
+        print(message)
+    return inner
+
+f1 = outer1()
+print(f1.__closure__)      # (<cell at 0x...>,)   ← something captured
+
+# Case 2 — inner doesn't use message → no closure → no need to keep message
+def outer2():
+    message = "hello"
+    def inner():
+        print("just hi")    # doesn't use message
+    return inner
+
+f2 = outer2()
+print(f2.__closure__)      # None   ← nothing captured</code></pre>
+
+<p>Closures are formed only when the inner function actually references something from the enclosing scope.</p>
+
+<h3>Independent closures — each has its own captured state</h3>
+<pre><code>def make_multiplier(factor):
+    def multiply(x):
+        return x * factor       # captures factor
+    return multiply
+
+triple = make_multiplier(3)     # factor=3 captured in this closure
+double = make_multiplier(2)     # factor=2 captured in this closure
+
+triple(10)    # 30  — uses its own captured factor=3
+double(10)    # 20  — uses its own captured factor=2</code></pre>
+
+<p>Each call to <code>make_multiplier</code> creates a new closure with its own <code>factor</code>. They don't interfere.</p>
+
+<h3>The chef analogy</h3>
+<ul>
+  <li><strong>Normal function</strong> = a chef who finishes a shift. Notes, ingredients, everything stays in the kitchen and gets cleaned up.</li>
+  <li><strong>Closure</strong> = a chef who, before going home, packs a special spice they need for a take-home recipe. The kitchen closes, but the chef has the spice with them.</li>
+</ul>
+
+<p><code>outer</code> is the kitchen. <code>message</code> is the spice. <code>inner</code> is the chef. <code>f = outer()</code> → "kitchen closes; chef walks out carrying the spice." <code>f()</code> → "chef makes the recipe at home using the packed spice."</p>
+
+<h3>Why closures matter — without classes or globals</h3>
+
+<p>They let you create functions with built-in memory:</p>
+<pre><code>def make_greeter(name):
+    def greet():
+        print(f"Hi, {name}!")
+    return greet
+
+hi_to_rajesh = make_greeter("Rajesh")
+hi_to_anna = make_greeter("Anna")
+
+hi_to_rajesh()    # 'Hi, Rajesh!'
+hi_to_anna()      # 'Hi, Anna!'</code></pre>
+
+<p>Each <code>greet</code> remembers its own <code>name</code>. No globals. No classes. Just a function carrying its environment.</p>
+
+<h2 id="decorator-preview">Decorator Preview (built on closures)</h2>
+
+<p>Decorators are just closures with a specific shape: they wrap a function with extra behavior.</p>
+
+<pre><code>def loud(func):                         # outer scope: `func` is a parameter
+    def wrapper(*args, **kwargs):       # inner function — closure over `func`
+        print(f">>> Calling {func.__name__}")
+        result = func(*args, **kwargs)
+        print(f"<<< Done")
+        return result
+    return wrapper                      # return inner = closure formed
+
+@loud                                    # syntactic sugar — see below
+def add(x, y): return x + y
+
+# Equivalent without @:
+def add(x, y): return x + y
+add = loud(add)</code></pre>
+
+<p>The <code>@loud</code> line is <strong>identical</strong> to <code>add = loud(add)</code>. The decorator just rebinds the name <code>add</code> to the wrapper. The original add is captured in the wrapper's closure as <code>func</code>.</p>
+
+<div class="info">
+  <div class="info-title">What `add` becomes after `add = loud(add)`</div>
+  <p>The name <code>add</code> now points to the wrapper. The original add function is still alive (captured in the closure as <code>func</code>) but has no other name pointing to it. When you call <code>add(2, 3)</code>, you're really calling <code>wrapper(2, 3)</code>, which internally calls the original via <code>func(2, 3)</code>.</p>
+  <p>Section 6 covers decorators in depth — but the foundation is exactly what you just learned: closures + name rebinding.</p>
+</div>
+
+<!-- ====================================================================== -->
+<!-- ====================================================================== -->
+<div class="part">PART 6 — Decorators</div>
+
+<h2 id="decorator-what">What a Decorator Is (and the @ Sugar)</h2>
+
+<p>A <strong>decorator</strong> is a function that takes a function and returns a new (usually wrapped) function. The <code>@</code> is just syntactic sugar for <code>func = decorator(func)</code>.</p>
+
+<pre><code>@my_decorator
+def greet(): ...
+
+# Identical to:
+def greet(): ...
+greet = my_decorator(greet)</code></pre>
+
+<p>That's the entire mechanism. Decorators build directly on closures (Part 5) — the wrapper is a closure over the original function.</p>
+
+<h2 id="decorator-basic">Basic Wrapper Pattern</h2>
+
+<pre><code>def loud(func):
+    def wrapper(*args, **kwargs):
+        print(f">>> calling {func.__name__}")
+        result = func(*args, **kwargs)
+        print(f"<<< done")
+        return result
+    return wrapper
+
+@loud
+def add(x, y):
+    return x + y
+
+add(2, 3)
+# >>> calling add
+# <<< done
+# returns 5</code></pre>
+
+<p><code>*args, **kwargs</code> makes the wrapper signature-agnostic — works for any wrapped function.</p>
+
+<h2 id="decorator-wraps">Always Use @functools.wraps</h2>
+
+<p>Without <code>@wraps</code>, decoration breaks introspection:</p>
+
+<pre><code>def loud(func):
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
+@loud
+def add(x, y): return x + y
+
+print(add.__name__)      # 'wrapper'   ← lost original name!
+print(add.__doc__)        # None        ← lost docstring</code></pre>
+
+<p><code>add.__name__</code> shows <code>wrapper</code> because that's literally what <code>add</code> is now (we replaced it). Stack traces, debuggers, and frameworks (FastAPI, Pydantic) get confused.</p>
+
+<h3>The fix — @functools.wraps copies metadata onto the wrapper</h3>
+
+<pre><code>from functools import wraps
+
+def loud(func):
+    @wraps(func)                      # ← copy func's name/doc onto wrapper
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
+@loud
+def add(x, y):
+    """Adds two numbers."""
+    return x + y
+
+print(add.__name__)      # 'add'              ✅ preserved
+print(add.__doc__)        # 'Adds two numbers.' ✅ preserved</code></pre>
+
+<div class="tip">
+  <div class="tip-title">Rule</div>
+  Every decorator you write should use <code>@functools.wraps(func)</code> on its wrapper. No exceptions.
+</div>
+
+<h2 id="decorator-args">Parameterized Decorators (3-Layer Pattern)</h2>
+
+<p>What if the decorator needs configuration? Like <code>@retry(max_attempts=3)</code>?</p>
+
+<pre><code>from functools import wraps
+
+def retry(max_attempts):              # LAYER 1: takes the CONFIG
+    def decorator(func):              # LAYER 2: takes the FUNCTION
+        @wraps(func)
+        def wrapper(*args, **kwargs): # LAYER 3: the actual wrapper
+            for attempt in range(max_attempts):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    print(f"Attempt {attempt+1} failed: {e}")
+            raise
+        return wrapper
+    return decorator
+
+@retry(max_attempts=3)
+def call_llm(prompt):
+    return client.messages.create(...)</code></pre>
+
+<h3>How @retry(max_attempts=3) actually unfolds</h3>
+
+<pre><code># This:
+@retry(max_attempts=3)
+def call_llm(prompt): ...
+
+# Is equivalent to:
+def call_llm(prompt): ...
+call_llm = retry(max_attempts=3)(call_llm)
+#          └─────────────────────┘
+#          this CALL returns `decorator`
+#                                ↑
+#                         then this is called with call_llm,
+#                         returning the final wrapper</code></pre>
+
+<h3>Three layers — three jobs</h3>
+
+<table>
+  <thead><tr><th>Layer</th><th>Receives</th><th>When it runs</th></tr></thead>
+  <tbody>
+    <tr><td>1 (<code>retry</code>)</td><td>Config (<code>max_attempts</code>)</td><td>When <code>@retry(...)</code> is parsed (decoration time)</td></tr>
+    <tr><td>2 (<code>decorator</code>)</td><td>The function (<code>func</code>)</td><td>Immediately after layer 1 returns</td></tr>
+    <tr><td>3 (<code>wrapper</code>)</td><td>Call args (<code>*args, **kwargs</code>)</td><td>Every time the decorated function is called</td></tr>
+  </tbody>
+</table>
+
+<div class="info">
+  <div class="info-title">Why the wrapper can't take max_attempts directly</div>
+  <p>If <code>max_attempts</code> were a wrapper parameter, every caller would have to pass it: <code>call_llm("Hello", max_attempts=3)</code>. The wrapper's signature must match the original function's signature so callers don't need to know about the decoration. The outer layer "bakes in" the config via closure — capture once at decoration time, use forever.</p>
+</div>
+
+<h3>Closure capture</h3>
+
+<p>When <code>@retry(max_attempts=3)</code> runs:</p>
+<ol>
+  <li><code>retry(3)</code> runs → <code>max_attempts = 3</code> in retry's scope</li>
+  <li><code>decorator</code> is defined and returned</li>
+  <li><code>decorator(call_llm)</code> runs → <code>func = call_llm</code> in decorator's scope</li>
+  <li><code>wrapper</code> is defined and returned</li>
+  <li><code>wrapper</code>'s closure captures BOTH <code>max_attempts</code> AND <code>func</code></li>
+</ol>
+
+<p>Every wrapper call pulls both values from its closure — frozen at decoration time.</p>
+
+<h2 id="decorator-builtins">Common Built-in Decorators</h2>
+
+<table>
+  <thead><tr><th>Decorator</th><th>What it does</th><th>Example</th></tr></thead>
+  <tbody>
+    <tr><td><code>@staticmethod</code></td><td>No <code>self</code> / <code>cls</code></td><td>Utility methods on classes</td></tr>
+    <tr><td><code>@classmethod</code></td><td>Auto-pass <code>cls</code></td><td>Factory methods</td></tr>
+    <tr><td><code>@property</code></td><td>Method that looks like an attribute</td><td><code>obj.x</code> instead of <code>obj.x()</code></td></tr>
+    <tr><td><code>@functools.cache</code> / <code>@lru_cache</code></td><td>Memoize results</td><td>Cache expensive function calls</td></tr>
+    <tr><td><code>@dataclass</code></td><td>Auto-generate <code>__init__</code>, <code>__repr__</code>, <code>__eq__</code></td><td>Replace boilerplate</td></tr>
+    <tr><td><code>@abstractmethod</code></td><td>Mark as required-to-override</td><td>Abstract base classes</td></tr>
+  </tbody>
+</table>
+
+<h2 id="decorator-property">@property Deep Dive</h2>
+
+<p>Make a method behave like an attribute — read it without parens, intercept assignment with a setter:</p>
+
+<pre><code>class Stock:
+    def __init__(self, ticker, price):
+        self.ticker = ticker
+        self._price = price
+
+    @property
+    def price(self):              # called like an attribute, NOT a method
+        return self._price
+
+    @price.setter
+    def price(self, value):
+        if value < 0:
+            raise ValueError("Price must be positive")
+        self._price = value
+
+s = Stock("AAPL", 150)
+print(s.price)        # 150       — looks like an attribute, runs the method
+s.price = 200         # calls the setter, validates
+s.price = -10         # ❌ ValueError</code></pre>
+
+<p>Use <code>@property</code> when you want validation or computed values without changing the calling syntax.</p>
+
+<h2 id="decorator-cache">@cache for Memoization</h2>
+
+<pre><code>from functools import cache
+
+@cache
+def fibonacci(n):
+    if n < 2: return n
+    return fibonacci(n-1) + fibonacci(n-2)
+
+fibonacci(50)         # instant — cached
+fibonacci(50)         # cache hit — no recomputation</code></pre>
+
+<p><code>@cache</code> automatically remembers return values keyed by arguments. Args must be hashable (tuples ok, lists not). For bounded cache: <code>@lru_cache(maxsize=128)</code>.</p>
+
+<h2 id="decorator-dataclass">@dataclass — Boilerplate Killer</h2>
+
+<pre><code>from dataclasses import dataclass
+
+@dataclass
+class Stock:
+    ticker: str
+    price: float = 0.0
+
+s = Stock(ticker="AAPL", price=150)
+print(s)              # Stock(ticker='AAPL', price=150)  ← __repr__ auto-generated
+print(s == Stock(ticker="AAPL", price=150))   # True ← __eq__ auto-generated</code></pre>
+
+<p><code>@dataclass</code> rewrites the class to add <code>__init__</code>, <code>__repr__</code>, <code>__eq__</code> automatically.</p>
+
+<h2 id="decorator-stacking">Stacking Decorators — Order Matters</h2>
+
+<pre><code>@upper          # outer — runs LAST on the result
+@exclaim        # inner — runs FIRST on the result
+def greet(name):
+    return f"hi {name}"
+
+# Equivalent to:
+greet = upper(exclaim(greet))</code></pre>
+
+<p>Python applies decorators <strong>bottom-up</strong>. The closest decorator to the <code>def</code> runs first; the outermost runs last (and wraps everything below it).</p>
+
+<h3>Trace through the example</h3>
+<pre><code>greet("rajesh")
+   ↓
+upper(exclaim_wrapped_greet)("rajesh")
+   ↓
+exclaim_wrapped_greet("rajesh") returns "hi rajesh!"
+   ↓
+upper wraps that → "HI RAJESH!"</code></pre>
+
+<h2 id="decorator-registry">Registry Pattern (How MCP/CrewAI Work)</h2>
+
+<p>Decorators can have side effects beyond wrapping — they often <strong>register</strong> functions in a global dict at decoration time:</p>
+
+<pre><code>TOOLS = {}                                # global registry
+
+def tool(name):
+    def decorator(func):
+        TOOLS[name] = func                # ← side effect: register
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+@tool("get_price")
+def get_stock_price(ticker):
+    return f"{ticker}: $150"
+
+@tool("get_news")
+def get_news_sentiment(ticker):
+    return f"{ticker}: positive"
+
+# After both decorations:
+# TOOLS = {
+#     'get_price': &lt;function get_stock_price&gt;,
+#     'get_news':  &lt;function get_news_sentiment&gt;,
+# }
+
+# Dispatch by string name
+TOOLS["get_price"]("AAPL")    # 'AAPL: $150'</code></pre>
+
+<p>This is exactly how:</p>
+<ul>
+  <li><code>@mcp.tool()</code> registers tools with the MCP server</li>
+  <li><code>@app.post("/path")</code> registers FastAPI routes</li>
+  <li><code>@tool</code> in CrewAI registers tools with the agent</li>
+</ul>
+
+<p>The decorator builds a registry as a side effect — every <code>@tool(...)</code> line adds another entry. By the time your module finishes loading, the registry knows about every decorated function.</p>
+
+<h2 id="decorator-gotchas">Common Gotchas</h2>
+
+<div class="gotcha">
+  <div class="gotcha-title">⚠️ Forgetting parentheses on parameterized decorators</div>
+  <pre><code>@retry              # ❌ — passes the function as max_attempts!
+def f(): ...
+
+@retry()            # ✅ — empty config, returns decorator
+def f(): ...
+
+@retry(max_attempts=3)   # ✅ — proper config
+def f(): ...</code></pre>
+  If a decorator takes args, you MUST call it with <code>()</code> even if you have no args to pass.
+</div>
+
+<div class="gotcha">
+  <div class="gotcha-title">⚠️ Forgetting @wraps</div>
+  Without it, your decorated function's <code>__name__</code>, <code>__doc__</code>, and <code>__module__</code> all show the wrapper's info — breaking debuggers, stack traces, and introspection-based frameworks (FastAPI, Pydantic). Always include <code>@wraps(func)</code> on the wrapper.
+</div>
+
+<div class="gotcha">
+  <div class="gotcha-title">⚠️ Decoration runs at module load time, not at call time</div>
+  <pre><code>def tool(name):
+    print(f"REGISTERING {name}")        # runs ONCE at decoration time
+    def decorator(func):
+        ...
+    return decorator
+
+@tool("get_price")                       # prints "REGISTERING get_price" NOW
+def get_stock_price(ticker): ...</code></pre>
+  Useful for registries; surprising if you expected per-call behavior. Wrapper logic runs per call; decorator setup runs once.
+</div>
+
+<h3>Cheat sheet</h3>
+<table>
+  <thead><tr><th>Need</th><th>Pattern</th></tr></thead>
+  <tbody>
+    <tr><td>Wrap a function with extra behavior</td><td>Standard decorator (2 layers + <code>@wraps</code>)</td></tr>
+    <tr><td>Decorator that takes config</td><td>3-layer decorator (outer call returns the decorator)</td></tr>
+    <tr><td>Make a method look like an attribute</td><td><code>@property</code></td></tr>
+    <tr><td>Cache function results</td><td><code>@functools.cache</code> or <code>@lru_cache</code></td></tr>
+    <tr><td>Auto-generate boring class methods</td><td><code>@dataclass</code></td></tr>
+    <tr><td>Force keyword-only / static / class</td><td><code>@staticmethod</code>, <code>@classmethod</code></td></tr>
+    <tr><td>Register a function for later lookup</td><td>Decorator with side effect — store in module-level dict</td></tr>
+  </tbody>
+</table>
+
+<!-- ====================================================================== -->
+<div class="part">PART 7 — Classes & Objects</div>
 
 <h2 id="three-method-types">The 3 Method Types — Instance, Class, Static</h2>
 
@@ -1310,7 +2116,7 @@ class Stock:
 </table>
 
 <!-- ====================================================================== -->
-<div class="part">PART 6 — Dunder Methods (Python's Data Model)</div>
+<div class="part">PART 8 — Dunder Methods (Python's Data Model)</div>
 
 <h2 id="what-dunders">What Dunders Are</h2>
 

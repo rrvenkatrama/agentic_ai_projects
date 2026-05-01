@@ -1626,3 +1626,114 @@ Files only created when a collection is actually written, not when client is con
 ---
 
 *Last updated: 2026-04-29 — P6 MCP complete; v6 curriculum (P7+P10 expanded, NEW P12); eval frameworks; reliability patterns; framework comparison*
+
+---
+
+## Decorators (#69 Section 4)
+
+### Mental model
+A decorator is **a function that takes a function and returns a (usually wrapped) function**. The `@` is sugar for `func = decorator(func)`.
+
+```python
+@my_decorator
+def greet(): ...
+
+# Identical to:
+def greet(): ...
+greet = my_decorator(greet)
+```
+
+Decorators are closures with a specific shape — the wrapper "captures" the original function via closure.
+
+### Basic 2-layer pattern (no config)
+```python
+from functools import wraps
+
+def loud(func):
+    @wraps(func)                          # always include
+    def wrapper(*args, **kwargs):
+        print(">>> calling")
+        result = func(*args, **kwargs)
+        print("<<< done")
+        return result
+    return wrapper
+
+@loud
+def add(x, y): return x + y
+```
+
+### 3-layer pattern (with config — `@retry(max_attempts=3)`)
+```python
+def retry(max_attempts):              # LAYER 1: receives config
+    def decorator(func):              # LAYER 2: receives the function
+        @wraps(func)
+        def wrapper(*args, **kwargs): # LAYER 3: runs at call time
+            for _ in range(max_attempts):
+                try: return func(*args, **kwargs)
+                except Exception: continue
+            raise
+        return wrapper
+    return decorator
+
+@retry(max_attempts=3)
+def call_llm(prompt): ...
+```
+
+| Layer | Receives | Runs |
+|---|---|---|
+| 1 | Config | Once at decoration |
+| 2 | Function | Immediately after layer 1 |
+| 3 | Call args | Every call |
+
+### Why config goes in layer 1, not the wrapper
+If `max_attempts` were a wrapper parameter, every caller would pass it: `call_llm("Hi", max_attempts=3)`. The wrapper's signature must match the original's so callers don't know about decoration. Outer layer captures config via closure.
+
+### Always use `@functools.wraps(func)`
+Without it, `func.__name__`, `__doc__`, `__module__` show wrapper's info — breaks debuggers, FastAPI, Pydantic.
+
+### Stacking — order is bottom-up
+```python
+@upper          # outer — runs LAST on result
+@exclaim        # inner — runs FIRST on result
+def greet(name): ...
+
+# Equivalent to: greet = upper(exclaim(greet))
+```
+
+### Registry pattern (how MCP/CrewAI/FastAPI work)
+```python
+TOOLS = {}
+
+def tool(name):
+    def decorator(func):
+        TOOLS[name] = func              # ← side effect: register
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+@tool("get_price")
+def get_stock_price(ticker): ...
+```
+
+Decoration runs at module load → builds the registry. Use cases: `@mcp.tool()`, `@app.post("/path")`, `@tool` (CrewAI).
+
+### Common builtins to know
+| Decorator | What it does |
+|---|---|
+| `@staticmethod` | No self/cls binding |
+| `@classmethod` | Auto-pass cls |
+| `@property` | Method that looks like attribute |
+| `@functools.cache` / `@lru_cache` | Memoize |
+| `@dataclass` | Auto-generate `__init__`/`__repr__`/`__eq__` |
+| `@abstractmethod` | Mark required-to-override |
+
+### Top gotchas
+- **Forgetting parens** on parameterized decorators: `@retry` passes the function as `max_attempts`. Always `@retry()` or `@retry(...)`.
+- **Forgetting `@wraps`** breaks introspection.
+- **Decoration runs at module load**, not per call. Wrapper runs per call.
+
+---
+
+*Last updated: 2026-04-30 — Section 4 (Decorators) complete: 3-layer pattern, @wraps, registry pattern (MCP/CrewAI), common builtins*
