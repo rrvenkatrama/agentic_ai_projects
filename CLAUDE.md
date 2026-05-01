@@ -75,6 +75,39 @@ Uses Faker for synthetic customer data. Connects naturally to Onemyle's real wor
 - P11: PyMuPDF page rendering, Claude vision API, base64 image content blocks, multi-modal RAG
 - **P12: AutoGen conversational multi-agent pattern, framework comparison methodology (LoC, latency, cost, debuggability), technical writing for LinkedIn**
 
+## Path B — AI Product Management Track (added 2026-05-01)
+
+Parallel PM artifact track integrated into P7-P12. Modern Agile/Lean approach (no waterfall PMP-style docs).
+Each remaining project produces 1-page artifacts alongside the engineering work.
+
+### Templates (in `p0_pm_templates/`)
+- 1-page PRD · ICP · Eval Plan · GTM Brief · Risk Register · Working Backwards PR · Buy-vs-Build
+
+### PM Artifacts per Project (Kanban tickets #81-#86)
+
+| # | Project | Artifacts |
+|---|---------|-----------|
+| #81 | P7 Customer Health | PRD + ICP + Eval Plan + GTM Brief |
+| #82 | P8 PII Compliance | PRD + ICP + Eval Plan + Risk Register |
+| #83 | P9 Account Memory | PRD + ICP + Eval Plan + GTM Brief + Working Backwards |
+| #84 | P10 AgentPlatform | PRD + ICP + GTM Brief + Risk Register + Working Backwards + Buy-vs-Build |
+| #85 | P11 Contract Analyzer | PRD + ICP + Eval Plan + GTM Brief + Risk Register |
+| #86 | P12 Framework Showdown | Decision Framework + LinkedIn blog (research project, different artifacts) |
+
+### Workflow per project
+1. Finish engineering work (existing tickets)
+2. Open PM ticket (#81+) → copy templates into `pX_xxx/pm/` folder
+3. Fill in artifacts (~1-2 hours per project)
+4. Review for AI-PM-specific framing (eval criteria, cost-per-task, hallucination budget, ICP/anti-ICP rigor)
+5. Mark ticket Done
+
+### Why Path B (not parallel PM curriculum)
+- Same projects → two evidence stacks (engineering portfolio + PM artifacts)
+- Path A (sequential) delays PM positioning by ~3 months
+- Path C (parallel curriculum) doesn't compound — one-shot artifacts vs growing codebase
+- Path B leverages Apple TPM background + Onemyle "Product Consultant" role + RAFL patent
+- Targets unicorn profile: AI Engineer + AI PM (most candidates are one or the other)
+
 ## Training Resources (on-demand, not upfront)
 | Course | Platform | When to use |
 |--------|----------|-------------|
