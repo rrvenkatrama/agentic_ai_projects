@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Product Management — Reference Guide</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    max-width: 1100px; margin: 0 auto; padding: 30px 40px;
+    color: #222; line-height: 1.55; background: #fafbfc;
+  }
+  header { border-bottom: 3px solid #1a4d8f; padding-bottom: 14px; margin-bottom: 24px; }
+  h1 { margin: 0; color: #1a4d8f; font-size: 26pt; }
+  .subtitle { color: #666; font-size: 11pt; margin-top: 6px; }
+  h2 {
+    color: #1a4d8f; border-bottom: 2px solid #1a4d8f; padding-bottom: 6px;
+    margin-top: 50px; font-size: 19pt; padding-top: 10px;
+  }
+  h3 { margin-top: 28px; font-size: 14pt; color: #333; border-bottom: 1px solid #e0e0e0; padding-bottom: 3px; }
+  h4 { font-size: 12pt; color: #555; margin-top: 18px; margin-bottom: 6px; }
+  pre {
+    background: #1e1e1e; color: #d4d4d4; padding: 12px 14px;
+    border-radius: 5px; overflow-x: auto; font-size: 10pt; line-height: 1.4;
+  }
+  code { background: #f1f3f5; padding: 1px 5px; border-radius: 3px; font-size: 90%; color: #c7254e; }
+  pre code { background: none; padding: 0; color: inherit; }
+  table {
+    border-collapse: collapse; width: 100%; margin: 12px 0; background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); font-size: 10.5pt;
+  }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #eee; vertical-align: top; }
+  th { background: #f0f4fa; color: #1a4d8f; font-weight: 600; border-bottom: 2px solid #1a4d8f; }
+  tr:hover { background: #f9fbff; }
+  .gotcha { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+  .gotcha-title { font-weight: 600; color: #856404; margin-bottom: 6px; }
+  .tip { background: #d4edda; border-left: 4px solid #28a745; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+  .tip-title { font-weight: 600; color: #155724; margin-bottom: 6px; }
+  .danger { background: #f8d7da; border-left: 4px solid #dc3545; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+  .danger-title { font-weight: 600; color: #721c24; margin-bottom: 6px; }
+  .info { background: #d1ecf1; border-left: 4px solid #17a2b8; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+  .info-title { font-weight: 600; color: #0c5460; margin-bottom: 6px; }
+  .toc { background: #f0f4fa; border: 1px solid #d4e0f0; padding: 14px 22px; border-radius: 4px; margin: 16px 0 36px 0; }
+  .toc h3 { margin-top: 0; border: none; }
+  .toc ul { margin: 4px 0 0 0; padding-left: 20px; }
+  .toc li { margin: 3px 0; font-size: 10.5pt; }
+  .toc a { color: #1a4d8f; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .part { background: #1a4d8f; color: white; padding: 14px 24px; margin-top: 60px; border-radius: 6px; font-size: 17pt; font-weight: 600; }
+  .term-card {
+    background: white; border-left: 4px solid #1a4d8f; padding: 14px 18px;
+    margin: 14px 0; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .term-card .term { font-weight: 700; color: #1a4d8f; font-size: 12pt; }
+  .term-card .pronounce { color: #888; font-size: 9pt; font-style: italic; }
+  .term-card .definition { margin-top: 4px; }
+  .term-card .example { margin-top: 8px; font-size: 10pt; color: #555; padding-left: 10px; border-left: 2px solid #ddd; }
+  footer { margin-top: 50px; padding-top: 16px; border-top: 1px solid #ddd; color: #888; font-size: 9pt; text-align: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>AI Product Management — Reference Guide</h1>
+  <div class="subtitle">Concepts, vocabulary, frameworks, and workflows for the AI PM track · Companion to Path B (P7-P12) · Updated 2026-05-02</div>
+</header>
+
+<div class="toc">
+  <h3>Contents</h3>
+  <strong>PART 1 — The PM Mindset</strong>
+  <ul>
+    <li><a href="#what-is-pm">What a Product Manager Actually Does</a></li>
+    <li><a href="#pm-vs-tpm">PM vs TPM vs PgM (project / program / product)</a></li>
+    <li><a href="#ai-pm-vs-traditional">AI PM vs Traditional PM</a></li>
+    <li><a href="#workflow-models">Three Workflow Models — Waterfall, Lean, AI-Modern</a></li>
+  </ul>
+  <strong>PART 2 — Core Terminology Glossary</strong>
+  <ul>
+    <li><a href="#term-prd">PRD</a></li>
+    <li><a href="#term-icp">ICP & Anti-ICP</a></li>
+    <li><a href="#term-spike">Spike</a></li>
+    <li><a href="#term-mvp">MVP / MLP</a></li>
+    <li><a href="#term-jtbd">JTBD (Jobs To Be Done)</a></li>
+    <li><a href="#term-gtm">GTM (Go-To-Market)</a></li>
+    <li><a href="#term-northstar">North Star Metric</a></li>
+    <li><a href="#term-okr">OKRs (Objectives & Key Results)</a></li>
+    <li><a href="#term-kpi">KPIs</a></li>
+    <li><a href="#term-tam">TAM / SAM / SOM</a></li>
+    <li><a href="#term-acv">ACV / ARR / MRR</a></li>
+    <li><a href="#term-cac-ltv">CAC / LTV</a></li>
+    <li><a href="#term-rice">RICE / MoSCoW prioritization</a></li>
+    <li><a href="#term-pmf">PMF (Product-Market Fit)</a></li>
+    <li><a href="#term-personas">User Persona vs Buyer Persona</a></li>
+    <li><a href="#term-discovery">Customer Discovery</a></li>
+    <li><a href="#term-roadmap">Roadmap (Now / Next / Later)</a></li>
+    <li><a href="#term-engineering-pingpong">Engineering Ping-Pong</a></li>
+    <li><a href="#term-design-partner">Design Partner / Closed Alpha / Beta</a></li>
+    <li><a href="#term-working-backwards">Working Backwards</a></li>
+    <li><a href="#term-rail">RAIL / Five-Stage Funnel (AARRR)</a></li>
+  </ul>
+  <strong>PART 3 — AI-Specific PM Concepts</strong>
+  <ul>
+    <li><a href="#ai-eval-driven">Eval-Driven Development</a></li>
+    <li><a href="#ai-prompt-iteration">Prompt Iteration as Product Releases</a></li>
+    <li><a href="#ai-model-selection">Model Selection as a PM Decision</a></li>
+    <li><a href="#ai-cost-per-task">Cost-per-Task as a North Star</a></li>
+    <li><a href="#ai-hallucination-budget">Hallucination Budget</a></li>
+    <li><a href="#ai-confidence-threshold">Confidence Thresholds & Kill Switches</a></li>
+    <li><a href="#ai-data-flywheel">Data Flywheel</a></li>
+    <li><a href="#ai-grounding">Grounding & Retrieval</a></li>
+    <li><a href="#ai-llm-as-judge">LLM-as-Judge for Eval</a></li>
+    <li><a href="#ai-ab-prompts">A/B Testing Prompts</a></li>
+  </ul>
+  <strong>PART 4 — The Lean Artifact Toolkit</strong>
+  <ul>
+    <li><a href="#artifact-1-prd">1-Page PRD</a></li>
+    <li><a href="#artifact-2-icp">ICP Definition</a></li>
+    <li><a href="#artifact-3-eval">Eval Plan</a></li>
+    <li><a href="#artifact-4-gtm">GTM Brief</a></li>
+    <li><a href="#artifact-5-risk">Risk Register</a></li>
+    <li><a href="#artifact-6-wb">Working Backwards Press Release</a></li>
+    <li><a href="#artifact-7-buy-build">Buy vs Build Analysis</a></li>
+  </ul>
+  <strong>PART 5 — Discovery & Research</strong>
+  <ul>
+    <li><a href="#discovery-interviews">Customer Interview Techniques</a></li>
+    <li><a href="#mom-test">"The Mom Test" — Avoiding False Validation</a></li>
+    <li><a href="#research-quant-qual">Quantitative vs Qualitative Research</a></li>
+    <li><a href="#competitive-analysis">Competitive Analysis (Lean Version)</a></li>
+  </ul>
+  <strong>PART 6 — Pricing & GTM for AI Products</strong>
+  <ul>
+    <li><a href="#pricing-models">Pricing Models — Per-Seat, Per-Token, Outcome-Based</a></li>
+    <li><a href="#unit-economics">Unit Economics for AI Products</a></li>
+    <li><a href="#gtm-motions">GTM Motions — PLG, Sales-Led, Hybrid</a></li>
+    <li><a href="#launch-stages">Launch Stages — Closed Alpha → Beta → GA</a></li>
+  </ul>
+  <strong>PART 7 — Risk & Governance</strong>
+  <ul>
+    <li><a href="#risk-categories">AI-Specific Risk Categories</a></li>
+    <li><a href="#owasp-llm">OWASP LLM Top 10</a></li>
+    <li><a href="#kill-switches">Kill Switches & Reversibility</a></li>
+    <li><a href="#compliance">Compliance — GDPR, HIPAA, SOC2 (PM POV)</a></li>
+  </ul>
+  <strong>PART 8 — Interview Prep for AI PM Roles</strong>
+  <ul>
+    <li><a href="#interview-formats">Common Interview Formats</a></li>
+    <li><a href="#interview-frameworks">Frameworks Interviewers Expect You to Know</a></li>
+    <li><a href="#interview-questions">Sample Questions + How to Answer</a></li>
+    <li><a href="#portfolio-pitch">Portfolio Pitch (Path B Artifacts)</a></li>
+  </ul>
+  <strong>PART 9 — Reading List & Resources</strong>
+  <ul>
+    <li><a href="#books">Essential Books</a></li>
+    <li><a href="#newsletters">Newsletters / Blogs</a></li>
+    <li><a href="#frameworks-list">PM Framework Cheatsheet</a></li>
+  </ul>
+  <strong>APPENDIX — Path B Project Log</strong>
+  <ul>
+    <li><a href="#log-p7">P7 — Customer Health Monitor</a> (in progress)</li>
+    <li><a href="#log-p8">P8 — PII Compliance Agent</a></li>
+    <li><a href="#log-p9">P9 — Account Memory Agent</a></li>
+    <li><a href="#log-p10">P10 — AgentPlatform</a></li>
+    <li><a href="#log-p11">P11 — Contract Analyzer</a></li>
+    <li><a href="#log-p12">P12 — Framework Showdown</a></li>
+  </ul>
+</div>
+
+<!-- ====================================================================== -->
+<div class="part">PART 1 — The PM Mindset</div>
+
+<h2 id="what-is-pm">What a Product Manager Actually Does</h2>
+
+<p>The role is often misunderstood. Here's what a PM does and doesn't do:</p>
+
+<table>
+  <thead><tr><th>Does</th><th>Doesn't (in modern orgs)</th></tr></thead>
+  <tbody>
+    <tr><td>Decides WHAT to build and WHY</td><td>Write code (some do, but it's not the job)</td></tr>
+    <tr><td>Owns the success metrics for a product/feature</td><td>Manage engineers (that's the EM/manager)</td></tr>
+    <tr><td>Talks to customers continuously (discovery)</td><td>Run sprints (that's the EM/Scrum Master)</td></tr>
+    <tr><td>Prioritizes ruthlessly (says NO often)</td><td>Design the UI (that's the designer)</td></tr>
+    <tr><td>Communicates with stakeholders (eng, sales, exec)</td><td>Write tests / QA (that's QA + engineers)</td></tr>
+    <tr><td>Defines success metrics, eval criteria, kill thresholds</td><td>"Manage the project" (TPMs/PgMs do that — see below)</td></tr>
+    <tr><td>Owns the strategic narrative (positioning, GTM)</td><td>Sell the product (that's sales)</td></tr>
+  </tbody>
+</table>
+
+<p>A PM's superpower is <strong>making prioritization decisions with incomplete information and getting alignment around them</strong>. The artifacts (PRDs, ICPs) are tools for that decision-making — not the job itself.</p>
+
+<h2 id="pm-vs-tpm">PM vs TPM vs PgM</h2>
+
+<p>Three roles often confused, especially relevant given your TPM background:</p>
+
+<table>
+  <thead><tr><th>Role</th><th>Owns</th><th>Asks</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>PM</strong> (Product Manager)</td>
+      <td>What and why — outcomes</td>
+      <td>"What should we build for whom and why?"</td>
+    </tr>
+    <tr>
+      <td><strong>TPM</strong> (Technical Program Manager)</td>
+      <td>How and when — execution</td>
+      <td>"How do we ship this on time, across teams?"</td>
+    </tr>
+    <tr>
+      <td><strong>PgM</strong> (Program Manager)</td>
+      <td>Cross-team coordination</td>
+      <td>"How do we orchestrate multiple programs?"</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="info">
+  <div class="info-title">Your background advantage</div>
+  Coming from a 12-year Apple TPM background, you already have execution chops, stakeholder skills, and roadmap discipline. The shift to AI PM is mainly: (1) less execution focus, (2) more outcome focus, (3) heavy AI-specific concepts (evals, model selection, hallucination management). Your TPM muscle memory accelerates the move.
+</div>
+
+<h2 id="ai-pm-vs-traditional">AI PM vs Traditional PM</h2>
+
+<table>
+  <thead><tr><th>Aspect</th><th>Traditional PM</th><th>AI PM</th></tr></thead>
+  <tbody>
+    <tr><td>Predictability</td><td>Spec → outcome is largely predictable</td><td>Spec → outcome requires experimentation</td></tr>
+    <tr><td>Cycle time</td><td>Months per release</td><td>Days/weeks per prompt iteration</td></tr>
+    <tr><td>Eval criteria</td><td>Functional tests, A/B on conversion</td><td>Quality metrics (precision, faithfulness, hallucination rate)</td></tr>
+    <tr><td>Cost variability</td><td>Stable (engineering hours)</td><td>Highly variable (per-token costs)</td></tr>
+    <tr><td>Failure modes</td><td>Bugs, performance, edge cases</td><td>Hallucinations, drift, prompt injection, model deprecation</td></tr>
+    <tr><td>Spec confidence</td><td>High before build</td><td>Low until spike measures behavior</td></tr>
+    <tr><td>Tools used daily</td><td>Mixpanel, Jira, Figma</td><td>LangSmith, Pinecone dashboards, prompt eval tools</td></tr>
+  </tbody>
+</table>
+
+<h2 id="workflow-models">Three Workflow Models</h2>
+
+<h3>Model 1 — Waterfall (Traditional / Large Enterprise)</h3>
+<pre><code>Strategy → Market Research → ICP → PRD → Spec → Engineering → QA → Launch → Measure
+─────────────────────────────────────────────────────────────────────────────────→
+   (months of PM/research)        (months of engineering)         (post-launch)</code></pre>
+
+<p>Common at: Apple infrastructure, Oracle, large enterprise. Slow but predictable. Not how AI products typically work.</p>
+
+<h3>Model 2 — Lean Startup</h3>
+<pre><code>Hypothesis → Quick PRD → Thin-slice MVP → Measure → Pivot or Expand
+       ↺────────────────────────────────────────────↺
+                  (continuous loop, weekly/monthly)</code></pre>
+
+<p>Common at: most modern SaaS startups. PM and engineering interleave tightly. PRDs are 1 page, not 30.</p>
+
+<h3>Model 3 — Modern AI Product Workflow</h3>
+<pre><code>Hypothesis → Spike (engineering tries it) → Measure model behavior →
+   Real PRD (now with data) → Build → Closed alpha → Iterate → GA
+                                          ↑
+                          You can't write a credible PRD until
+                          the spike shows the model can actually do it</code></pre>
+
+<p>Dominant at: OpenAI, Anthropic, modern AI startups. Engineering "spike" comes BEFORE the real PRD because AI behavior isn't predictable from spec.</p>
+
+<div class="info">
+  <div class="info-title">Why Path B mimics Model 3</div>
+  In your training, P7-P12 engineering work IS the spike. The PM artifact tickets (#81-#86) are written AFTER the engineering, which gives you real numbers (precision, cost, latency, failure modes) to write credible PRDs. That's exactly how AI PMs work in practice.
+</div>
+
+<!-- ====================================================================== -->
+<div class="part">PART 2 — Core Terminology Glossary</div>
+
+<div class="term-card">
+<div class="term" id="term-prd">PRD — Product Requirements Document</div>
+<div class="definition">A document that captures what you're building, for whom, and how you'll measure success. Modern lean PRDs are 1 PAGE, not 30.</div>
+<div class="example">Lean structure: Problem · Hypothesis · ICP · Success metrics · MVP scope · Kill criteria · Open questions. <em>You'll write one for every project P7-P12.</em></div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-icp">ICP — Ideal Customer Profile</div>
+<div class="definition">The SPECIFIC type of customer that gets the most value from your product. Not "who could use it" — "who SHOULD we sell to first." Always paired with an <strong>Anti-ICP</strong> (who we are EXPLICITLY NOT for).</div>
+<div class="example">Good ICP: "B2B SaaS, Series B+, 100-2000 customers, CSM team of 5-30, recently lost a $1M+ account." Bad ICP: "Anyone who uses LLMs."</div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-spike">Spike</div>
+<div class="definition">A time-boxed engineering experiment to learn something or de-risk a hypothesis. Throwaway code is fine. Goal is information, not shipping.</div>
+<div class="example">"Spike: can Claude reliably extract dates from contracts? 1 week. Success criteria: 90% precision on 100-doc test set." If yes, write the real PRD. If no, pivot the approach.</div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-mvp">MVP — Minimum Viable Product</div>
+<div class="definition">The SMALLEST thing you can ship to test your core hypothesis. NOT "version 1" — it's deliberately incomplete. <strong>MLP (Minimum Lovable Product)</strong> is the modern version: minimum that customers actually love, not just tolerate.</div>
+<div class="example">MVP for ChurnGuard: detects 1 churn signal (login recency), alerts via email. NOT: 12 signals + dashboard + Salesforce integration + mobile app.</div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-jtbd">JTBD — Jobs To Be Done</div>
+<div class="definition">A framework that asks: "What is the customer 'hiring' this product to DO for them?" Focuses on the underlying job, not features.</div>
+<div class="example">Customers don't hire a CRM — they hire a "stop my deals from slipping through cracks" job. Reframing problems as jobs reveals competitive alternatives (a smart CSM might do the job too — that's your real competitor).</div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-gtm">GTM — Go-To-Market</div>
+<div class="definition">The strategy + execution plan for how a product reaches customers. Includes positioning, pricing, channels, sales motion, launch sequencing.</div>
+<div class="example">GTM brief for ChurnGuard: "Direct sales to VP CS at 200 mid-market SaaS targets. Pricing $50K-$150K ACV. Channel: Pavilion + Gainsight community + LinkedIn outreach. Pilot motion: 90-day paid pilot."</div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-northstar">North Star Metric</div>
+<div class="definition">The ONE metric that best captures product success. Everything else is secondary. Should reflect customer value, not vanity.</div>
+<div class="example">Slack: "Daily active users sending 2000+ messages per workspace." Not "signups." Reflects actual engagement. <em>For AI products, often a quality+adoption hybrid.</em></div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-okr">OKRs — Objectives & Key Results</div>
+<div class="definition">Goal-setting framework. <strong>Objective</strong> = qualitative ambition. <strong>Key Results</strong> = 3-5 measurable outcomes that prove you achieved the objective.</div>
+<div class="example">Objective: "Make ChurnGuard the default churn-prediction tool for mid-market SaaS." KR1: 50 paying customers by Q4. KR2: NPS 40+. KR3: 70% precision on churn predictions.</div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-kpi">KPIs — Key Performance Indicators</div>
+<div class="definition">Ongoing metrics tracked to monitor product health. Different from OKRs (which are time-bound goals). KPIs are the dashboard you check daily.</div>
+<div class="example">KPIs for an AI agent: daily active users, tokens consumed per user, precision/recall on golden test set, p95 latency, cost per call, NPS, churn rate.</div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-tam">TAM / SAM / SOM</div>
+<div class="definition"><strong>TAM</strong> (Total Addressable Market) = entire market for the category. <strong>SAM</strong> (Serviceable Addressable Market) = the slice you can realistically serve. <strong>SOM</strong> (Serviceable Obtainable Market) = what you can capture in 3-5 years.</div>
+<div class="example">TAM: all churn prevention software ($5B). SAM: B2B SaaS mid-market ($800M). SOM: realistic 3-year capture ($30M).</div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-acv">ACV / ARR / MRR</div>
+<div class="definition"><strong>ACV</strong> (Annual Contract Value) = avg contract size per customer per year. <strong>ARR</strong> (Annual Recurring Revenue) = total recurring revenue annualized. <strong>MRR</strong> (Monthly Recurring Revenue) = same, monthly. SaaS metrics — used to size deals and growth.</div>
+<div class="example">ChurnGuard: $100K ACV × 50 customers = $5M ARR. MRR = $417K.</div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-cac-ltv">CAC / LTV</div>
+<div class="definition"><strong>CAC</strong> (Customer Acquisition Cost) = cost to win one new customer. <strong>LTV</strong> (Lifetime Value) = total revenue from a customer over their lifetime. Healthy SaaS: LTV/CAC > 3.</div>
+<div class="example">CAC = $20K (sales + marketing). LTV = $300K (3-year retention × $100K ACV). Ratio = 15. Very healthy.</div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-rice">RICE / MoSCoW Prioritization</div>
+<div class="definition">Frameworks for prioritizing roadmap items. <strong>RICE</strong> = Reach × Impact × Confidence ÷ Effort. <strong>MoSCoW</strong> = Must-have / Should-have / Could-have / Won't-have.</div>
+<div class="example">Use RICE when you have data to estimate. Use MoSCoW for quick stakeholder alignment without quantification.</div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-pmf">PMF — Product-Market Fit</div>
+<div class="definition">The state where customers actively want and use your product. Hard to measure precisely; usually you "know it when you see it" (Sean Ellis test: "would you be very disappointed if you couldn't use this?" — 40%+ saying yes = PMF).</div>
+<div class="example">Pre-PMF: "I built it, hard to get customers to try." Post-PMF: "Customers refer their friends; sales are easier; usage grows organically."</div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-personas">User Persona vs Buyer Persona</div>
+<div class="definition"><strong>User</strong> = the person who USES the product daily. <strong>Buyer</strong> = the person who DECIDES to purchase. Often different in B2B.</div>
+<div class="example">ChurnGuard: User = Customer Success Manager (uses the dashboard daily). Buyer = VP Customer Success (signs the contract). Marketing/sales materials must speak to BOTH.</div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-discovery">Customer Discovery</div>
+<div class="definition">The process of validating problems and solutions with REAL customers (not assumptions). Continuous, not one-shot. Often the most-skipped, highest-leverage activity.</div>
+<div class="example">Talk to 5-10 ICP customers per week. Ask about THEIR problems, not your solution. "Tell me about the last time you lost an account unexpectedly..." — open-ended, learns about real pain.</div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-roadmap">Roadmap (Now / Next / Later)</div>
+<div class="definition">Modern roadmaps avoid Gantt charts and dates. Three buckets: <strong>Now</strong> (in flight), <strong>Next</strong> (next 1-2 quarters), <strong>Later</strong> (rest). Communicates direction without false precision.</div>
+<div class="example">Now: ChurnGuard core MVP. Next: Salesforce integration, mobile alerts. Later: Predictive churn-cause analysis, automated intervention recommendations.</div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-engineering-pingpong">Engineering Ping-Pong</div>
+<div class="definition">Tight back-and-forth between PM and engineering during build. PM defines a slice → engineering builds → measure → PM refines based on what was learned → engineering iterates. Replaces big upfront specs.</div>
+<div class="example">"Engineering shipped a churn detector. Precision is 45%. PM: that's not enough. What if we add 3 more signals? Eng: estimates 1 week. PM: do it. Measure again. Now 62%. Closer."</div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-design-partner">Design Partner / Closed Alpha / Beta</div>
+<div class="definition"><strong>Design Partner</strong> = early customer who works closely with you (often free or discounted) in exchange for input. <strong>Closed Alpha</strong> = 5-20 selected customers, very early. <strong>Beta</strong> = wider rollout, near production.</div>
+<div class="example">Stage progression: 5 design partners → 50-100 beta → public GA. Each stage has different goals: alpha = find PMF; beta = scale ops; GA = grow.</div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-working-backwards">Working Backwards (Amazon)</div>
+<div class="definition">Famous Amazon process: write the LAUNCH PRESS RELEASE before building anything. If the press release isn't compelling enough to drive customer action, the idea isn't ready.</div>
+<div class="example">Press release for ChurnGuard's launch — written in customer-language, with hypothetical customer quotes. Forces clarity about the OUTCOME (not features).</div>
+</div>
+
+<div class="term-card">
+<div class="term" id="term-rail">RAIL / AARRR (Pirate Metrics)</div>
+<div class="definition"><strong>AARRR</strong> = Acquisition → Activation → Retention → Referral → Revenue. The classic SaaS funnel. <strong>RAIL</strong> = Recommended Action, Insight, Learning — a more recent variant.</div>
+<div class="example">Acquisition: how do customers find us? Activation: do they get value in first session? Retention: do they come back next week? Referral: do they tell others? Revenue: do they pay/expand?</div>
+</div>
+
+<!-- ====================================================================== -->
+<div class="part">PART 3 — AI-Specific PM Concepts</div>
+
+<h2 id="ai-eval-driven">Eval-Driven Development</h2>
+
+<p>The AI equivalent of TDD. Before you build the AI feature, you build the <strong>evaluation harness</strong> — a way to measure whether the model behavior is good enough.</p>
+
+<pre><code># Workflow:
+1. Define success metrics (precision >= 70%, false positives < 5/week)
+2. Build eval dataset (golden inputs + expected outputs)
+3. Build the AI feature
+4. Run evals
+5. Iterate prompts/models/architecture until evals pass</code></pre>
+
+<p>Without an eval harness, you're shipping vibes. Tools: Ragas, DeepEval, Promptfoo, LangSmith.</p>
+
+<h2 id="ai-prompt-iteration">Prompt Iteration as Product Releases</h2>
+
+<p>In AI products, <strong>tuning a prompt IS shipping a release</strong>. A prompt change affects every customer interaction. Track prompt versions like code versions:</p>
+
+<table>
+  <thead><tr><th>Prompt version</th><th>Date</th><th>Eval score</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>v1.0</td><td>2026-05-01</td><td>62% precision</td><td>Initial</td></tr>
+    <tr><td>v1.1</td><td>2026-05-08</td><td>68%</td><td>Added "step-by-step" instruction</td></tr>
+    <tr><td>v1.2</td><td>2026-05-15</td><td>71%</td><td>Few-shot examples added</td></tr>
+  </tbody>
+</table>
+
+<p>PMs own the prompt iteration roadmap, not just code features.</p>
+
+<h2 id="ai-model-selection">Model Selection as a PM Decision</h2>
+
+<p>Choosing Claude Opus 4.7 vs GPT-4o vs Gemini Ultra is a PM tradeoff (not just engineering):</p>
+
+<table>
+  <thead><tr><th>Dimension</th><th>What PM considers</th></tr></thead>
+  <tbody>
+    <tr><td>Quality</td><td>Eval scores on YOUR test set (not benchmarks)</td></tr>
+    <tr><td>Cost</td><td>Per-token cost × expected usage</td></tr>
+    <tr><td>Latency</td><td>p95 response time — affects UX</td></tr>
+    <tr><td>Reliability</td><td>Uptime SLA, rate limits</td></tr>
+    <tr><td>Vendor risk</td><td>Lock-in, deprecation history</td></tr>
+    <tr><td>Compliance</td><td>HIPAA-eligible? Data residency?</td></tr>
+  </tbody>
+</table>
+
+<p>Often the best answer is <strong>route by request type</strong>: cheap model for simple cases, premium model for complex ones. PM defines the routing rules.</p>
+
+<h2 id="ai-cost-per-task">Cost-per-Task as a North Star</h2>
+
+<p>Token costs add up fast. PMs track cost-per-task as a first-class metric alongside conversion/retention.</p>
+
+<pre><code>cost_per_task = (input_tokens × $/1M_in) + (output_tokens × $/1M_out)
+
+# ChurnGuard example:
+# - 5 churn signals analyzed per customer
+# - Each signal: ~2000 input tokens, ~500 output tokens
+# - Claude Opus 4.7: $15/$75 per 1M tokens
+# - cost = (5 × 2000 × $15/1M) + (5 × 500 × $75/1M)
+# - cost = $0.15 + $0.19 = $0.34 per customer per analysis
+# - 1000 customers × daily analysis = $340/day = $124K/year</code></pre>
+
+<p>If you're charging $50/customer/month and burning $10 in tokens, your gross margin is destroyed. PMs design pricing around this.</p>
+
+<h2 id="ai-hallucination-budget">Hallucination Budget</h2>
+
+<p>Acknowledging that LLMs WILL sometimes be wrong — and pre-deciding how much wrong is acceptable.</p>
+
+<table>
+  <thead><tr><th>Use case</th><th>Acceptable hallucination rate</th></tr></thead>
+  <tbody>
+    <tr><td>Marketing copy generation</td><td>5-10% (human reviews anyway)</td></tr>
+    <tr><td>Code suggestions</td><td>10-20% (developer accepts/rejects)</td></tr>
+    <tr><td>Customer support drafts</td><td>2-5% (with human approval gate)</td></tr>
+    <tr><td>Legal contract analysis</td><td>< 0.5% (compounds liability)</td></tr>
+    <tr><td>Medical advice</td><td>~0% (effectively can't ship without human in loop)</td></tr>
+  </tbody>
+</table>
+
+<p>The PM defines the budget. Engineering builds to it (RAG for grounding, confidence thresholds, human-in-loop for high-stakes).</p>
+
+<h2 id="ai-confidence-threshold">Confidence Thresholds & Kill Switches</h2>
+
+<p>Two safety mechanisms PMs design:</p>
+
+<ul>
+  <li><strong>Confidence threshold</strong>: only auto-execute if model confidence > X. Below that, escalate to human or refuse.</li>
+  <li><strong>Kill switch</strong>: ability to instantly disable the AI feature when something goes wrong (eval drift, cost runaway, customer complaints).</li>
+</ul>
+
+<pre><code># Pseudo-pattern:
+prediction, confidence = agent.predict(input)
+if confidence > 0.85:
+    auto_act(prediction)
+elif confidence > 0.5:
+    queue_for_human_review(prediction)
+else:
+    decline_to_predict()
+    log_for_analysis()</code></pre>
+
+<h2 id="ai-data-flywheel">Data Flywheel</h2>
+
+<p>The compound advantage of usage-data-feeding-quality-improvements:</p>
+
+<pre><code>Users → Use product → Generate data → Train better models / improve prompts →
+                                                    ↓
+                                          Better product → More users → ...</code></pre>
+
+<p>PMs design feedback loops to capture data ethically (with consent) and use it to improve quality. Differentiator vs new entrants.</p>
+
+<h2 id="ai-grounding">Grounding & Retrieval (RAG)</h2>
+
+<p><strong>Grounding</strong> = forcing the model to answer based on specific provided context (not its general training). Reduces hallucination.</p>
+
+<p>The technique: <strong>Retrieval-Augmented Generation (RAG)</strong>. Given a question, retrieve relevant documents, include them in the prompt, ask the model to answer based ONLY on those docs.</p>
+
+<p>PM responsibility: define what "groundedness" means for your product. Tools: Ragas measures groundedness automatically.</p>
+
+<h2 id="ai-llm-as-judge">LLM-as-Judge for Eval</h2>
+
+<p>Use one LLM to evaluate another LLM's output. Cheap, scalable, replaces some human grading.</p>
+
+<pre><code># Example LLM-as-judge prompt:
+"Given the user query: {query}
+And the assistant response: {response}
+Rate the response on a scale of 1-5 for:
+- Accuracy
+- Helpfulness
+- Tone
+Respond in JSON: {accuracy: int, helpfulness: int, tone: int}"</code></pre>
+
+<p>PM defines the rubric (what to measure, scale). DeepEval and similar tools wrap this pattern.</p>
+
+<h2 id="ai-ab-prompts">A/B Testing Prompts</h2>
+
+<p>Same as A/B testing UX — but on prompts. Show variant A to half of users, variant B to half, measure outcome metric.</p>
+
+<table>
+  <thead><tr><th>Tool</th><th>Use</th></tr></thead>
+  <tbody>
+    <tr><td>Promptfoo</td><td>Side-by-side prompt comparison on a fixed test set (offline eval)</td></tr>
+    <tr><td>LangSmith Experiments</td><td>Production A/B testing with traffic splitting</td></tr>
+    <tr><td>Custom feature flags</td><td>Roll your own (LaunchDarkly, etc.)</td></tr>
+  </tbody>
+</table>
+
+<!-- ====================================================================== -->
+<div class="part">PART 4 — The Lean Artifact Toolkit</div>
+
+<p>The 7 lean PM artifacts you'll produce in Path B (templates in <code>p0_pm_templates/</code>).</p>
+
+<h2 id="artifact-1-prd">1-Page PRD</h2>
+<p>Problem · Hypothesis · ICP · Success metrics · MVP · Kill criteria · Open questions. <strong>Always 1 page.</strong> If it doesn't fit, the thinking isn't lean enough.</p>
+
+<h2 id="artifact-2-icp">ICP Definition</h2>
+<p>Target customer + ANTI-target. Specific company size/industry/maturity/budget. Pain triggers. How to find them.</p>
+
+<h2 id="artifact-3-eval">Eval Plan</h2>
+<p>Eval dataset + thresholds (ship/kill) + tools (Ragas, DeepEval, Promptfoo) + regression suite + production monitoring + iteration plan.</p>
+
+<h2 id="artifact-4-gtm">GTM Brief</h2>
+<p>Positioning sentence · Key messages · Pricing · Channels · Launch stages · Success metrics · Anti-launch criteria.</p>
+
+<h2 id="artifact-5-risk">Risk Register</h2>
+<p>Top 5 risks ranked by impact × probability. AI-specific categories (hallucination, cost, prompt injection, vendor lock-in). Kill switches. Acceptable trade-offs.</p>
+
+<h2 id="artifact-6-wb">Working Backwards Press Release</h2>
+<p>Hypothetical launch press release written BEFORE building. Forces customer-outcome focus. Internal FAQ underneath.</p>
+
+<h2 id="artifact-7-buy-build">Buy vs Build Analysis</h2>
+<p>Decision framework: cost, time-to-value, customization, risk, strategic differentiation. Includes reversibility plan.</p>
+
+<!-- ====================================================================== -->
+<div class="part">PART 5 — Discovery & Research</div>
+
+<h2 id="discovery-interviews">Customer Interview Techniques</h2>
+
+<p>Modern PM discovery is continuous (5-10 conversations/week, not a one-shot research project).</p>
+
+<h3>Good interview questions</h3>
+<ul>
+  <li>"Tell me about the last time you [had this problem]..."</li>
+  <li>"Walk me through your current process step by step."</li>
+  <li>"What's the worst part of your day related to X?"</li>
+  <li>"How do you currently work around this?"</li>
+  <li>"Have you ever tried to solve this? How did it go?"</li>
+</ul>
+
+<h3>Bad interview questions</h3>
+<ul>
+  <li>"Would you use a product that does X?" (hypothetical = unreliable)</li>
+  <li>"Do you like our product idea?" (everyone is polite to your face)</li>
+  <li>"How much would you pay?" (people lie about pricing)</li>
+</ul>
+
+<h2 id="mom-test">"The Mom Test" — Avoiding False Validation</h2>
+
+<p>Famous PM book by Rob Fitzpatrick. Three rules:</p>
+<ol>
+  <li>Talk about THEIR life, not your idea</li>
+  <li>Ask about specific past behavior, not opinions about the future</li>
+  <li>Talk less, listen more</li>
+</ol>
+
+<p>Why "Mom Test"? Even your mom won't tell you the truth about your idea — she's being supportive. Need techniques to avoid hearing what you want to hear.</p>
+
+<h2 id="research-quant-qual">Quantitative vs Qualitative Research</h2>
+
+<table>
+  <thead><tr><th>Type</th><th>Answers</th><th>Tools</th></tr></thead>
+  <tbody>
+    <tr><td>Qualitative (interviews)</td><td>WHY users do things</td><td>1:1 calls, observation, diary studies</td></tr>
+    <tr><td>Quantitative (analytics)</td><td>WHAT users do, how often</td><td>Mixpanel, Amplitude, dashboards</td></tr>
+  </tbody>
+</table>
+
+<p>Use both. Quant tells you something happened; qual tells you why.</p>
+
+<h2 id="competitive-analysis">Competitive Analysis (Lean Version)</h2>
+
+<p>Skip the 50-page report. Lean version:</p>
+
+<table>
+  <thead><tr><th>Competitor</th><th>Their wedge</th><th>Where they win</th><th>Where they lose</th><th>Our differentiation</th></tr></thead>
+  <tbody>
+    <tr><td>[Name]</td><td>[Their unique value]</td><td>[Their strengths]</td><td>[Their weaknesses]</td><td>[How we're different]</td></tr>
+  </tbody>
+</table>
+
+<p>One row per major competitor. Update quarterly.</p>
+
+<!-- ====================================================================== -->
+<div class="part">PART 6 — Pricing & GTM for AI Products</div>
+
+<h2 id="pricing-models">Pricing Models</h2>
+
+<table>
+  <thead><tr><th>Model</th><th>How it works</th><th>Best for</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Per-seat</strong></td><td>$X per user per month</td><td>Tools used by named individuals (Notion, Slack)</td></tr>
+    <tr><td><strong>Per-account / per-tenant</strong></td><td>$X per company per month</td><td>Org-level tools (Salesforce, internal AI)</td></tr>
+    <tr><td><strong>Per-token / usage-based</strong></td><td>$X per AI call or token</td><td>API products (OpenAI, Anthropic)</td></tr>
+    <tr><td><strong>Outcome-based</strong></td><td>$X per successful outcome</td><td>Hard to measure but emerging in AI (e.g., $X per resolved support ticket)</td></tr>
+    <tr><td><strong>Tiered (good/better/best)</strong></td><td>Multi-tier with feature gating</td><td>Most B2B SaaS (Starter/Pro/Enterprise)</td></tr>
+    <tr><td><strong>Freemium</strong></td><td>Free tier + paid upgrades</td><td>PLG products (Figma, Notion)</td></tr>
+  </tbody>
+</table>
+
+<h2 id="unit-economics">Unit Economics for AI Products</h2>
+
+<pre><code># Healthy AI SaaS product:
+gross_margin = (revenue_per_customer - cost_per_customer) / revenue_per_customer
+# Target: > 70% gross margin
+
+# Where cost includes:
+# - LLM API costs (often 20-40% of revenue if not careful)
+# - Hosting / vector DB
+# - Support / success
+# - Sales commissions
+
+# AI-specific watch-out: token costs scale with usage
+# Heavy users can wreck per-customer margin if pricing is flat</code></pre>
+
+<h2 id="gtm-motions">GTM Motions</h2>
+
+<table>
+  <thead><tr><th>Motion</th><th>Best for</th><th>Pricing range</th></tr></thead>
+  <tbody>
+    <tr><td><strong>PLG</strong> (Product-Led Growth)</td><td>Self-serve, viral, low-touch</td><td>$0-$1K ACV</td></tr>
+    <tr><td><strong>Sales-Led</strong></td><td>Enterprise, complex deals</td><td>$50K+ ACV</td></tr>
+    <tr><td><strong>Hybrid (Sales-assisted PLG)</strong></td><td>Middle market, expansion</td><td>$5K-$50K ACV</td></tr>
+  </tbody>
+</table>
+
+<h2 id="launch-stages">Launch Stages — Closed Alpha → Beta → GA</h2>
+
+<table>
+  <thead><tr><th>Stage</th><th>Audience</th><th>Goal</th><th>Duration</th></tr></thead>
+  <tbody>
+    <tr><td>Design Partner / Closed Alpha</td><td>5-10 hand-picked customers</td><td>Validate hypothesis, find PMF</td><td>4-8 weeks</td></tr>
+    <tr><td>Private Beta</td><td>50-100 customers (waitlist)</td><td>Find initial fit at scale</td><td>8-12 weeks</td></tr>
+    <tr><td>Public Beta</td><td>Open signup, may have limits</td><td>Stress-test ops, gather signal</td><td>1-3 quarters</td></tr>
+    <tr><td>GA (General Availability)</td><td>Public</td><td>Scale revenue</td><td>Ongoing</td></tr>
+  </tbody>
+</table>
+
+<!-- ====================================================================== -->
+<div class="part">PART 7 — Risk & Governance</div>
+
+<h2 id="risk-categories">AI-Specific Risk Categories</h2>
+
+<table>
+  <thead><tr><th>Risk</th><th>Mitigation</th></tr></thead>
+  <tbody>
+    <tr><td>Hallucination</td><td>RAG, confidence thresholds, human-in-loop for high-stakes</td></tr>
+    <tr><td>Cost runaway</td><td>Per-tenant budgets, alerts, kill switches</td></tr>
+    <tr><td>Prompt injection</td><td>Input filtering, NeMo Guardrails, separate user-input from system prompt</td></tr>
+    <tr><td>Privacy / PII leakage</td><td>Presidio for detection, no PII in prompts/embeddings, audit logging</td></tr>
+    <tr><td>Bias / fairness</td><td>Eval across demographics, fairness metrics</td></tr>
+    <tr><td>Model deprecation</td><td>Multi-vendor support, abstraction layer</td></tr>
+    <tr><td>Vendor lock-in</td><td>Standard interfaces (OpenAI-compatible APIs), multi-cloud routing</td></tr>
+    <tr><td>Compliance</td><td>HIPAA-eligible models, GDPR data retention, SOC2 logging</td></tr>
+  </tbody>
+</table>
+
+<h2 id="owasp-llm">OWASP LLM Top 10 (covered in P8)</h2>
+
+<p>The standard security risks for LLM applications. PM responsibility: ensure these are addressed in design.</p>
+
+<ol>
+  <li>Prompt Injection</li>
+  <li>Insecure Output Handling</li>
+  <li>Training Data Poisoning</li>
+  <li>Model Denial of Service</li>
+  <li>Supply Chain Vulnerabilities</li>
+  <li>Sensitive Information Disclosure</li>
+  <li>Insecure Plugin Design</li>
+  <li>Excessive Agency</li>
+  <li>Overreliance</li>
+  <li>Model Theft</li>
+</ol>
+
+<h2 id="kill-switches">Kill Switches & Reversibility</h2>
+
+<p>Every AI product needs an "off button." Design considerations:</p>
+<ul>
+  <li>Per-tenant rate limits (cap tokens per day)</li>
+  <li>Daily budget alerts + auto-pause at threshold</li>
+  <li>Manual override / "stop all agents" command</li>
+  <li>Eval-driven auto-rollback (if quality drops > X%)</li>
+  <li>Confidence threshold gating (block low-confidence outputs)</li>
+</ul>
+
+<h2 id="compliance">Compliance — GDPR, HIPAA, SOC2 (PM POV)</h2>
+
+<table>
+  <thead><tr><th>Standard</th><th>What it means for AI products</th></tr></thead>
+  <tbody>
+    <tr><td>GDPR (EU)</td><td>Right to deletion, data residency, consent for processing — affects training data, embeddings</td></tr>
+    <tr><td>HIPAA (US healthcare)</td><td>PHI handling, BAAs with vendors (Anthropic/OpenAI offer HIPAA-eligible versions)</td></tr>
+    <tr><td>SOC2</td><td>Security audit trail, access controls — table stakes for enterprise sales</td></tr>
+    <tr><td>EU AI Act</td><td>Risk classification, transparency, human oversight for high-risk AI</td></tr>
+  </tbody>
+</table>
+
+<!-- ====================================================================== -->
+<div class="part">PART 8 — Interview Prep for AI PM Roles</div>
+
+<h2 id="interview-formats">Common Interview Formats</h2>
+
+<table>
+  <thead><tr><th>Format</th><th>What they're testing</th></tr></thead>
+  <tbody>
+    <tr><td>Behavioral</td><td>"Tell me about a time you..." — past patterns predict future</td></tr>
+    <tr><td>Product Sense / Design</td><td>"How would you improve [product]?" — strategic thinking</td></tr>
+    <tr><td>Execution / Estimation</td><td>"Estimate the market for X." — quantitative reasoning</td></tr>
+    <tr><td>Analytical / Metrics</td><td>"What metrics for X?" — measurement instinct</td></tr>
+    <tr><td>Strategy</td><td>"Should company X enter market Y?" — strategic frameworks</td></tr>
+    <tr><td>Technical (AI-specific)</td><td>"How would you measure if your AI feature works?" — eval design</td></tr>
+  </tbody>
+</table>
+
+<h2 id="interview-frameworks">Frameworks Interviewers Expect You to Know</h2>
+
+<ul>
+  <li><strong>CIRCLES</strong> (Comprehend, Identify users, Report needs, Cut through, List solutions, Evaluate, Summarize) — for product design questions</li>
+  <li><strong>SWOT</strong> (Strengths, Weaknesses, Opportunities, Threats) — for strategy</li>
+  <li><strong>RICE</strong> — for prioritization</li>
+  <li><strong>HEART</strong> (Happiness, Engagement, Adoption, Retention, Task success) — for metrics</li>
+  <li><strong>JTBD</strong> — for user research framing</li>
+  <li><strong>Working Backwards</strong> (Amazon) — for new product ideation</li>
+</ul>
+
+<h2 id="interview-questions">Sample Questions + How to Answer</h2>
+
+<h3>"How would you measure success for [AI feature]?"</h3>
+<pre><code>Structure:
+1. Clarify what the feature does (user / business goal)
+2. Define quality metrics (precision/recall/groundedness)
+3. Define adoption metrics (DAU, calls per user)
+4. Define cost metrics (cost per call)
+5. Define operational metrics (latency, uptime)
+6. Pick a north star (1 metric that captures it all)
+7. Mention kill criteria / counter-metrics</code></pre>
+
+<h3>"Walk me through how you'd build [an AI product]."</h3>
+<pre><code>Structure:
+1. Hypothesis + ICP first (1-page brief)
+2. Spike: 1-2 week engineering prototype
+3. Measure: precision, cost, failure modes
+4. Real PRD with concrete eval criteria
+5. Build MVP
+6. Closed alpha (5-10 design partners)
+7. Iterate based on feedback
+8. Public beta → GA
+Mention: hallucination budget, cost-per-task, kill switches.</code></pre>
+
+<h3>"How do you balance speed with quality on AI products?"</h3>
+<pre><code>Structure:
+1. Acknowledge the tradeoff (cost/quality/speed pick 2)
+2. Set a quality floor with eval thresholds (won't ship below X)
+3. Use kill switches for production safety
+4. Iterate prompts before model changes (cheaper, faster)
+5. Use closed alpha to find quality issues early
+Reference: your real eval framework setup in P7.</code></pre>
+
+<h2 id="portfolio-pitch">Portfolio Pitch (Path B Artifacts)</h2>
+
+<p>When you walk into an AI PM interview, you'll have <strong>two evidence stacks</strong>:</p>
+
+<table>
+  <thead><tr><th>Engineering portfolio</th><th>PM portfolio</th></tr></thead>
+  <tbody>
+    <tr><td>6 working agents on GitHub</td><td>6 sets of PM artifacts (PRD, ICP, GTM, etc.)</td></tr>
+    <tr><td>Eval frameworks integrated (Ragas, DeepEval)</td><td>Eval plans written for each project</td></tr>
+    <tr><td>Production patterns (FastAPI, multi-cloud, reliability)</td><td>Buy-vs-build analysis (P10 platform)</td></tr>
+    <tr><td>MCP, LangGraph, CrewAI hands-on</td><td>Framework comparison decision doc (P12)</td></tr>
+  </tbody>
+</table>
+
+<p>Pitch script:</p>
+<blockquote>
+"I built and shipped 6 AI agents end-to-end — but more importantly, I treated each one as a real product. For each, I wrote a 1-page PRD with measurable success criteria, defined the ICP and anti-ICP, designed an eval plan with kill thresholds, and made a buy-vs-build call where appropriate. I can show you the artifacts AND the working code. The portfolio isn't 6 demos — it's 6 product-shaped projects."
+</blockquote>
+
+<!-- ====================================================================== -->
+<div class="part">PART 9 — Reading List & Resources</div>
+
+<h2 id="books">Essential Books</h2>
+
+<table>
+  <thead><tr><th>Book</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>"Inspired" — Marty Cagan</td><td>Modern PM bible. How tech companies build great products.</td></tr>
+    <tr><td>"Working Backwards" — Bryar & Carr</td><td>Amazon's PM method (PR-FAQ first).</td></tr>
+    <tr><td>"The Mom Test" — Rob Fitzpatrick</td><td>How to run customer interviews without lying to yourself. Short, essential.</td></tr>
+    <tr><td>"Obviously Awesome" — April Dunford</td><td>Positioning + ICP. ~150 pages.</td></tr>
+    <tr><td>"Lean Startup" — Eric Ries</td><td>Hypothesis-driven product development.</td></tr>
+    <tr><td>"Crossing the Chasm" — Geoffrey Moore</td><td>Tech adoption lifecycle, early adopters → mainstream.</td></tr>
+    <tr><td>"Designing AI Products" — emerging titles</td><td>AI-specific PM still being written; check 2025-2026 releases.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="newsletters">Newsletters / Blogs</h2>
+
+<table>
+  <thead><tr><th>Source</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Lenny Rachitsky</td><td>Best modern PM source, free, AI/SaaS focused</td></tr>
+    <tr><td>Reforge / Lenny's Pod</td><td>Frameworks + interviews</td></tr>
+    <tr><td>Andrew Ng's "The Batch"</td><td>AI strategic context</td></tr>
+    <tr><td>Anthropic / OpenAI engineering blogs</td><td>How they build their products</td></tr>
+    <tr><td>Latent Space podcast</td><td>AI engineering + product</td></tr>
+  </tbody>
+</table>
+
+<h2 id="frameworks-list">PM Framework Cheatsheet</h2>
+
+<table>
+  <thead><tr><th>When you need to...</th><th>Use</th></tr></thead>
+  <tbody>
+    <tr><td>Prioritize features</td><td>RICE or MoSCoW</td></tr>
+    <tr><td>Define metrics</td><td>HEART or AARRR</td></tr>
+    <tr><td>Define a problem</td><td>JTBD or 5 Whys</td></tr>
+    <tr><td>Run discovery</td><td>The Mom Test</td></tr>
+    <tr><td>Set goals</td><td>OKRs (objective + 3-5 KRs)</td></tr>
+    <tr><td>Position a product</td><td>April Dunford framework</td></tr>
+    <tr><td>Plan a launch</td><td>Working Backwards (PR-FAQ)</td></tr>
+    <tr><td>Evaluate an opportunity</td><td>SWOT + TAM/SAM/SOM</td></tr>
+    <tr><td>Design AI product</td><td>Spike → measure → PRD (modern AI workflow)</td></tr>
+  </tbody>
+</table>
+
+<!-- ====================================================================== -->
+<div class="part">APPENDIX — Path B Project Log</div>
+
+<p>This section gets updated as you complete each project. Real PM artifacts, real lessons, real numbers.</p>
+
+<h2 id="log-p7">P7 — Customer Health Monitor (in progress)</h2>
+
+<p><em>To be filled in as we work through #81.</em></p>
+
+<table>
+  <thead><tr><th>Artifact</th><th>Status</th><th>Key insight</th></tr></thead>
+  <tbody>
+    <tr><td>1-Page PRD</td><td>⏳ Pending engineering completion</td><td>—</td></tr>
+    <tr><td>ICP + Anti-ICP</td><td>⏳ Pending</td><td>—</td></tr>
+    <tr><td>Eval Plan</td><td>⏳ Pending</td><td>—</td></tr>
+    <tr><td>GTM Brief</td><td>⏳ Pending</td><td>—</td></tr>
+  </tbody>
+</table>
+
+<h2 id="log-p8">P8 — PII Compliance Agent</h2>
+<p><em>Pending — engineering ticket #48 then PM ticket #82.</em></p>
+
+<h2 id="log-p9">P9 — Account Memory Agent</h2>
+<p><em>Pending — engineering ticket #49 then PM ticket #83.</em></p>
+
+<h2 id="log-p10">P10 — AgentPlatform (BIGGEST)</h2>
+<p><em>Pending — engineering tickets #43-#45, #74-#78 then PM ticket #84. Includes Buy-vs-Build vs LangSmith / Bedrock Agent Runtime.</em></p>
+
+<h2 id="log-p11">P11 — Contract Analyzer</h2>
+<p><em>Pending — engineering ticket #50 then PM ticket #85. Hallucination budget critical for legal docs.</em></p>
+
+<h2 id="log-p12">P12 — Framework Showdown</h2>
+<p><em>Pending — engineering ticket #80 then PM ticket #86. Decision framework + LinkedIn blog.</em></p>
+
+<footer>
+  AI Product Management Reference · v1.0 (2026-05-02) · Companion to Path B (P7-P12) · Will be updated as projects complete
+</footer>
+
+</body>
+</html>

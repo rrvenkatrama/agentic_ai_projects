@@ -83,6 +83,9 @@ Each remaining project produces 1-page artifacts alongside the engineering work.
 ### Templates (in `p0_pm_templates/`)
 - 1-page PRD · ICP · Eval Plan · GTM Brief · Risk Register · Working Backwards PR · Buy-vs-Build
 
+### Reference Doc
+- `p0_pm_templates/ai_product_management.html` — comprehensive AI PM reference: terminology, frameworks, AI-specific concepts, interview prep, project log appendix that grows per project
+
 ### PM Artifacts per Project (Kanban tickets #81-#86)
 
 | # | Project | Artifacts |
