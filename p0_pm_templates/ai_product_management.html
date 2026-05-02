@@ -121,11 +121,22 @@
     <li><a href="#artifact-6-wb">Working Backwards Press Release</a></li>
     <li><a href="#artifact-7-buy-build">Buy vs Build Analysis</a></li>
   </ul>
-  <strong>PART 5 — Discovery & Research</strong>
+  <strong>PART 5 — Working with Customers & Translating Needs into PRDs</strong>
   <ul>
+    <li><a href="#stakeholder-mapping">Stakeholder Mapping — Who Are Your "Customers"?</a></li>
+    <li><a href="#discovery-cycle">The Continuous Discovery Cycle</a></li>
+    <li><a href="#input-sources">Sources of Customer Input (and How to Weigh Them)</a></li>
     <li><a href="#discovery-interviews">Customer Interview Techniques</a></li>
     <li><a href="#mom-test">"The Mom Test" — Avoiding False Validation</a></li>
+    <li><a href="#five-whys">The 5 Whys Technique</a></li>
+    <li><a href="#journey-mapping">Customer Journey Mapping</a></li>
+    <li><a href="#aggregating-patterns">Aggregating Patterns Across Customers</a></li>
+    <li><a href="#translation-framework">Translating Customer Needs into PRDs (The Framework)</a></li>
+    <li><a href="#worked-example">Worked Example — From Customer Quote to PRD</a></li>
+    <li><a href="#discovery-pitfalls">Common Pitfalls & Anti-Patterns</a></li>
+    <li><a href="#ai-customer-dynamics">AI-Specific Customer Dynamics</a></li>
     <li><a href="#research-quant-qual">Quantitative vs Qualitative Research</a></li>
+    <li><a href="#discovery-tools">Discovery Tools</a></li>
     <li><a href="#competitive-analysis">Competitive Analysis (Lean Version)</a></li>
   </ul>
   <strong>PART 6 — Pricing & GTM for AI Products</strong>
@@ -566,50 +577,562 @@ Respond in JSON: {accuracy: int, helpfulness: int, tone: int}"</code></pre>
 <p>Decision framework: cost, time-to-value, customization, risk, strategic differentiation. Includes reversibility plan.</p>
 
 <!-- ====================================================================== -->
-<div class="part">PART 5 — Discovery & Research</div>
+<div class="part">PART 5 — Working with Customers & Translating Needs into PRDs</div>
+
+<p>This is the actual day-to-day work of a PM. Customers and users are the source of truth — the PM's job is to talk to them constantly, find patterns, and translate raw business needs into products that engineering can build.</p>
+
+<h2 id="stakeholder-mapping">Stakeholder Mapping — Who Are Your "Customers"?</h2>
+
+<p>"Customer" isn't one person. In B2B especially, you're balancing multiple stakeholders, each with different goals:</p>
+
+<table>
+  <thead><tr><th>Stakeholder</th><th>What they care about</th><th>How they evaluate</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>End User</strong></td>
+      <td>"Does this make my daily work easier?"</td>
+      <td>Daily friction, time saved, satisfaction</td>
+    </tr>
+    <tr>
+      <td><strong>Buyer / Economic Owner</strong></td>
+      <td>"Does this hit my business outcomes? Is the ROI clear?"</td>
+      <td>Cost vs measurable impact (revenue, efficiency)</td>
+    </tr>
+    <tr>
+      <td><strong>Executive Sponsor</strong></td>
+      <td>"Does this align with our strategic priorities?"</td>
+      <td>Visibility, board-friendly metrics</td>
+    </tr>
+    <tr>
+      <td><strong>IT / Procurement</strong></td>
+      <td>"Is this secure, compliant, integrable?"</td>
+      <td>SOC2, SSO, data residency, integration paths</td>
+    </tr>
+    <tr>
+      <td><strong>Legal / Compliance</strong></td>
+      <td>"Does this meet GDPR / HIPAA / industry rules?"</td>
+      <td>Data handling, audit trail, contract terms</td>
+    </tr>
+    <tr>
+      <td><strong>Champion / Internal Advocate</strong></td>
+      <td>"Will this make me look good?"</td>
+      <td>Career impact, reputational risk</td>
+    </tr>
+    <tr>
+      <td><strong>Detractor</strong></td>
+      <td>"Will this disrupt my territory or budget?"</td>
+      <td>Threat to existing tools / processes / power</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="info">
+  <div class="info-title">Critical insight: the buyer often isn't the user</div>
+  In ChurnGuard: User = Customer Success Manager (uses the dashboard daily). Buyer = VP CS (signs the $100K contract). Executive sponsor = CRO (cares about revenue retention numbers). IT = needs Salesforce SSO. Legal = needs GDPR compliance.
+  <br><br>
+  All five must say YES for a deal to close. Your PRD, ICP, and GTM materials must address EACH separately.
+</div>
+
+<h3>Building a stakeholder map (1-page artifact)</h3>
+<pre><code>For each stakeholder type:
+  - Title / role
+  - What they're measured on
+  - What they want from us
+  - What objections they'll raise
+  - What proof / artifacts will satisfy them</code></pre>
+
+<h2 id="discovery-cycle">The Continuous Discovery Cycle</h2>
+
+<p>Modern PM is NOT "do research once, then build." It's a continuous weekly habit:</p>
+
+<pre><code>Every week:
+  - 5-10 customer/prospect conversations (30-45 min each)
+  - 1-2 hours reviewing support tickets / Slack channels
+  - 1 hour analyzing usage data
+  - Write up patterns observed
+
+Every month:
+  - Synthesize: what's recurring? what's surprising?
+  - Update PRD assumptions based on what you learned
+  - Re-prioritize roadmap
+
+Every quarter:
+  - Larger retrospective: are we solving the right problems?
+  - Refresh ICP if needed
+  - Pricing experiments based on what customers value</code></pre>
+
+<p>Teresa Torres calls this "continuous discovery habits" — see her book/work for more depth.</p>
+
+<h2 id="input-sources">Sources of Customer Input (and How to Weigh Them)</h2>
+
+<table>
+  <thead><tr><th>Source</th><th>Strength</th><th>Weakness</th><th>How to weigh</th></tr></thead>
+  <tbody>
+    <tr><td>1:1 customer interviews</td><td>Deep context, follow-up questions</td><td>Small sample, recall bias</td><td>HIGH for problem discovery, LOW for prioritization</td></tr>
+    <tr><td>Support tickets</td><td>Real frustrations, high signal</td><td>Skewed toward complaints</td><td>HIGH for finding broken things</td></tr>
+    <tr><td>Sales call recordings (Gong/Chorus)</td><td>What prospects actually objected to</td><td>Sales team bias toward "feature requests"</td><td>HIGH for GTM, MEDIUM for product</td></tr>
+    <tr><td>NPS / CSAT surveys</td><td>Quantitative trend</td><td>Shallow ("just OK")</td><td>LOW signal alone, useful for trend</td></tr>
+    <tr><td>Product usage analytics</td><td>What people actually do</td><td>Doesn't tell you why</td><td>HIGH for behavior, paired with qual</td></tr>
+    <tr><td>Slack / Discord communities</td><td>Authentic voice, network effect</td><td>Loud minority effect</td><td>MEDIUM — surface patterns only</td></tr>
+    <tr><td>Internal employees using product</td><td>Easy access</td><td>Not your real customers</td><td>LOW for B2B, MEDIUM for dev tools</td></tr>
+    <tr><td>Executive directives ("the CEO wants X")</td><td>Strategic alignment</td><td>Often disconnected from customer reality</td><td>HIGH political weight, validate against real data</td></tr>
+    <tr><td>Sales reps relaying "the customer asked for X"</td><td>Real customer voice</td><td>Filtered through sales agenda</td><td>MEDIUM — verify by talking to the customer directly</td></tr>
+    <tr><td>Twitter / public reviews (G2, Capterra)</td><td>Public sentiment</td><td>Selection bias (very happy/angry)</td><td>LOW — tracks brand, not product depth</td></tr>
+  </tbody>
+</table>
+
+<div class="gotcha">
+  <div class="gotcha-title">⚠️ The "loudest customer" trap</div>
+  Don't build for the customer who emails the most. Build for the PATTERN across many customers. One angry customer ≠ a product priority. Aggregate before deciding.
+</div>
 
 <h2 id="discovery-interviews">Customer Interview Techniques</h2>
 
-<p>Modern PM discovery is continuous (5-10 conversations/week, not a one-shot research project).</p>
+<p>1:1 customer interviews are the most powerful discovery tool. 30-45 min, recorded (with permission), notes synthesized within 24h.</p>
 
 <h3>Good interview questions</h3>
 <ul>
-  <li>"Tell me about the last time you [had this problem]..."</li>
-  <li>"Walk me through your current process step by step."</li>
-  <li>"What's the worst part of your day related to X?"</li>
-  <li>"How do you currently work around this?"</li>
-  <li>"Have you ever tried to solve this? How did it go?"</li>
+  <li>"Tell me about the last time you [had this problem]..." — concrete past behavior</li>
+  <li>"Walk me through your current process step by step." — reveals workarounds</li>
+  <li>"What's the worst part of your day related to X?" — finds pain</li>
+  <li>"How do you currently work around this?" — reveals existing solutions</li>
+  <li>"Have you ever tried to solve this? How did it go?" — past purchase intent</li>
+  <li>"How much time/money does this cost you per week?" — quantify pain</li>
+  <li>"Who else is affected by this?" — finds the buyer</li>
+  <li>"If you had a magic wand, what would change?" — surfaces wish lists carefully</li>
 </ul>
 
-<h3>Bad interview questions</h3>
+<h3>Bad interview questions (avoid these)</h3>
 <ul>
-  <li>"Would you use a product that does X?" (hypothetical = unreliable)</li>
-  <li>"Do you like our product idea?" (everyone is polite to your face)</li>
-  <li>"How much would you pay?" (people lie about pricing)</li>
+  <li>"Would you use a product that does X?" — hypothetical = unreliable</li>
+  <li>"Do you like our product idea?" — politeness bias</li>
+  <li>"How much would you pay?" — people lie about pricing intent</li>
+  <li>"What features do you want?" — gets you a wish list, not the underlying need</li>
+  <li>"Would you pay $50/month for this?" — anchors them, biases response</li>
 </ul>
+
+<h3>Interview structure (45 min)</h3>
+<table>
+  <thead><tr><th>Time</th><th>Section</th><th>What to do</th></tr></thead>
+  <tbody>
+    <tr><td>0-5 min</td><td>Rapport + context</td><td>"Tell me about your role and what you do day-to-day."</td></tr>
+    <tr><td>5-15 min</td><td>Current state / pain</td><td>"Walk me through how you do X today. What's hard?"</td></tr>
+    <tr><td>15-25 min</td><td>Past behavior</td><td>"Tell me about the last time this went wrong. What happened?"</td></tr>
+    <tr><td>25-35 min</td><td>Workarounds + solutions tried</td><td>"How have you tried to solve this? What worked / didn't?"</td></tr>
+    <tr><td>35-40 min</td><td>Magnitude</td><td>"How often does this happen? What does it cost you?"</td></tr>
+    <tr><td>40-45 min</td><td>Wrap + referrals</td><td>"Who else should I talk to about this?"</td></tr>
+  </tbody>
+</table>
 
 <h2 id="mom-test">"The Mom Test" — Avoiding False Validation</h2>
 
 <p>Famous PM book by Rob Fitzpatrick. Three rules:</p>
 <ol>
-  <li>Talk about THEIR life, not your idea</li>
-  <li>Ask about specific past behavior, not opinions about the future</li>
-  <li>Talk less, listen more</li>
+  <li><strong>Talk about THEIR life, not your idea.</strong> Don't pitch.</li>
+  <li><strong>Ask about specific past behavior, not opinions about the future.</strong> "Tell me about the last time..." not "Would you...?"</li>
+  <li><strong>Talk less, listen more.</strong> Aim for 80% them, 20% you.</li>
 </ol>
 
 <p>Why "Mom Test"? Even your mom won't tell you the truth about your idea — she's being supportive. Need techniques to avoid hearing what you want to hear.</p>
+
+<h3>The 3 sub-techniques</h3>
+<ul>
+  <li><strong>Get specific:</strong> "How often did you do that this week?" not "How often do you usually...?"</li>
+  <li><strong>Probe for pain magnitude:</strong> "What did that cost you in time/money/stress?"</li>
+  <li><strong>Surface commitment:</strong> "Have you ever paid for a tool to solve this?" — past spending = real pain</li>
+</ul>
+
+<h2 id="five-whys">The 5 Whys Technique</h2>
+
+<p>When a customer says "I want X," ask "why" five times. Each layer peels back to the root need.</p>
+
+<h3>Worked example</h3>
+<pre><code>Customer: "I want a button to export data to CSV."
+
+Why? — "Because I need to share data with my finance team."
+
+Why? — "Because they need to reconcile our numbers monthly."
+
+Why? — "Because our Salesforce data and their bookings system don't match."
+
+Why? — "Because there's no integration between the systems."
+
+Why? — "Because each system was bought by a different team and IT never connected them."
+
+REAL NEED: data reconciliation between disconnected systems
+NOT what they asked for: "a CSV export button"
+
+What you might actually build:
+  - A scheduled report that auto-emails finance the reconciled data
+  - OR an integration that prevents the divergence in the first place
+
+The CSV button would technically satisfy the request — but miss the real problem.</code></pre>
+
+<div class="info">
+  <div class="info-title">Why this matters</div>
+  Customers articulate SOLUTIONS (build me X), not problems. The PM's job is to translate solutions back into problems, then build the right solution. Often it's totally different from what was asked for.
+</div>
+
+<h2 id="journey-mapping">Customer Journey Mapping</h2>
+
+<p>A visualization of the customer's full experience around a workflow — including pain points and opportunities. Used to find where to insert your product.</p>
+
+<h3>Simple journey map (5 columns)</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Stage</th>
+      <th>What they're doing</th>
+      <th>What they're feeling</th>
+      <th>Pain points</th>
+      <th>Opportunities</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Discover</td>
+      <td>Realize an account is at risk</td>
+      <td>Worried, behind</td>
+      <td>"Always too late"</td>
+      <td>Early warning system</td>
+    </tr>
+    <tr>
+      <td>Investigate</td>
+      <td>Pull together signals from CRM, support tickets</td>
+      <td>Frustrated by tool-switching</td>
+      <td>Manual + slow</td>
+      <td>Auto-aggregated view</td>
+    </tr>
+    <tr>
+      <td>Decide</td>
+      <td>Discuss with manager whether to intervene</td>
+      <td>Uncertain</td>
+      <td>"Is it worth my time?"</td>
+      <td>Confidence score</td>
+    </tr>
+    <tr>
+      <td>Act</td>
+      <td>Reach out to customer</td>
+      <td>Anxious about message</td>
+      <td>Don't know what to say</td>
+      <td>Suggested intervention</td>
+    </tr>
+    <tr>
+      <td>Follow-up</td>
+      <td>Track if intervention worked</td>
+      <td>Hopeful or defeated</td>
+      <td>No closure visibility</td>
+      <td>Outcome tracking</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>You can build a product that addresses one stage (focused MVP) or multiple stages (broader platform). Mapping the journey makes those decisions explicit.</p>
+
+<h2 id="aggregating-patterns">Aggregating Patterns Across Customers</h2>
+
+<p>One customer interview = an anecdote. Ten customers = a pattern. The discipline is in synthesizing.</p>
+
+<h3>The synthesis workflow</h3>
+<ol>
+  <li><strong>After each interview</strong>: write 3-5 quotes + key observations within 24h (memory fades fast)</li>
+  <li><strong>Tag each observation</strong> by theme: "data integration pain", "CSV exports requested", "SOC2 question raised"</li>
+  <li><strong>Weekly</strong>: count tags. Themes that recur across 3+ customers = signal. Single mentions = noise.</li>
+  <li><strong>Monthly</strong>: rewrite key themes as problem statements with evidence count</li>
+  <li><strong>Quarterly</strong>: feed into roadmap</li>
+</ol>
+
+<h3>Example synthesis output</h3>
+<pre><code>Theme: "Customer Success teams are reactive, not proactive"
+  Mentioned by: 12 of 18 interviews (67%)
+  Severity: HIGH (associated with $1M+ account losses)
+  Existing workarounds: spreadsheets, manual CRM reports, weekly review meetings
+  Magnitude: 8-15 hours/week per CSM spent on reactive triage
+
+Theme: "Want CSV export from dashboard"
+  Mentioned by: 3 of 18 interviews (17%)
+  Real need (after 5 whys): data reconciliation with finance — not export per se
+  → reframe as integration problem, not export problem</code></pre>
+
+<p>Tools: Dovetail, Notion, even a Google Sheet works. The discipline beats the tool.</p>
+
+<h2 id="translation-framework">Translating Customer Needs into PRDs (The Framework)</h2>
+
+<p>The core PM skill: turning raw customer input into a buildable spec. A 5-step framework:</p>
+
+<h3>Step 1 — Listen + Capture</h3>
+<p>Run interviews. Take quotes verbatim. Don't filter through your assumptions yet.</p>
+
+<h3>Step 2 — Aggregate + Theme</h3>
+<p>Find patterns across many conversations. What problems come up repeatedly? With what magnitude?</p>
+
+<h3>Step 3 — Reframe as Problem Statements</h3>
+<p>Convert "they want X" into "they have problem Y." Use the 5 Whys.</p>
+<pre><code>Wrong (solution): "Customers want a CSV export button"
+Right (problem):  "Customer Success teams need to reconcile CRM data with finance
+                   without manual copy-paste, currently costing 4 hours/week."</code></pre>
+
+<h3>Step 4 — Hypothesize the Job-To-Be-Done</h3>
+<p>What is the customer "hiring" your product to do for them? Frame as outcome, not feature.</p>
+<pre><code>JTBD: "When my finance team needs reconciled customer data,
+       I want to deliver it without manual work,
+       so I can focus on customer relationships, not data plumbing."</code></pre>
+
+<h3>Step 5 — Write the 1-Page PRD</h3>
+
+<p>Now you have everything to write a credible PRD:</p>
+
+<table>
+  <thead><tr><th>PRD section</th><th>Comes from</th></tr></thead>
+  <tbody>
+    <tr><td>Problem statement</td><td>Step 3 reframed problem</td></tr>
+    <tr><td>Hypothesis</td><td>Step 4 JTBD</td></tr>
+    <tr><td>Target users / ICP</td><td>Patterns from interviews — who said this most</td></tr>
+    <tr><td>Success metric</td><td>What change would prove the problem is solved (quantify)</td></tr>
+    <tr><td>MVP scope</td><td>Smallest thing to test the hypothesis</td></tr>
+    <tr><td>Open questions</td><td>What you DON'T know yet — answer in next discovery round</td></tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <div class="tip-title">The PRD is a hypothesis, not a contract</div>
+  PMs new to lean methodology think the PRD has to be "right." It doesn't — it has to be CLEAR about what you're testing. After the spike, you update the PRD with real numbers. Hypothesis confirmed → expand. Falsified → pivot.
+</div>
+
+<h2 id="worked-example">Worked Example — From Customer Quotes to PRD</h2>
+
+<p>End-to-end example, fictional but realistic:</p>
+
+<h3>The raw input — quotes from 10 interviews</h3>
+<blockquote>
+"We lose a $1M+ account every quarter and never see it coming." — VP CS at Series C SaaS
+<br><br>
+"My CSMs spend 60% of their time chasing accounts that already gave up." — VP CS at Series B
+<br><br>
+"By the time we hear about a churn, the customer has been mentally gone for 3 months." — CRO at $50M ARR
+<br><br>
+"I look at NPS and CSAT but they don't predict anything actionable." — CS Director
+<br><br>
+"I have 5 systems with churn signals — Salesforce, Zendesk, Mixpanel, Stripe, Slack — but no one stitches them together." — CS Ops Lead
+</blockquote>
+
+<h3>Step 2 — Aggregate themes</h3>
+<table>
+  <thead><tr><th>Theme</th><th>Frequency</th><th>Severity</th></tr></thead>
+  <tbody>
+    <tr><td>Surprise churn (no warning)</td><td>9/10</td><td>$1M+ losses per event</td></tr>
+    <tr><td>Reactive vs proactive CSMs</td><td>8/10</td><td>60% of CSM time wasted</td></tr>
+    <tr><td>Existing metrics (NPS, CSAT) not predictive</td><td>7/10</td><td>Lost trust in current tools</td></tr>
+    <tr><td>Data fragmented across 5+ systems</td><td>6/10</td><td>Manual aggregation = no signal</td></tr>
+  </tbody>
+</table>
+
+<h3>Step 3 — Reframe as problem statement</h3>
+<blockquote>
+B2B SaaS Customer Success teams (Series B+) lose major accounts unexpectedly because their existing health metrics (NPS/CSAT) don't predict churn early enough, and signals are fragmented across 5+ tools. By the time they react, the customer has already mentally churned. This costs $1M+ per surprise loss and consumes 60% of CSM time on reactive triage.
+</blockquote>
+
+<h3>Step 4 — JTBD hypothesis</h3>
+<blockquote>
+"When I'm responsible for customer retention, I want to know which accounts are at risk 90+ days before they churn, so I can intervene proactively and protect revenue."
+</blockquote>
+
+<h3>Step 5 — The 1-Page PRD</h3>
+<pre><code># ChurnGuard — 1-Page PRD
+
+Problem
+B2B SaaS CS teams lose $1M+ accounts unexpectedly. Existing tools don't
+predict churn early enough; signals are fragmented across 5+ systems.
+Result: 60% of CSM time is reactive triage of accounts already gone.
+
+Hypothesis
+We believe Series B+ B2B SaaS CSMs will adopt an early-warning agent
+because they cannot afford another surprise million-dollar loss.
+We'll know when 50% of pilot customers prevent at least one churn
+in the first quarter.
+
+Target Users
+PRIMARY USER: Customer Success Manager (CSM) at $20M-$200M ARR SaaS
+BUYER: VP Customer Success or CRO
+EXECUTIVE SPONSOR: CFO/Board (revenue retention)
+
+Success Metrics
+- Precision: 60%+ on churn predictions (low false positives)
+- Recall: 40%+ on actual churns (catch real problems)
+- CSM time savings: 5+ hours/week reclaimed
+- Customer save rate: 30% of flagged accounts prevented
+
+Scope (MVP, 8 weeks)
+IN: Watch 5 signals (login recency, ticket sentiment, NPS trend, payment delay, feature adoption)
+IN: Weekly digest email with top 5 at-risk accounts + reasoning
+IN: Salesforce integration (read-only)
+OUT: Mobile app, automated outreach, predictive cause analysis (Phase 2)
+
+Kill Criteria
+- If precision < 40% after 4 weeks: pivot model approach
+- If pilot customers don't see value at week 6: kill MVP
+- If cost per prediction > $0.50: re-architect
+
+Open Questions
+- Do CSMs trust AI predictions, or want explainability? (test in alpha)
+- Does intervention recommendation matter, or just early warning? (alpha)
+- Salesforce vs HubSpot first? (50/50 by current ICP usage)</code></pre>
+
+<p>Notice: every line of the PRD traces back to specific evidence from interviews. Nothing is made up. That's a credible PRD.</p>
+
+<h2 id="discovery-pitfalls">Common Pitfalls & Anti-Patterns</h2>
+
+<table>
+  <thead><tr><th>Anti-pattern</th><th>What goes wrong</th><th>Fix</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>"Build what the customer asked for"</strong></td>
+      <td>Customer asks for CSV button; real need is integration. You ship the wrong thing.</td>
+      <td>Always 5 Whys. Translate solutions to problems.</td>
+    </tr>
+    <tr>
+      <td><strong>"Loudest customer wins"</strong></td>
+      <td>Roadmap shaped by 1-2 vocal customers, ignores patterns</td>
+      <td>Aggregate across 10+ before prioritizing</td>
+    </tr>
+    <tr>
+      <td><strong>"Sales-driven roadmap"</strong></td>
+      <td>Every deal needs "one more feature." Roadmap becomes spaghetti.</td>
+      <td>Use a request log; prioritize by frequency + ICP fit, not deal size</td>
+    </tr>
+    <tr>
+      <td><strong>"Talking only to existing customers"</strong></td>
+      <td>Misses why prospects DIDN'T buy. Survivorship bias.</td>
+      <td>Interview lost-deal prospects too — incredibly informative</td>
+    </tr>
+    <tr>
+      <td><strong>"Executive whim driving roadmap"</strong></td>
+      <td>"The CEO heard X at a dinner" → 2 sprints derailed</td>
+      <td>Push back politely with data. "Let's validate with 3 customers first."</td>
+    </tr>
+    <tr>
+      <td><strong>"Vibes-based decisions"</strong></td>
+      <td>"I think customers want this." No evidence trail.</td>
+      <td>Every PRD must cite specific interview evidence + frequency</td>
+    </tr>
+    <tr>
+      <td><strong>"Boil the ocean MVP"</strong></td>
+      <td>MVP balloons to 12 features. Ships in 9 months instead of 8 weeks. By then market changed.</td>
+      <td>Cut scope ruthlessly. The MVP tests ONE hypothesis.</td>
+    </tr>
+    <tr>
+      <td><strong>"Confirmation bias in interviews"</strong></td>
+      <td>You hear what you want to hear because you ask leading questions</td>
+      <td>The Mom Test. Have a colleague review your interview transcripts.</td>
+    </tr>
+    <tr>
+      <td><strong>"Skipping the spike for AI products"</strong></td>
+      <td>Write detailed PRD for AI feature you've never tested. Build for 3 months. Doesn't work.</td>
+      <td>SPIKE FIRST. Always. AI behavior must be measured before specced.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="ai-customer-dynamics">AI-Specific Customer Dynamics</h2>
+
+<p>Customer expectations of AI products have unique distortions you must manage:</p>
+
+<table>
+  <thead><tr><th>Customer expectation</th><th>Reality</th><th>How PM handles it</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>"AI should be 100% accurate"</td>
+      <td>It's never 100%. Hallucinations exist.</td>
+      <td>Set explicit hallucination budget in PRD. Frame as "high accuracy + human safety net" — not "perfect."</td>
+    </tr>
+    <tr>
+      <td>"AI is magic, just throw a model at it"</td>
+      <td>Real AI products need eval frameworks, RAG, prompt iteration, monitoring</td>
+      <td>Educate during sales. Show eval results. Don't oversell.</td>
+    </tr>
+    <tr>
+      <td>"It worked great in the demo"</td>
+      <td>Demos are cherry-picked. Production has long tail of edge cases.</td>
+      <td>Closed alpha with REAL data. Set expectation: "v1 will surprise us."</td>
+    </tr>
+    <tr>
+      <td>"We don't trust AI for [high-stakes thing]"</td>
+      <td>Reasonable concern. Build trust gradually.</td>
+      <td>Start with human-in-loop. Expand autonomy as track record builds.</td>
+    </tr>
+    <tr>
+      <td>"How is this different from ChatGPT?"</td>
+      <td>Vague positioning. They've used ChatGPT and don't see why pay.</td>
+      <td>Sharp ICP, sharp problem statement. "This is for X doing Y, not general purpose."</td>
+    </tr>
+    <tr>
+      <td>"Privacy / data concerns"</td>
+      <td>Real risk if not addressed. Compliance affects deal flow.</td>
+      <td>Lead with data handling story. SOC2, HIPAA, BAA where applicable.</td>
+    </tr>
+    <tr>
+      <td>"What happens when the model gets deprecated?"</td>
+      <td>Models DO get deprecated. Anthropic/OpenAI swap them every 6-12 months.</td>
+      <td>Multi-vendor abstraction. Versioned prompts. Migration playbook in roadmap.</td>
+    </tr>
+    <tr>
+      <td>"Can you fine-tune on our data?"</td>
+      <td>Often unnecessary; RAG + good prompting beats fine-tuning for most cases.</td>
+      <td>Educate. Default to RAG. Fine-tune only when evals demand it.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>The "AI honeymoon → disillusionment → real value" curve</h3>
+<pre><code>Customer adoption typically goes:
+
+Week 1-2: HONEYMOON ("This is amazing!")
+              ↓
+Week 3-6: DISILLUSIONMENT ("It got X wrong, can we trust it?")
+              ↓
+Week 7+:  REAL VALUE if trust is rebuilt with measurable wins
+              OR
+              CHURN if you don't manage the dip
+
+PM job: design the disillusionment phase. Set expectations early.
+       Plan trust-building wins for week 4-6. Show eval improvements.</code></pre>
 
 <h2 id="research-quant-qual">Quantitative vs Qualitative Research</h2>
 
 <table>
   <thead><tr><th>Type</th><th>Answers</th><th>Tools</th></tr></thead>
   <tbody>
-    <tr><td>Qualitative (interviews)</td><td>WHY users do things</td><td>1:1 calls, observation, diary studies</td></tr>
-    <tr><td>Quantitative (analytics)</td><td>WHAT users do, how often</td><td>Mixpanel, Amplitude, dashboards</td></tr>
+    <tr><td>Qualitative (interviews)</td><td>WHY users do things</td><td>1:1 calls, observation, diary studies, Gong call recordings</td></tr>
+    <tr><td>Quantitative (analytics)</td><td>WHAT users do, how often</td><td>Mixpanel, Amplitude, dashboards, SQL on event data</td></tr>
   </tbody>
 </table>
 
-<p>Use both. Quant tells you something happened; qual tells you why.</p>
+<p>Use both. Quant tells you something happened; qual tells you why. The PM workflow:</p>
+
+<pre><code>1. QUANT spots an anomaly: "Activation rate dropped 20% last week"
+2. QUAL investigates: 5 interviews with users who didn't activate
+3. QUANT validates the hypothesis: "Was it the onboarding change? Yes — 40% drop in step 3"
+4. Fix → measure → iterate</code></pre>
+
+<h2 id="discovery-tools">Discovery Tools</h2>
+
+<table>
+  <thead><tr><th>Tool</th><th>Use</th></tr></thead>
+  <tbody>
+    <tr><td>Calendly + Zoom + transcription</td><td>Schedule and run interviews</td></tr>
+    <tr><td>Dovetail / Reduct / Otter</td><td>Transcribe + tag interview themes</td></tr>
+    <tr><td>Productboard / Aha! / Notion</td><td>Aggregate feature requests with evidence</td></tr>
+    <tr><td>Mixpanel / Amplitude</td><td>Behavioral analytics</td></tr>
+    <tr><td>Gong / Chorus</td><td>Sales call recordings (gold for what prospects object to)</td></tr>
+    <tr><td>Gainsight / Vitally</td><td>Customer success signals (for B2B)</td></tr>
+    <tr><td>Zendesk / Intercom</td><td>Support ticket patterns</td></tr>
+    <tr><td>Slack channels (customer + internal)</td><td>Real-time signal</td></tr>
+    <tr><td>Maze / UserTesting</td><td>Usability testing on prototypes</td></tr>
+  </tbody>
+</table>
+
+<p>Don't over-tool. A spreadsheet + recorded calls + 24h notes habit beats fancy tools without discipline.</p>
 
 <h2 id="competitive-analysis">Competitive Analysis (Lean Version)</h2>
 
@@ -622,7 +1145,12 @@ Respond in JSON: {accuracy: int, helpfulness: int, tone: int}"</code></pre>
   </tbody>
 </table>
 
-<p>One row per major competitor. Update quarterly.</p>
+<p>One row per major competitor. Update quarterly. Sources: G2, Capterra, sales call recordings (where prospects mention competitors).</p>
+
+<div class="tip">
+  <div class="tip-title">"Indirect competitors" matter more than direct ones</div>
+  Spreadsheets, manual processes, "doing nothing" — these are usually your real competition, not the named-brand alternatives. Most B2B AI products lose to "we'll keep doing it manually" more than to other vendors.
+</div>
 
 <!-- ====================================================================== -->
 <div class="part">PART 6 — Pricing & GTM for AI Products</div>
