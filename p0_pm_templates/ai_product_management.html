@@ -166,7 +166,7 @@
     <li><a href="#newsletters">Newsletters / Blogs</a></li>
     <li><a href="#frameworks-list">PM Framework Cheatsheet</a></li>
   </ul>
-  <strong>APPENDIX — Path B Project Log</strong>
+  <strong>APPENDIX A — Path B Project Log</strong>
   <ul>
     <li><a href="#log-p7">P7 — Customer Health Monitor</a> (in progress)</li>
     <li><a href="#log-p8">P8 — PII Compliance Agent</a></li>
@@ -174,6 +174,22 @@
     <li><a href="#log-p10">P10 — AgentPlatform</a></li>
     <li><a href="#log-p11">P11 — Contract Analyzer</a></li>
     <li><a href="#log-p12">P12 — Framework Showdown</a></li>
+  </ul>
+  <strong>APPENDIX B — Hallucination Deep Dive</strong>
+  <ul>
+    <li><a href="#halluc-what">What hallucination precisely means</a></li>
+    <li><a href="#halluc-examples">12 examples by category</a></li>
+    <li><a href="#halluc-causes">12 root causes</a></li>
+    <li><a href="#halluc-pm-implications">Implications for AI PMs</a></li>
+  </ul>
+  <strong>APPENDIX C — RAG + Grounding Deep Dive</strong>
+  <ul>
+    <li><a href="#rag-vs-grounding">RAG vs Grounding — the distinction</a></li>
+    <li><a href="#rag-failures">Why RAG alone hallucinates</a></li>
+    <li><a href="#grounding-three-fixes">Grounding's 3 mechanisms</a></li>
+    <li><a href="#grounding-spectrum">The grounding spectrum (5 levels)</a></li>
+    <li><a href="#grounding-faithfulness">Measuring with Ragas faithfulness</a></li>
+    <li><a href="#rag-grounding-glossary">Related terminology</a></li>
   </ul>
 </div>
 
@@ -1395,7 +1411,7 @@ Reference: your real eval framework setup in P7.</code></pre>
 </table>
 
 <!-- ====================================================================== -->
-<div class="part">APPENDIX — Path B Project Log</div>
+<div class="part">APPENDIX A — Path B Project Log</div>
 
 <p>This section gets updated as you complete each project. Real PM artifacts, real lessons, real numbers.</p>
 
@@ -1427,6 +1443,356 @@ Reference: your real eval framework setup in P7.</code></pre>
 
 <h2 id="log-p12">P12 — Framework Showdown</h2>
 <p><em>Pending — engineering ticket #80 then PM ticket #86. Decision framework + LinkedIn blog.</em></p>
+
+<!-- ====================================================================== -->
+<div class="part">APPENDIX B — Hallucination Deep Dive</div>
+
+<h2 id="halluc-what">What Hallucination Precisely Means</h2>
+
+<p>When an LLM produces output that is <strong>plausible-sounding but factually wrong, fabricated, or unsupported by its inputs</strong>. Not random gibberish — confident, fluent, often expert-sounding, and incorrect.</p>
+
+<p>Critically: the model doesn't "know" it's hallucinating. It's not lying. It's generating tokens that fit the pattern of a correct answer without grounding them in truth.</p>
+
+<h2 id="halluc-examples">12 Examples by Category</h2>
+
+<h3>1. Fabricated facts</h3>
+<p>Model invents people, places, events, statistics that don't exist.</p>
+<pre><code>User: "Who won the Nobel Peace Prize in 2024?"
+Bad: "The 2024 Nobel Peace Prize was awarded to Jane Doe, a Pakistani
+     human rights activist..."
+Reality: Made up. Actual winner was Nihon Hidankyo. The model produced
+a plausible-shaped answer because that's what Nobel Peace Prize answers
+look like.</code></pre>
+
+<h3>2. Fabricated citations / sources</h3>
+<p>Model invents books, papers, URLs, court cases that sound real.</p>
+<pre><code>User: "What does the Smith vs. Acme 2018 ruling say?"
+Bad: "In Smith vs. Acme (2018), the 5th Circuit ruled..."
+Reality: Doesn't exist. Lawyers have been sanctioned for filing
+AI-generated briefs citing fake cases (real 2023 incident).</code></pre>
+
+<h3>3. Fabricated technical details</h3>
+<p>Model generates API methods, function signatures, library features that don't exist.</p>
+<pre><code>User: "How do I use pandas .auto_normalize() method?"
+Bad: "df.auto_normalize(method='zscore')..."
+Reality: pandas has no such method. Invented because it fits the pattern.</code></pre>
+
+<h3>4. Confidently wrong arithmetic / reasoning</h3>
+<pre><code>User: "If I invest $10,000 at 7% for 30 years, what's the value?"
+Bad: "$76,123.04"
+Reality: $76,122.55 (close but wrong). Or worse: off by a factor of 10.</code></pre>
+
+<h3>5. Misattribution</h3>
+<p>Model attributes correct quotes/ideas to wrong people.</p>
+<pre><code>User: "Who said 'The unexamined life is not worth living'?"
+Bad: "Plato said this in his Republic."
+Reality: Socrates (per Plato's Apology). Subtle confusion.</code></pre>
+
+<h3>6. False precision</h3>
+<p>Model gives specific numbers/dates when it shouldn't have them.</p>
+<pre><code>User: "How many employees does Acme Corp have?"
+Bad: "Acme Corp has approximately 2,847 employees."
+Reality: Model has no idea. Made up the precision because that's what
+authoritative answers look like.</code></pre>
+
+<h3>7. Out-of-context grounding (RAG-specific)</h3>
+<p>RAG retrieves correct documents, but model ignores them and answers from training data.</p>
+<pre><code>[Retrieved doc says: "Our return policy is 60 days."]
+User: "What's your return policy?"
+Bad: "Our return policy is 30 days."
+Reality: Model defaulted to its trained knowledge of typical return
+policies (30 days is common) instead of the retrieved 60 days.</code></pre>
+
+<h3>8. Tool-call hallucination (agent-specific)</h3>
+<pre><code>User: "Get the weather in Paris"
+Bad agent: Calls get_temperature(location="Paris", include_humidity=True)
+Reality: Actual tool is get_weather(city="Paris"). Invented parameter.
+
+Worse: Some models will fabricate tool RESULTS if a tool fails — pretend
+it returned data that it didn't.</code></pre>
+
+<h3>9. Multi-step reasoning errors</h3>
+<pre><code>"Step 1: Acme has 100 customers.
+ Step 2: 30% churn = 30 customers.
+ Step 3: Average customer worth $5,000.
+ Step 4: Total churn impact: $15,000."
+Reality: Step 4 should be $150,000. Each step looks right but the
+math collapses.</code></pre>
+
+<h3>10. Self-contradiction</h3>
+<pre><code>"Paragraph 1: The Eiffel Tower was completed in 1889..."
+"Paragraph 3: ...notable for being built in 1887, the Eiffel Tower..."</code></pre>
+
+<h3>11. Hallucinated UI elements / instructions</h3>
+<p>Model tells users to click buttons that don't exist in the actual product.</p>
+<pre><code>User: "How do I export my Slack data?"
+Bad: "Go to Settings → Privacy → Export → Click 'Download Archive'"
+Reality: That menu path doesn't exist. User gets frustrated.</code></pre>
+
+<h3>12. Persona drift</h3>
+<p>Model agrees with confident-sounding wrong premises rather than challenging them.</p>
+<pre><code>User: "As we discussed, Python's GIL allows true parallelism, right?"
+Bad: "Yes, exactly. The GIL enables..."
+Reality: GIL prevents true parallelism for CPU-bound work. Model
+sycophantically agreed with the false premise.</code></pre>
+
+<h2 id="halluc-causes">12 Root Causes</h2>
+
+<h3>Cause 1 — Probabilistic generation, not retrieval</h3>
+<p>LLMs predict next tokens based on probability over training data. They're <strong>not databases of facts</strong>. When asked "who won X," they generate the most likely-shaped answer, not the actual answer.</p>
+<p><strong>Mitigation:</strong> Force grounding via RAG. Don't ask the LLM to recall facts — give it the facts and ask it to synthesize.</p>
+
+<h3>Cause 2 — Training data cutoff</h3>
+<p>Models are trained through some date. Anything after = model has no knowledge but doesn't always know it doesn't know.</p>
+<p><strong>Mitigation:</strong> Tools/web search for time-sensitive info. State the cutoff in system prompt.</p>
+
+<h3>Cause 3 — Underrepresentation of facts in training</h3>
+<p>Facts mentioned once in trillions of tokens have low signal — the model might know they exist but get details wrong. This is why models are wrong about niche topics but right about common ones.</p>
+<p><strong>Mitigation:</strong> Don't ask LLMs about rare/niche topics without grounding. Use RAG with authoritative sources.</p>
+
+<h3>Cause 4 — Prompt ambiguity</h3>
+<p>Vague prompts → model has to "fill in the blanks" → invention.</p>
+<pre><code>Vague: "Tell me about Johnson."  → invents details
+Specific: "Tell me about Johnson, the 36th US president."  → constrained</code></pre>
+<p><strong>Mitigation:</strong> Detailed prompts. Constrain the answer space.</p>
+
+<h3>Cause 5 — Confidence bias in training</h3>
+<p>Training rewards models for producing confident, fluent text. Hedging often produced lower-rated responses during RLHF. Result: model defaults to confident answers even when uncertain.</p>
+<p><strong>Mitigation:</strong> System prompts that explicitly allow "I don't know." Confidence scoring.</p>
+
+<h3>Cause 6 — Pattern completion under pressure</h3>
+<p>If the prompt SOUNDS LIKE a question with a definitive answer, the model produces a definitive-shaped answer — regardless of whether the answer exists.</p>
+<pre><code>"What was the 7th law of thermodynamics?"
+Model: Generates a 7th law. Reality: there are only 4.</code></pre>
+<p><strong>Mitigation:</strong> Encourage the model to challenge presuppositions.</p>
+
+<h3>Cause 7 — Long-context drift</h3>
+<p>Models lose coherence in long contexts. Information from early conversation gets forgotten or misremembered.</p>
+<p><strong>Mitigation:</strong> Periodically re-summarize key constraints. Use structured memory (Mem0, Zep). Repeat critical context in system prompt.</p>
+
+<h3>Cause 8 — Tool / function calling without validation</h3>
+<p>LLMs generating structured tool calls can hallucinate parameters that don't exist or have wrong types.</p>
+<p><strong>Mitigation:</strong> Strict schema validation (Pydantic). Reject malformed calls and force the model to retry. Use models with strict structured output mode.</p>
+
+<h3>Cause 9 — RAG retrieval failures</h3>
+<p>In RAG systems, hallucination has TWO sources: (a) wrong documents retrieved, or (b) right documents retrieved but model didn't use them.</p>
+<p><strong>Mitigation:</strong> Improve retrieval (better embeddings, chunking, reranking). Force citations. Use Ragas to measure groundedness.</p>
+
+<h3>Cause 10 — Insufficient context about constraints</h3>
+<p>The model doesn't know what it's NOT supposed to do unless you tell it.</p>
+<p><strong>Mitigation:</strong> Explicit constraints in system prompts. Define out-of-scope behavior.</p>
+
+<h3>Cause 11 — Adversarial inputs</h3>
+<p>Some hallucinations are induced by prompt injection or adversarial phrasing — questions that presuppose false facts.</p>
+<p><strong>Mitigation:</strong> Recognize and refuse questions based on false premises. Input filtering.</p>
+
+<h3>Cause 12 — Model size + knowledge depth tradeoff</h3>
+<p>Smaller models hallucinate more on niche topics. Bigger models hallucinate less on facts but more on highly specific things (because they fluently fill gaps).</p>
+<p><strong>Mitigation:</strong> Right-size the model. Don't ask Haiku for legal precedent; don't ask Opus to do simple structured extraction.</p>
+
+<h3>Quick reference table</h3>
+<table>
+  <thead><tr><th>Root cause</th><th>Where it happens</th><th>Primary mitigation</th></tr></thead>
+  <tbody>
+    <tr><td>Probabilistic generation</td><td>All LLM use</td><td>RAG + grounding</td></tr>
+    <tr><td>Training cutoff</td><td>Time-sensitive queries</td><td>Tools / web search</td></tr>
+    <tr><td>Underrepresented facts</td><td>Niche topics</td><td>RAG with authoritative sources</td></tr>
+    <tr><td>Prompt ambiguity</td><td>Vague user input</td><td>Constrain prompts</td></tr>
+    <tr><td>Confidence bias</td><td>Default behavior</td><td>Allow "I don't know"</td></tr>
+    <tr><td>Pattern completion</td><td>Presupposing questions</td><td>Challenge presuppositions</td></tr>
+    <tr><td>Long-context drift</td><td>Multi-turn conversations</td><td>Memory systems, re-summarization</td></tr>
+    <tr><td>Tool call invention</td><td>Agent / function calling</td><td>Schema validation</td></tr>
+    <tr><td>RAG failures</td><td>RAG systems</td><td>Better retrieval + groundedness eval</td></tr>
+    <tr><td>Missing constraints</td><td>Underspec'd system</td><td>Explicit constraints in prompt</td></tr>
+    <tr><td>Adversarial inputs</td><td>User prompts</td><td>Refusal patterns</td></tr>
+    <tr><td>Wrong model size</td><td>Mismatched model/task</td><td>Right-size model selection</td></tr>
+  </tbody>
+</table>
+
+<h2 id="halluc-pm-implications">Implications for AI PMs</h2>
+
+<p>You can't eliminate hallucination — you can only manage it. The PM's responsibility:</p>
+
+<ol>
+  <li><strong>Set a hallucination budget</strong> — explicit acceptable rate per use case (5% for marketing, 0.5% for legal)</li>
+  <li><strong>Choose architecture to match the budget</strong> — RAG + citations for high-accuracy needs; bare LLM for creative work</li>
+  <li><strong>Build evals</strong> — measure hallucination rate continuously (Ragas faithfulness, golden test sets)</li>
+  <li><strong>Define kill criteria</strong> — what hallucination rate would force you to roll back</li>
+  <li><strong>Design for graceful failure</strong> — confidence thresholds, "I don't know" responses, human review queues</li>
+  <li><strong>Communicate with users</strong> — set expectations that the system is high-accuracy, not perfect</li>
+</ol>
+
+<p>Hallucination management is one of the defining skills of AI PMs. Understanding the root causes lets you decide which mitigations to invest in for each product.</p>
+
+<!-- ====================================================================== -->
+<div class="part">APPENDIX C — RAG + Grounding Deep Dive</div>
+
+<h2 id="rag-vs-grounding">RAG vs Grounding — The Distinction</h2>
+
+<p>The two get conflated, but they're separate problems.</p>
+
+<table>
+  <thead><tr><th>Term</th><th>What it means</th><th>What it solves</th></tr></thead>
+  <tbody>
+    <tr><td><strong>RAG</strong> (Retrieval-Augmented Generation)</td><td>Retrieve relevant docs, put them in the prompt, ask the LLM</td><td>The retrieval problem — "get relevant info into context"</td></tr>
+    <tr><td><strong>Grounding</strong></td><td>Discipline that forces the model to ANSWER FROM the retrieved context (not drift to training data) and prove it via citations</td><td>The adherence problem — "make the model actually use it"</td></tr>
+  </tbody>
+</table>
+
+<p>RAG = "I gave you the docs." Grounding = "Use ONLY the docs and show your work."</p>
+
+<h2 id="rag-failures">Why RAG Alone Hallucinates</h2>
+
+<p>Just because you put docs in the prompt doesn't mean the model uses them. Real failure mode:</p>
+
+<pre><code>[Retrieved doc says: "Our return policy is 60 days."]
+
+User: "What's your return policy?"
+Model: "Our return policy is 30 days."</code></pre>
+
+<p>What happened? The model has seen "return policy is usually 30 days" in millions of training examples. The retrieved 60-day doc is one signal among many. The model's training-data instinct overpowered the retrieved context.</p>
+
+<p>This is <strong>ungrounded</strong> — the model produced an answer not supported by the provided context. Bare RAG didn't enforce adherence.</p>
+
+<h2 id="grounding-three-fixes">Grounding's 3 Mechanisms</h2>
+
+<h3>1. System prompt constraint</h3>
+<p>Tell the model EXPLICITLY that it must answer from context only:</p>
+<pre><code>SYSTEM_PROMPT = """
+You are a helpful assistant. Answer questions ONLY using information from
+the provided context below. If the context doesn't contain the answer, say
+"I don't have that information" — DO NOT use your general knowledge.
+
+Always cite which passage you used by quoting the relevant sentence.
+
+Context:
+{retrieved_documents}
+"""</code></pre>
+<p>This is the cheapest, most-impactful change. Most "grounding failures" come from missing this instruction.</p>
+
+<h3>2. Citation enforcement</h3>
+<p>Require the model to quote or cite the specific passage it used:</p>
+<pre><code>UNGROUNDED: "The return policy is 30 days."
+            (no source — can't tell where this came from)
+
+GROUNDED:   "The return policy is 60 days, per the policy document:
+             'Customers may return items within 60 calendar days of purchase.'"
+            (cited — verifiable against retrieved docs)</code></pre>
+<p>If the model can't produce a citation matching the retrieved docs, it's hallucinating.</p>
+
+<h3>3. Eval — measure groundedness automatically</h3>
+<p>Use Ragas to score every response on <strong>faithfulness</strong> (also called groundedness):</p>
+<pre><code>from ragas.metrics import faithfulness
+
+# Faithfulness = % of statements in answer that are supported by context
+# Score 1.0 = every claim grounded in retrieved docs
+# Score 0.5 = half the claims unsupported (hallucinations)</code></pre>
+<p>PMs set thresholds: "Production must maintain faithfulness ≥ 0.85."</p>
+
+<h2 id="grounding-spectrum">The Grounding Spectrum (5 Levels)</h2>
+
+<table>
+  <thead><tr><th>Level</th><th>Mechanism</th><th>Faithfulness</th></tr></thead>
+  <tbody>
+    <tr><td><strong>0</strong> — No RAG</td><td>LLM answers from training data only</td><td>~0.5 (hallucinates often)</td></tr>
+    <tr><td><strong>1</strong> — Bare RAG</td><td>Docs in prompt, no instructions</td><td>~0.7 (uses some docs)</td></tr>
+    <tr><td><strong>2</strong> — RAG + system prompt</td><td>"Use only context" instruction</td><td>~0.85</td></tr>
+    <tr><td><strong>3</strong> — RAG + citations required</td><td>Model must quote passages</td><td>~0.92</td></tr>
+    <tr><td><strong>4</strong> — RAG + refusal + eval</td><td>Refuses without context, faithfulness measured</td><td>~0.95+</td></tr>
+    <tr><td><strong>5</strong> — RAG + structured output verification</td><td>Output schema validates citations against docs</td><td>~0.98</td></tr>
+  </tbody>
+</table>
+
+<p>Most production AI products live at level 3-4. Level 5 is for high-stakes use cases (legal, medical).</p>
+
+<h3>Picking the right level (PM decision)</h3>
+<table>
+  <thead><tr><th>Use case</th><th>Recommended level</th></tr></thead>
+  <tbody>
+    <tr><td>Marketing copy generation</td><td>1-2 (creativity > strict accuracy)</td></tr>
+    <tr><td>Customer support chatbot</td><td>3 (cited answers from docs)</td></tr>
+    <tr><td>Internal knowledge search</td><td>3-4 (cited + refusal)</td></tr>
+    <tr><td>Legal contract analysis</td><td>5 (verified citations or refuse)</td></tr>
+    <tr><td>Medical / clinical decision support</td><td>5 + human-in-loop (don't ship without)</td></tr>
+  </tbody>
+</table>
+
+<h2 id="grounding-faithfulness">Measuring with Ragas Faithfulness</h2>
+
+<pre><code>from ragas import evaluate
+from ragas.metrics import faithfulness, answer_relevancy, context_precision
+from datasets import Dataset
+
+# Build eval dataset
+data = Dataset.from_dict({
+    "question": ["When does the contract end?"],
+    "answer": ["The contract ends December 31, 2027."],
+    "contexts": [["Section 4.2: Term ends December 31, 2027."]],
+})
+
+# Run eval
+result = evaluate(data, metrics=[faithfulness])
+print(result)
+# {'faithfulness': 1.0}    ← perfect — claim fully supported by context</code></pre>
+
+<p>Ragas does this by:</p>
+<ol>
+  <li>Decomposing the answer into atomic claims</li>
+  <li>Checking each claim against the retrieved context</li>
+  <li>Scoring: % of claims that are supported</li>
+</ol>
+
+<p>PMs set a threshold (e.g., faithfulness ≥ 0.85), monitor in production, and roll back if it drops.</p>
+
+<h3>Real example — Legal contract analyzer (P11 territory)</h3>
+
+<p>Without grounding:</p>
+<pre><code>[Retrieved contract clause: "Term ends December 31, 2027."]
+User: "When does this contract end?"
+Model: "Most contracts of this type are 1-year terms ending in
+        the year they were signed."
+→ Hallucinated. Drifted to typical patterns instead of the specific clause.</code></pre>
+
+<p>With grounding:</p>
+<pre><code>SYSTEM: "Answer only from the contract text. Quote the exact clause.
+         If the answer isn't in the contract, say so."
+
+[Retrieved contract clause: "Term ends December 31, 2027."]
+User: "When does this contract end?"
+Model: "The contract ends December 31, 2027, per Section 4.2:
+        'Term ends December 31, 2027.'"
+→ Grounded. Verifiable. Auditable.</code></pre>
+
+<p>For legal use cases, grounding isn't optional — ungrounded outputs create liability.</p>
+
+<h2 id="rag-grounding-glossary">Related Terminology</h2>
+
+<table>
+  <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><strong>RAG</strong></td><td>Retrieval-Augmented Generation — fetch docs, put in prompt, ask model</td></tr>
+    <tr><td><strong>Grounding</strong></td><td>Discipline of forcing the model to answer FROM the context</td></tr>
+    <tr><td><strong>Faithfulness</strong></td><td>Metric: % of answer claims supported by context (Ragas)</td></tr>
+    <tr><td><strong>Groundedness</strong></td><td>Synonym for faithfulness — used interchangeably</td></tr>
+    <tr><td><strong>Citation / Attribution</strong></td><td>Showing which passage backs each claim</td></tr>
+    <tr><td><strong>Hallucination rate</strong></td><td>Inverse of faithfulness — % claims unsupported</td></tr>
+    <tr><td><strong>Hybrid search</strong></td><td>Combine vector + keyword search for better retrieval</td></tr>
+    <tr><td><strong>Reranking</strong></td><td>Re-score top-K retrieved docs with a cross-encoder for higher precision</td></tr>
+    <tr><td><strong>Refusal pattern</strong></td><td>Model says "I don't know" instead of guessing when context is missing</td></tr>
+    <tr><td><strong>Context precision</strong></td><td>Ragas metric: of retrieved docs, how many are actually relevant?</td></tr>
+    <tr><td><strong>Context recall</strong></td><td>Ragas metric: of relevant info, how much was retrieved?</td></tr>
+    <tr><td><strong>Answer relevancy</strong></td><td>Ragas metric: does the answer address the question (regardless of correctness)?</td></tr>
+  </tbody>
+</table>
+
+<h3>The big takeaway</h3>
+
+<div class="info">
+  <div class="info-title">RAG vs Grounding — the one-liner</div>
+  <strong>RAG</strong> = "I retrieved relevant docs and gave them to the model."<br>
+  <strong>Grounding</strong> = "I forced the model to actually USE those docs and prove it."<br><br>
+  RAG without grounding is hopeful retrieval. Grounded RAG is enforced. For high-accuracy AI products, grounding is the layer that makes RAG actually trustworthy.
+</div>
 
 <footer>
   AI Product Management Reference · v1.0 (2026-05-02) · Companion to Path B (P7-P12) · Will be updated as projects complete
