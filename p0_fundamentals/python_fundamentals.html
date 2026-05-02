@@ -142,7 +142,27 @@
     <li><a href="#no-overloading">Why Python Doesn't Support Method Overloading</a></li>
     <li><a href="#cpp-comparison">Quick C++ Comparison Table</a></li>
   </ul>
-  <strong>PART 8 — Dunder Methods (Python's Data Model)</strong>
+  <strong>PART 8 — async / await Patterns</strong>
+  <ul>
+    <li><a href="#async-mental-model">The Mental Model — Single-Threaded Cooperation</a></li>
+    <li><a href="#async-event-loop">The Event Loop</a></li>
+    <li><a href="#async-essential-patterns">5 Essential async Patterns</a></li>
+    <li><a href="#async-vs-sync">When async Helps vs Doesn't</a></li>
+    <li><a href="#async-gotchas">Common Gotchas</a></li>
+  </ul>
+  <strong>PART 9 — Pydantic Essentials</strong>
+  <ul>
+    <li><a href="#pydantic-what">What Pydantic Does</a></li>
+    <li><a href="#pydantic-basemodel">BaseModel and Type Annotations</a></li>
+    <li><a href="#pydantic-creation">Three Ways to Create an Instance</a></li>
+    <li><a href="#pydantic-serialize">Serialization (model_dump / model_dump_json)</a></li>
+    <li><a href="#pydantic-optional">Optional Fields and Defaults</a></li>
+    <li><a href="#pydantic-field">Field() — Constraints and Metadata</a></li>
+    <li><a href="#pydantic-validators">Custom Validators</a></li>
+    <li><a href="#pydantic-tool-schema">Tool Input Schemas (Agentic AI Pattern)</a></li>
+    <li><a href="#pydantic-vs-class">Pydantic vs Plain Class vs @dataclass</a></li>
+  </ul>
+  <strong>PART 10 — Dunder Methods (Python's Data Model)</strong>
   <ul>
     <li><a href="#what-dunders">What Dunders Are</a></li>
     <li><a href="#builtin-mapping">How Built-ins Map to Dunders</a></li>
@@ -2116,7 +2136,373 @@ class Stock:
 </table>
 
 <!-- ====================================================================== -->
-<div class="part">PART 8 — Dunder Methods (Python's Data Model)</div>
+<!-- ====================================================================== -->
+<div class="part">PART 8 — async / await Patterns</div>
+
+<h2 id="async-mental-model">The Mental Model — Single-Threaded Cooperation</h2>
+
+<p><strong>async/await is NOT about threads.</strong> It's <strong>single-threaded cooperative concurrency</strong>:</p>
+
+<ul>
+  <li>Runs on ONE thread (the event loop thread)</li>
+  <li><code>await</code> yields control to OTHER coroutines, not to other threads</li>
+  <li>All coroutines share one thread, taking turns at <code>await</code> points</li>
+  <li>Different from preemptive multithreading (where the OS forcibly switches threads)</li>
+</ul>
+
+<table>
+  <thead><tr><th></th><th>async (asyncio)</th><th>Threading</th></tr></thead>
+  <tbody>
+    <tr><td>Threads used</td><td>1</td><td>Many</td></tr>
+    <tr><td>Switching</td><td>Cooperative — at <code>await</code></td><td>Preemptive — OS forces it</td></tr>
+    <tr><td>Memory per task</td><td>Tiny (~KB per coroutine)</td><td>Heavy (~MB per thread)</td></tr>
+    <tr><td>Locks needed</td><td>Rarely</td><td>Yes (data races possible)</td></tr>
+    <tr><td>Best for</td><td>I/O-bound work (network, disk)</td><td>I/O + CPU-bound mix</td></tr>
+    <tr><td>1000 concurrent ops</td><td>Easy (1000 coroutines)</td><td>Painful (1000 threads)</td></tr>
+  </tbody>
+</table>
+
+<h2 id="async-event-loop">The Event Loop</h2>
+
+<p>An event loop is a <code>while True</code> scheduler that:</p>
+<ol>
+  <li>Picks a coroutine that's READY to run</li>
+  <li>Runs it until it hits <code>await</code> (which pauses it)</li>
+  <li>Registers what the await is waiting for (timer, network IO)</li>
+  <li>Picks the next ready coroutine</li>
+  <li>If everyone is awaiting, sleeps until something becomes ready (using OS-level <code>epoll</code>/<code>kqueue</code>)</li>
+</ol>
+
+<p><strong>This is why one thread can handle thousands of concurrent connections</strong> — the OS multiplexes I/O notifications, and asyncio just wraps that in a friendly coroutine API.</p>
+
+<h3>How asyncio.run works</h3>
+<pre><code>asyncio.run(main())
+# Equivalent to:
+loop = asyncio.new_event_loop()
+try:
+    loop.run_until_complete(main())     # runs main() ONCE
+finally:
+    loop.close()</code></pre>
+
+<p><code>asyncio.run(main())</code> runs <code>main()</code> exactly once. If <code>main()</code> contains a <code>while True</code>, that's <code>main()</code> looping internally — not <code>asyncio.run</code> re-invoking it.</p>
+
+<h2 id="async-essential-patterns">5 Essential async Patterns</h2>
+
+<table>
+  <thead><tr><th>Pattern</th><th>When to use</th></tr></thead>
+  <tbody>
+    <tr><td><code>asyncio.run(main())</code></td><td>Top-level entry point</td></tr>
+    <tr><td><code>await coro()</code></td><td>Sequential — wait for one thing</td></tr>
+    <tr><td><code>await asyncio.gather(*coros)</code></td><td>Concurrent — fan out independent calls</td></tr>
+    <tr><td><code>asyncio.create_task(coro())</code></td><td>Fire-and-forget background work</td></tr>
+    <tr><td><code>async with</code> / <code>async for</code></td><td>Async resources / iterators</td></tr>
+  </tbody>
+</table>
+
+<h3>Sequential vs Concurrent</h3>
+<pre><code># Sequential — 3 seconds total (each waits for previous)
+result1 = await fetch("AAPL")     # 1s
+result2 = await fetch("GOOGL")    # 1s
+result3 = await fetch("MSFT")     # 1s
+
+# Concurrent with gather — 1 second total
+results = await asyncio.gather(
+    fetch("AAPL"),
+    fetch("GOOGL"),
+    fetch("MSFT"),
+)</code></pre>
+
+<h3>gather with error handling</h3>
+<pre><code>results = await asyncio.gather(
+    fetch_profile(),
+    fetch_prefs(),
+    return_exceptions=True,        # don't crash on one failure
+)
+for r in results:
+    if isinstance(r, Exception):
+        print(f"failed: {r}")
+    else:
+        print(f"got: {r}")</code></pre>
+
+<h3>create_task — fire-and-forget</h3>
+<pre><code>async def main():
+    asyncio.create_task(send_analytics(...))     # don't await
+    return await respond_to_user()                # client gets fast response</code></pre>
+
+<h3>async with / async for (used heavily in MCP code)</h3>
+<pre><code>async with streamablehttp_client(URL) as (read, write, _):
+    async with ClientSession(read, write) as session:
+        await session.initialize()
+
+async for chunk in stream.text_stream:
+    print(chunk, end="")</code></pre>
+
+<h2 id="async-vs-sync">When async Helps vs Doesn't</h2>
+
+<table>
+  <thead><tr><th>Situation</th><th>Async helps?</th></tr></thead>
+  <tbody>
+    <tr><td>Standalone script, one while loop, nothing else running</td><td>❌ No real benefit (could be sync)</td></tr>
+    <tr><td>Server with many clients</td><td>✅ Massive — sync would serialize all clients</td></tr>
+    <tr><td>Multiple coroutines coexisting</td><td>✅ Each runs during others' awaits</td></tr>
+    <tr><td>Need cancellation / timeouts</td><td>✅ Event loop manages it cleanly</td></tr>
+    <tr><td>Long-running daemon with periodic background tasks</td><td>✅ Background tasks run during main loop's awaits</td></tr>
+    <tr><td>Just one coroutine, no I/O</td><td>❌ Use sync — async is overhead</td></tr>
+  </tbody>
+</table>
+
+<div class="info">
+  <div class="info-title">The benefit of await in a regular while loop</div>
+  Even with no <code>gather</code>, <code>await</code> lets <strong>other coroutines</strong> on the same event loop run while this one waits. The benefit only shows when something ELSE wants to use the thread (server with multiple clients, background tasks, etc.).
+</div>
+
+<h2 id="async-gotchas">Common async Gotchas</h2>
+
+<div class="gotcha">
+  <div class="gotcha-title">⚠️ Forgetting await</div>
+  <pre><code>result = fetch_price("AAPL")           # ❌ this is a COROUTINE OBJECT, not the result
+result = await fetch_price("AAPL")     # ✅ awaited — get the actual result</code></pre>
+</div>
+
+<div class="gotcha">
+  <div class="gotcha-title">⚠️ Calling sync blocking code in async</div>
+  <pre><code>async def bad():
+    time.sleep(5)              # ❌ BLOCKS the event loop for 5 seconds
+
+async def good():
+    await asyncio.sleep(5)     # ✅ yields, others can run
+
+# If you must call blocking sync code:
+result = await asyncio.to_thread(blocking_function, arg1, arg2)</code></pre>
+</div>
+
+<h3>Cheatsheet</h3>
+<table>
+  <thead><tr><th>Need</th><th>Code</th></tr></thead>
+  <tbody>
+    <tr><td>Define a coroutine</td><td><code>async def foo(): ...</code></td></tr>
+    <tr><td>Run from sync code</td><td><code>asyncio.run(foo())</code></td></tr>
+    <tr><td>Wait for one</td><td><code>result = await foo()</code></td></tr>
+    <tr><td>Run N concurrently</td><td><code>results = await asyncio.gather(*[foo(x) for x in xs])</code></td></tr>
+    <tr><td>Background task</td><td><code>task = asyncio.create_task(foo())</code></td></tr>
+    <tr><td>Cancel a task</td><td><code>task.cancel()</code></td></tr>
+    <tr><td>Async resource</td><td><code>async with manager() as x:</code></td></tr>
+    <tr><td>Async iterator</td><td><code>async for item in stream():</code></td></tr>
+    <tr><td>Bridge sync code</td><td><code>await asyncio.to_thread(blocking_fn, arg)</code></td></tr>
+    <tr><td>Sleep</td><td><code>await asyncio.sleep(seconds)</code></td></tr>
+    <tr><td>Timeout</td><td><code>async with asyncio.timeout(10): ...</code></td></tr>
+  </tbody>
+</table>
+
+<!-- ====================================================================== -->
+<div class="part">PART 9 — Pydantic Essentials</div>
+
+<h2 id="pydantic-what">What Pydantic Does</h2>
+
+<p><strong>Pydantic validates and converts data at runtime based on type hints.</strong> You define a class with type-annotated fields; Pydantic checks incoming data matches, raises clean errors when it doesn't, and gives you typed objects to work with.</p>
+
+<p>Used by every major AI/web framework: Anthropic SDK, OpenAI SDK, FastAPI, MCP, LangChain, CrewAI.</p>
+
+<h2 id="pydantic-basemodel">BaseModel and Type Annotations</h2>
+
+<pre><code>from pydantic import BaseModel
+
+class Stock(BaseModel):
+    ticker: str           # field declaration via type annotation
+    price: float
+    period: str = "3mo"   # default value</code></pre>
+
+<div class="info">
+  <div class="info-title">ticker / price are INSTANCE fields (not class variables)</div>
+  Pydantic's metaclass reads <code>__annotations__</code> at class creation time and generates <code>__init__</code> that creates per-instance attributes. The class itself doesn't hold <code>ticker</code> or <code>price</code> — each instance does. Use <code>ClassVar[X]</code> for true class-level shared values.
+</div>
+
+<h2 id="pydantic-creation">Three Ways to Create an Instance</h2>
+
+<table>
+  <thead><tr><th>You have...</th><th>Use...</th><th>Example</th></tr></thead>
+  <tbody>
+    <tr><td>Python literals/variables</td><td><code>Stock(ticker=..., price=...)</code></td><td>Manual construction</td></tr>
+    <tr><td>A Python dict</td><td><code>Stock.model_validate(data)</code></td><td>Tool inputs, API responses</td></tr>
+    <tr><td>A JSON string</td><td><code>Stock.model_validate_json(json_str)</code></td><td>HTTP body, file contents</td></tr>
+  </tbody>
+</table>
+
+<p>All three produce the same kind of validated Stock instance. Pick based on input format.</p>
+
+<pre><code># Method 1 — direct construction
+s = Stock(ticker="AAPL", price=150.0)
+
+# Method 2 — from dict (most common in agent code)
+data = {"ticker": "AAPL", "price": 150.0}
+s = Stock.model_validate(data)
+
+# Method 3 — from JSON string (parses + validates in one step)
+json_str = '{"ticker": "GOOGL", "price": 2800}'
+s = Stock.model_validate_json(json_str)</code></pre>
+
+<div class="info">
+  <div class="info-title">model_validate and model_validate_json are inherited from BaseModel</div>
+  Every model gets ~17 <code>model_*</code> methods automatically by inheriting from BaseModel. The <code>model_</code> prefix avoids clashing with field names you might want to use (like <code>validate</code>, <code>dump</code>, <code>json</code>).
+</div>
+
+<h3>What "validation" means</h3>
+<p>Pydantic checks: required fields present? Types match (or coercible)? Custom validators pass? Constraints satisfied?</p>
+<p>Pass → returns typed instance. Fail → raises <code>ValidationError</code> with detailed per-field messages.</p>
+
+<h2 id="pydantic-serialize">Serialization (model_dump / model_dump_json)</h2>
+
+<pre><code>s = Stock(ticker="AAPL", price=150)
+s.model_dump()        # {'ticker': 'AAPL', 'price': 150.0}        ← dict
+s.model_dump_json()   # '{"ticker": "AAPL", "price": 150.0}'      ← JSON string</code></pre>
+
+<p>Used when sending agent state to APIs, files, databases.</p>
+
+<h2 id="pydantic-optional">Optional Fields and Defaults</h2>
+
+<pre><code>from typing import Optional
+
+class Stock(BaseModel):
+    ticker: str                          # required
+    price: Optional[float] = None        # optional, defaults to None
+    signal: str = "HOLD"                  # optional with non-None default</code></pre>
+
+<h3>The four combinations matter</h3>
+<table>
+  <thead><tr><th>Annotation</th><th>Type allows None?</th><th>Field required?</th></tr></thead>
+  <tbody>
+    <tr><td><code>price: float</code></td><td>❌ No</td><td>✅ Required</td></tr>
+    <tr><td><code>price: float = 0.0</code></td><td>❌ No</td><td>❌ Optional (defaults to 0.0)</td></tr>
+    <tr><td><code>price: Optional[float]</code></td><td>✅ Yes</td><td>✅ Required (must explicitly pass float OR None)</td></tr>
+    <tr><td><code>price: Optional[float] = None</code></td><td>✅ Yes</td><td>❌ Optional (defaults to None)</td></tr>
+  </tbody>
+</table>
+
+<div class="info">
+  <div class="info-title">Optional[X] vs "field is optional"</div>
+  <code>Optional[X]</code> means the TYPE allows None. It does NOT mean the field is skippable. To make it skippable, you need a default value. The standard "skippable, None when missing" pattern is <code>Optional[float] = None</code> (or modern <code>float | None = None</code>).
+</div>
+
+<h2 id="pydantic-field">Field() — Constraints and Metadata</h2>
+
+<p><code>Field()</code> attaches constraints, defaults, and metadata to a field beyond just its type:</p>
+
+<pre><code>from pydantic import BaseModel, Field
+
+class Stock(BaseModel):
+    ticker: str = Field(min_length=1, max_length=5,
+                        description="Stock ticker symbol")
+    price: float = Field(gt=0, description="Current price in USD")
+    quantity: int = Field(ge=0, default=0)</code></pre>
+
+<h3>Common Field parameters</h3>
+<table>
+  <thead><tr><th>Parameter</th><th>Meaning</th><th>Example</th></tr></thead>
+  <tbody>
+    <tr><td><code>gt</code> / <code>ge</code> / <code>lt</code> / <code>le</code></td><td>Numeric range</td><td><code>Field(gt=0, le=100)</code></td></tr>
+    <tr><td><code>min_length</code> / <code>max_length</code></td><td>String/list length</td><td><code>Field(min_length=1)</code></td></tr>
+    <tr><td><code>pattern</code></td><td>Regex match</td><td><code>Field(pattern=r"^[A-Z]+$")</code></td></tr>
+    <tr><td><code>description</code></td><td>Field description (shows in JSON schema → LLM)</td><td><code>Field(description="Ticker symbol")</code></td></tr>
+    <tr><td><code>examples</code></td><td>Example values for schema</td><td><code>Field(examples=["AAPL"])</code></td></tr>
+    <tr><td><code>default</code></td><td>Explicit default value</td><td><code>Field(default=0)</code></td></tr>
+    <tr><td><code>default_factory</code></td><td>Callable for mutable defaults</td><td><code>Field(default_factory=list)</code></td></tr>
+    <tr><td><code>alias</code></td><td>Alternative field name (camelCase ↔ snake_case)</td><td><code>Field(alias="userName")</code></td></tr>
+  </tbody>
+</table>
+
+<div class="info">
+  <div class="info-title">Why description matters in agentic AI</div>
+  <code>Field(description=...)</code> isn't documentation for humans — it's <strong>prompt engineering for the LLM</strong>. The description becomes part of the JSON schema sent to Claude/GPT, telling it what each field means. Critical for tool-call accuracy.
+</div>
+
+<h2 id="pydantic-validators">Custom Validators</h2>
+
+<pre><code>from pydantic import BaseModel, field_validator
+
+class Stock(BaseModel):
+    ticker: str
+
+    @field_validator("ticker")
+    @classmethod
+    def ticker_uppercase(cls, v: str) -> str:
+        if not v.isupper():
+            raise ValueError("Ticker must be UPPERCASE")
+        return v</code></pre>
+
+<p>Use when type checking isn't enough — business rules, format checks, cross-field consistency. Always include <code>@classmethod</code> on validators in Pydantic v2.</p>
+
+<h2 id="pydantic-tool-schema">Tool Input Schemas (Agentic AI Pattern)</h2>
+
+<p>The most common Pydantic use in agent code: defining tool input schemas that get sent to LLMs.</p>
+
+<pre><code>class GetPriceInput(BaseModel):
+    ticker: str = Field(description="Stock ticker like AAPL")
+    period: str = Field(default="3mo", description="1d, 1mo, 3mo, 1y")
+
+# Generate the JSON schema (sent to Claude as input_schema)
+schema = GetPriceInput.model_json_schema()</code></pre>
+
+<h3>Pydantic generates only the input_schema portion</h3>
+<p>A complete tool definition has THREE parts:</p>
+<table>
+  <thead><tr><th>Part</th><th>Who provides</th></tr></thead>
+  <tbody>
+    <tr><td><code>name</code></td><td>You — tool identifier</td></tr>
+    <tr><td><code>description</code></td><td>You — when to use it (tool selection prompt)</td></tr>
+    <tr><td><code>input_schema</code></td><td>Pydantic generates from BaseModel</td></tr>
+  </tbody>
+</table>
+
+<pre><code>tool = {
+    "name": "get_stock_price",
+    "description": "Get the current price of a stock",
+    "input_schema": GetPriceInput.model_json_schema(),    # ← Pydantic part
+}</code></pre>
+
+<p>Frameworks like <code>@mcp.tool()</code> assemble all three from a decorated function automatically. Manual SDK code does the assembly explicitly.</p>
+
+<h2 id="pydantic-vs-class">Pydantic vs Plain Class vs @dataclass</h2>
+
+<table>
+  <thead><tr><th>Feature</th><th>Plain class</th><th><code>@dataclass</code></th><th>Pydantic BaseModel</th></tr></thead>
+  <tbody>
+    <tr><td>Auto <code>__init__</code></td><td>❌</td><td>✅</td><td>✅</td></tr>
+    <tr><td>Auto <code>__repr__</code> / <code>__eq__</code></td><td>❌</td><td>✅</td><td>✅</td></tr>
+    <tr><td>Type validation at runtime</td><td>❌</td><td>❌</td><td>✅</td></tr>
+    <tr><td>JSON schema generation</td><td>❌</td><td>❌</td><td>✅ (the killer feature)</td></tr>
+    <tr><td>Serialize to dict / JSON</td><td>Manual</td><td>Manual</td><td>✅</td></tr>
+    <tr><td>External dependency</td><td>None</td><td>None (stdlib)</td><td>pydantic</td></tr>
+  </tbody>
+</table>
+
+<h3>When to use which</h3>
+<ul>
+  <li><strong>Plain class</strong> — methods + behavior, no validation needed</li>
+  <li><strong><code>@dataclass</code></strong> — data containers without external boundary, no validation overhead</li>
+  <li><strong>Pydantic BaseModel</strong> — anything at a system boundary (LLM tool inputs, API requests, config files, structured output)</li>
+</ul>
+
+<h3>Cheatsheet</h3>
+<table>
+  <thead><tr><th>Operation</th><th>Code</th></tr></thead>
+  <tbody>
+    <tr><td>Define model</td><td><code>class M(BaseModel): name: str</code></td></tr>
+    <tr><td>Create instance</td><td><code>m = M(name="x")</code></td></tr>
+    <tr><td>Validate dict</td><td><code>m = M.model_validate(some_dict)</code></td></tr>
+    <tr><td>Validate JSON string</td><td><code>m = M.model_validate_json('{"name": "x"}')</code></td></tr>
+    <tr><td>Dump to dict</td><td><code>m.model_dump()</code></td></tr>
+    <tr><td>Dump to JSON</td><td><code>m.model_dump_json()</code></td></tr>
+    <tr><td>Get JSON schema</td><td><code>M.model_json_schema()</code></td></tr>
+    <tr><td>Optional field</td><td><code>name: str | None = None</code></td></tr>
+    <tr><td>Default value</td><td><code>name: str = "default"</code></td></tr>
+    <tr><td>Constraints</td><td><code>age: int = Field(ge=0, lt=150)</code></td></tr>
+    <tr><td>Custom validator</td><td><code>@field_validator("name") @classmethod def check(cls, v): ...</code></td></tr>
+    <tr><td>Mutable default</td><td><code>tags: list = Field(default_factory=list)</code></td></tr>
+  </tbody>
+</table>
+
+<!-- ====================================================================== -->
+<div class="part">PART 10 — Dunder Methods (Python's Data Model)</div>
 
 <h2 id="what-dunders">What Dunders Are</h2>
 

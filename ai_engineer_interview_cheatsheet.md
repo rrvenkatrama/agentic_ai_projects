@@ -1737,3 +1737,145 @@ Decoration runs at module load → builds the registry. Use cases: `@mcp.tool()`
 ---
 
 *Last updated: 2026-04-30 — Section 4 (Decorators) complete: 3-layer pattern, @wraps, registry pattern (MCP/CrewAI), common builtins*
+
+---
+
+## async / await (#69 Section 6)
+
+### Mental model
+Single-threaded cooperative concurrency. `await` yields control to OTHER coroutines on the same event loop, NOT to other threads. The event loop runs on ONE thread, juggling coroutines at `await` points.
+
+This is why FastMCP/uvicorn can serve thousands of concurrent connections on one thread — each is a coroutine, OS multiplexes I/O via epoll/kqueue.
+
+### 5 essential patterns
+| Pattern | Use |
+|---|---|
+| `asyncio.run(main())` | Top-level entry point — runs main() ONCE |
+| `await coro()` | Sequential — wait for one |
+| `await asyncio.gather(*coros)` | Concurrent — fan out independent calls |
+| `asyncio.create_task(coro())` | Fire-and-forget background work |
+| `async with` / `async for` | Async resources / iterators (MCP sessions, LLM streams) |
+
+### Sequential vs concurrent
+```python
+# Sequential — 3s total
+for t in tickers:
+    result = await fetch(t)
+
+# Concurrent — ~1s total
+results = await asyncio.gather(*[fetch(t) for t in tickers])
+```
+
+### When async helps
+- Server with many clients (each a coroutine)
+- Multiple coroutines coexisting (background tasks during awaits)
+- Async-only libraries (MCP, httpx, asyncpg)
+- Cancellation/timeouts via `asyncio.timeout(s)`
+
+### When async DOESN'T help
+- Standalone script with one linear flow, no concurrency
+- CPU-bound work (use threads/processes via `asyncio.to_thread`)
+
+### Top gotchas
+- Forgetting `await` → returns coroutine OBJECT, not result
+- `time.sleep()` in async → blocks the entire event loop
+- Use `await asyncio.to_thread(blocking_fn, args)` to bridge sync code
+
+---
+
+## Pydantic Essentials (#69 Section 7)
+
+### What it does
+Runtime validation + serialization based on type hints. Used by every AI/web framework (Anthropic, OpenAI, FastAPI, MCP, LangChain, CrewAI).
+
+### Define model
+```python
+from pydantic import BaseModel, Field
+
+class Stock(BaseModel):
+    ticker: str = Field(min_length=1, max_length=5, description="Ticker symbol")
+    price: float = Field(gt=0)
+    quantity: int = Field(ge=0, default=0)
+```
+
+`ticker`/`price` are INSTANCE fields (not class variables). Pydantic's metaclass reads `__annotations__` and generates `__init__` that validates + creates per-instance attributes.
+
+### Three ways to create
+| Input | Method |
+|---|---|
+| Python literals | `Stock(ticker="AAPL", price=150)` |
+| dict | `Stock.model_validate(data)` |
+| JSON string | `Stock.model_validate_json(json_str)` |
+
+All return the same kind of validated instance. `model_validate` and `model_validate_json` are inherited from BaseModel automatically.
+
+### Serialize
+```python
+s.model_dump()        # → dict
+s.model_dump_json()   # → JSON string
+```
+
+### Optional field patterns (4 combinations)
+| Annotation | None allowed? | Required? |
+|---|---|---|
+| `price: float` | ❌ | ✅ |
+| `price: float = 0.0` | ❌ | ❌ (defaults to 0.0) |
+| `price: Optional[float]` | ✅ | ✅ (must explicitly pass) |
+| `price: Optional[float] = None` | ✅ | ❌ (defaults to None) |
+
+`Optional[X]` means TYPE allows None — NOT that the field is skippable. To make it skippable you need a default.
+
+### Field() — constraints + metadata
+```python
+Field(gt=0, le=100)           # numeric range
+Field(min_length=1, max_length=50)
+Field(pattern=r"^[A-Z]+$")
+Field(description="...")       # CRITICAL — becomes part of LLM-visible JSON schema
+Field(default_factory=list)    # for mutable defaults
+```
+
+`description` is prompt engineering for the LLM — included in the schema sent to Claude/GPT.
+
+### Custom validators
+```python
+@field_validator("ticker")
+@classmethod                              # always include in v2
+def ticker_uppercase(cls, v):
+    if not v.isupper():
+        raise ValueError("Must be uppercase")
+    return v
+```
+
+### Tool input schemas (the agentic AI killer pattern)
+A complete tool def has 3 parts. Pydantic generates only the third:
+
+```python
+tool = {
+    "name": "get_stock_price",                       # YOU
+    "description": "Get current price of a stock",   # YOU
+    "input_schema": GetPriceInput.model_json_schema()  # PYDANTIC
+}
+```
+
+Frameworks like `@mcp.tool()` assemble all three from a decorated function automatically.
+
+### When to use Pydantic vs alternatives
+| Use case | Tool |
+|---|---|
+| External boundary (LLM tools, API requests, config files) | Pydantic BaseModel |
+| Internal data containers, no validation needed | `@dataclass` |
+| Behavior-heavy classes (engines, orchestrators) | Plain class |
+
+### Pydantic v1 → v2 method renames (if you see old code)
+| v1 | v2 |
+|---|---|
+| `parse_obj(d)` | `model_validate(d)` |
+| `parse_raw(s)` | `model_validate_json(s)` |
+| `.dict()` | `.model_dump()` |
+| `.json()` | `.model_dump_json()` |
+| `.schema()` | `.model_json_schema()` |
+| `validator()` | `field_validator()` |
+
+---
+
+*Last updated: 2026-05-02 — Sections 6 (async/await) and 7 (Pydantic) complete. #69 Python Fundamentals DONE — ready for P7.*
